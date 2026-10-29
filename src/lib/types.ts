@@ -29,10 +29,13 @@ export type Flag = {
   contentType: string
   contentSummary: string
   reportedBy: string
+  reporterEmail?: string | null
   severity: Severity
   flagStatus: FlagStatus
   reason: string
   createdAt: string
+  decidedBy?: string | null
+  decidedAt?: string | null
 }
 
 export type AuditEvent = {

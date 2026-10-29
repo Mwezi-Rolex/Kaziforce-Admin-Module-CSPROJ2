@@ -15,6 +15,7 @@ const PERMISSIONS: Array<[string, string]> = [
   ['users.assign_role', 'Assign operator roles (Super Admin)'],
   ['users.ban', 'Permanently ban accounts (Super Admin)'],
   ['moderation.decide', 'Approve, reject, or escalate flags (Moderator+)'],
+  ['moderation.escalation', 'Resolve escalated flags in the Super Admin lane (overrule / uphold and ban)'],
   ['audit.view', 'View and filter the audit log'],
   ['audit.export', 'Download the audit log as CSV (Moderator+ — BRIEF restriction, CON-AUD-003)'],
   ['settings.manage', 'Modify system settings and feature toggles (Super Admin)'],
@@ -29,6 +30,7 @@ const ROLE_MATRIX: Record<string, string[]> = {
     'users.assign_role',
     'users.ban',
     'moderation.decide',
+    'moderation.escalation',
     'audit.view',
     'audit.export',
     'settings.manage',
@@ -127,6 +129,12 @@ async function main() {
          ON CONFLICT (user_id, role_id) DO NOTHING`,
         [rows[0].id, roleIds[role]],
       )
+      // Single-role enforcement: remove any role rows other than the seeded one
+      // (the role-assignment endpoint replaces rows, but re-seeding must too).
+      await conn.query(
+        `DELETE FROM user_roles WHERE user_id = $1 AND role_id <> $2`,
+        [rows[0].id, roleIds[role]],
+      )
       return rows[0].id as string
     }
 
@@ -138,7 +146,13 @@ async function main() {
       await upsertUser(u.email, u.name, u.role, u.status, null, false) // platform accounts never sign in here
     }
 
-    // Sample content + flags (SAMPLE DATA)
+    // Sample content + flags (SAMPLE DATA) — replace prior sample rows so the
+    // seed is idempotent (audit_log rows referencing them stay, by design).
+    await conn.query(
+      `DELETE FROM flags WHERE content_item_id IN (
+         SELECT id FROM content_items WHERE owner_id IN (SELECT id FROM users WHERE email LIKE '%@example.com'))`,
+    )
+    await conn.query(`DELETE FROM content_items WHERE owner_id IN (SELECT id FROM users WHERE email LIKE '%@example.com')`)
     const userIds = await conn.query<{ id: string; email: string }>(
       `SELECT id, email FROM users WHERE lower(email) LIKE '%@example.com'`,
     )
