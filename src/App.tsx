@@ -1,120 +1,51 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { Navigate, Route, Routes } from 'react-router-dom'
+import { AccessDenied, RequireAuth } from './app/guards'
+import { ConsoleLayout } from './app/layouts/ConsoleLayout'
+import { PublicLayout } from './app/layouts/PublicLayout'
+import { LoginPage } from './features/auth/LoginPage'
+import { DashboardPage } from './features/dashboard/DashboardPage'
+import { AuditPage } from './features/audit/AuditPage'
+import { LandingPage } from './features/landing/LandingPage'
+import { QueuePage } from './features/moderation/QueuePage'
+import { NotFoundPage } from './features/NotFoundPage'
+import { SettingsPage } from './features/settings/SettingsPage'
+import { UsersPage } from './features/users/UsersPage'
+import { PERMISSIONS, can } from './lib/permissions'
+import { useSession } from './app/SessionContext'
+import { Loading } from './components/ui/primitives'
 
-type Role = 'Viewer' | 'Moderator' | 'Super Admin'
-type Page = 'login' | 'dashboard' | 'users' | 'queue' | 'audit' | 'settings'
-
-const users = [
-  { id: 'usr_0184', email: 'adwoa.mensah@workmail.gh', role: 'Viewer', status: 'Active', created: '12 Sep 2026, 09:14' },
-  { id: 'usr_0191', email: 'isaac.njeri@talent.co.ke', role: 'Moderator', status: 'Suspended', created: '10 Sep 2026, 16:42' },
-  { id: 'usr_0203', email: 'zainab.okafor@workmail.ng', role: 'Viewer', status: 'Active', created: '07 Sep 2026, 11:08' },
-  { id: 'usr_0227', email: 'moses.kato@talent.ug', role: 'Viewer', status: 'Active', created: '03 Sep 2026, 08:31' },
-]
-
-const flags = [
-  { id: 'flg_0772', content: 'Gig listing · Remote bookkeeping support', reporter: 'usr_0203', severity: 'High', flag_status: 'Pending', age: '18 mins ago' },
-  { id: 'flg_0768', content: 'Review · “Requested payment before delivery”', reporter: 'usr_0191', severity: 'Medium', flag_status: 'Pending', age: '46 mins ago' },
-  { id: 'flg_0761', content: 'Portfolio submission · Product photography', reporter: 'usr_0184', severity: 'Low', flag_status: 'Pending', age: '1 hr ago' },
-  { id: 'flg_0755', content: 'Gig listing · Data entry contract', reporter: 'usr_0227', severity: 'High', flag_status: 'Escalated', age: '2 hrs ago' },
-]
-
-const contentItems = [
-  { id: 'cnt_0401', content_type: 'Gig listing', owner_id: 'usr_0184', created_at: '12 Sep 2026' },
-  { id: 'cnt_0402', content_type: 'Review', owner_id: 'usr_0191', created_at: '10 Sep 2026' },
-  { id: 'cnt_0403', content_type: 'Portfolio submission', owner_id: 'usr_0203', created_at: '07 Sep 2026' },
-  { id: 'cnt_0404', content_type: 'Gig listing', owner_id: 'usr_0227', created_at: '03 Sep 2026' },
-]
-
-const events = [
-  { id: 'evt_0b11', actor: 'op_001', action: 'Content Rejected', target: 'flg_0764', time: '17 Sep 2026, 09:42' },
-  { id: 'evt_0b10', actor: 'op_004', action: 'User Suspended', target: 'usr_0191', time: '17 Sep 2026, 09:31' },
-  { id: 'evt_0b0f', actor: 'op_001', action: 'Content Approved', target: 'flg_0759', time: '17 Sep 2026, 09:17' },
-  { id: 'evt_0b0e', actor: 'op_007', action: 'Role Assigned', target: 'usr_0173', time: '17 Sep 2026, 08:48' },
-]
-
-function Mark() { return <div className="grid h-9 w-9 place-items-center rounded-sm bg-[#183a35] font-serif text-xl text-[#fcfaf2]">T</div> }
-function Icon({ children }: { children: string }) { return <span className="grid h-5 w-5 place-items-center text-[15px] leading-none">{children}</span> }
-function Pill({ children, tone = 'neutral', label }: { children: string, tone?: 'neutral' | 'high' | 'medium' | 'low' | 'active' | 'suspended', label?: string }) { return <span className={`pill pill-${tone}`}><span aria-hidden="true">●</span>{label && `${label}: `}{children}</span> }
-
-export default function App() {
-  const [page, setPage] = useState<Page>('login')
-  const [role, setRole] = useState<Role>('Super Admin')
-  const [modal, setModal] = useState<{ type: 'ban' | 'toggle' | 'bulk', label: string } | null>(null)
-  const [modalStep, setModalStep] = useState(1)
-  const [selected, setSelected] = useState<string[]>([])
-  const [notice, setNotice] = useState('')
-  const [featureEnabled, setFeatureEnabled] = useState(true)
-  const [focusedUserId, setFocusedUserId] = useState<string | null>(null)
-
-  const allowed = useMemo(() => ({
-    moderation: role === 'Moderator' || role === 'Super Admin',
-    suspend: role === 'Moderator' || role === 'Super Admin',
-    super: role === 'Super Admin',
-  }), [role])
-  const notify = (message: string) => { setNotice(message); window.setTimeout(() => setNotice(''), 2800) }
-  const openModal = (type: 'ban' | 'toggle' | 'bulk', label: string) => { setModal({ type, label }); setModalStep(1) }
-  const confirm = () => {
-    if (modalStep === 1) { setModalStep(2); return }
-    if (modal?.type === 'toggle') setFeatureEnabled(value => !value)
-    notify(`${modal?.type === 'ban' ? 'Permanent ban' : modal?.type === 'bulk' ? 'Bulk moderation decision' : 'Configuration change'} recorded in audit log.`)
-    setModal(null)
-  }
-
-  if (page === 'login') return <Login onLogin={() => setPage('dashboard')} />
-
-  const nav = [
-    ['dashboard', 'Dashboard Analytics', '▦'], ['users', 'User Control Centre', '◎'], ['queue', 'Moderation Queue', '≡'], ['audit', 'Audit Explorer', '◫'],
-  ] as const
-
-  return <main className="min-h-screen bg-[#f7f5ef] text-[#17332f]">
-    <aside className="fixed inset-y-0 left-0 z-20 flex w-[252px] flex-col border-r border-[#d8d8ce] bg-[#eeece3] px-4 py-5">
-      <div className="flex items-center gap-3 px-2"><Mark /><div><p className="font-serif text-lg leading-none">Tendaji</p><p className="mt-1 font-mono text-[9px] uppercase tracking-[.18em] text-[#6c756e]">Governance console</p></div></div>
-      <div className="mt-12 px-2 font-mono text-[10px] uppercase tracking-[.16em] text-[#7c817a]">Operations</div>
-      <nav className="mt-3 space-y-1">{nav.map(([key, label, glyph]) => <button key={key} onClick={() => setPage(key)} className={`nav-item ${page === key ? 'nav-active' : ''}`}><Icon>{glyph}</Icon><span>{label}</span>{key === 'queue' && <span className="ml-auto grid h-5 min-w-5 place-items-center rounded-full bg-[#b54528] px-1 font-mono text-[10px] text-white">3</span>}</button>)}</nav>
-      <div className="mt-auto border-t border-[#d8d8ce] pt-4">
-        <button onClick={() => allowed.super && setPage('settings')} className={`flex w-full items-center gap-3 rounded-sm px-3 py-3 text-left text-sm ${allowed.super ? 'hover:bg-white/60' : 'cursor-not-allowed text-[#93988f]'}`} title={allowed.super ? 'System Settings' : 'System Settings requires Super Admin'}><Icon>⚙</Icon><span>System Settings</span>{!allowed.super && <span className="ml-auto text-xs">⌕</span>}</button>
-        <div className="mt-3 flex items-center gap-3 px-3"><div className="grid h-8 w-8 place-items-center rounded-full bg-[#d5caae] font-serif text-sm">SM</div><div className="min-w-0 flex-1"><p className="truncate text-xs font-semibold">Samuel M.</p><p className="font-mono text-[9px] uppercase tracking-wider text-[#747a72]">{role}</p></div></div>
-        <div className="mt-3 px-2"><label className="sr-only">Wireframe access role</label><select value={role} onChange={e => setRole(e.target.value as Role)} className="role-select"><option>Viewer</option><option>Moderator</option><option>Super Admin</option></select></div>
-      </div>
-    </aside>
-    <section className="ml-[252px] min-h-screen">
-      <header className="flex h-[76px] items-center justify-between border-b border-[#deded5] bg-[#faf9f4] px-10"><div className="flex items-center gap-3"><span className="font-mono text-[10px] uppercase tracking-[.15em] text-[#718078]">Authenticated / JWT verified</span><span className="h-1.5 w-1.5 rounded-full bg-[#3e7d5b]" /></div><div className="font-mono text-[10px] uppercase tracking-[.12em] text-[#7a8179]">Operator ID · op_007</div></header>
-      <div className="mx-auto max-w-[1440px] px-10 py-9">
-        {page === 'dashboard' && <Dashboard role={role} onGo={setPage} />}
-        {page === 'users' && <Users allowed={allowed} focusUserId={focusedUserId} onBan={(account) => openModal('ban', account)} onNotice={notify} />}
-        {page === 'queue' && <Queue allowed={allowed} selected={selected} setSelected={setSelected} onNotice={notify} onBulk={(action) => openModal('bulk', `${action} ${selected.length} selected moderation item${selected.length === 1 ? '' : 's'}`)} onBan={(item) => openModal('ban', item)} onOpenUser={(id) => { setFocusedUserId(id); setPage('users') }} />}
-        {page === 'audit' && <Audit />}
-        {page === 'settings' && allowed.super && <Settings enabled={featureEnabled} onToggle={() => openModal('toggle', 'the selected feature toggle')} />}
-      </div>
-    </section>
-    {notice && <div className="fixed bottom-6 right-6 z-40 border border-[#a7c4ad] bg-[#eff7f0] px-4 py-3 text-sm shadow-lg">{notice}</div>}
-    {modal && <ConfirmModal item={modal} step={modalStep} onConfirm={confirm} onCancel={() => setModal(null)} />}
-  </main>
+// /console/settings is Super Admin only (CON-SET-001); the sidebar hides the
+// entry and the guard defends the route itself (server enforces the API side).
+function SettingsGate() {
+  const { user } = useSession()
+  if (!user) return <Loading label="Checking access…" />
+  if (!can(user.permissions, PERMISSIONS.settingsManage)) return <AccessDenied requiredPermission={PERMISSIONS.settingsManage} />
+  return <SettingsPage />
 }
 
-function Login({ onLogin }: { onLogin: () => void }) { return <main className="login-shell"><div className="login-rule" /><section className="login-card"><div className="mb-12 flex items-center gap-3"><Mark /><div><p className="font-serif text-xl">Tendaji</p><p className="font-mono text-[9px] uppercase tracking-[.2em] text-[#798078]">Governance console</p></div></div><p className="eyebrow">Operator access</p><h1 className="font-serif text-5xl leading-[1.02] text-[#17332f]">Accountable<br/>by design.</h1><p className="mt-5 max-w-sm text-sm leading-6 text-[#627069]">Sign in to access the marketplace governance system. Your role claim determines the actions available to you.</p><form onSubmit={e => { e.preventDefault(); onLogin() }} className="mt-10 space-y-4"><label className="field-label">Email<input required type="email" defaultValue="samuel@tendaji.africa" /></label><label className="field-label">Password<input required type="password" defaultValue="password" /></label><button className="primary-button mt-3 w-full">Authenticate <span>→</span></button></form><div className="mt-8 border-t border-[#deded4] pt-4 font-mono text-[9px] uppercase tracking-[.1em] text-[#7a8279]">JWT session · role-gated routes · secure credential validation</div></section><aside className="login-aside"><div><p className="eyebrow text-[#b9d6bd]">Governance layer</p><p className="mt-5 max-w-xs font-serif text-3xl leading-tight">Every decision is traceable. Every action is accountable.</p></div><div className="border-t border-white/20 pt-5 font-mono text-[10px] uppercase tracking-[.16em] text-[#c5d4c7]">African digital workforce marketplace<br/>Web operator interface</div></aside></main> }
-
-function PageTitle({ kicker, title, children }: { kicker: string, title: string, children?: ReactNode }) { return <div className="mb-8 flex items-end justify-between"><div><p className="eyebrow">{kicker}</p><h1 className="mt-2 font-serif text-[42px] leading-none tracking-tight">{title}</h1></div>{children}</div> }
-function Dashboard({ role, onGo }: { role: Role, onGo: (p: Page) => void }) { return <><PageTitle kicker="Governance overview" title="Dashboard"><p className="font-mono text-[10px] uppercase tracking-[.14em] text-[#758078]">Role scope · {role}</p></PageTitle><div className="grid grid-cols-[1.3fr_.7fr] gap-5"><section className="border border-[#d8d9cf] bg-[#fcfbf7] p-7"><p className="eyebrow">Analytics access</p><h2 className="mt-4 max-w-md font-serif text-3xl leading-tight">Dashboard analytics are available to all operator tiers.</h2><p className="mt-5 max-w-lg text-sm leading-6 text-[#68736c]">The source documentation does not define a dashboard KPI set. This wireframe intentionally leaves the analytical content unpopulated rather than introduce unapproved measures.</p><div className="mt-10 flex items-center gap-3 border-t border-[#dfe0d8] pt-5"><span className="h-2 w-2 rounded-full bg-[#c99735]"/><span className="font-mono text-[10px] uppercase tracking-[.1em] text-[#798179]">Metric definitions pending</span></div></section><section className="bg-[#183a35] p-7 text-[#f8f5ec]"><p className="eyebrow text-[#bcd7c2]">Operator scope</p><div className="mt-6 space-y-4 text-sm leading-5"><p>Read-only dashboard analytics and audit exploration are available to every authenticated operator.</p><button onClick={() => onGo('audit')} className="border-b border-[#bcd7c2] pb-1 font-mono text-[10px] uppercase tracking-wider text-[#d7ead9]">Open audit explorer →</button></div></section></div></> }
-function Users({ allowed, focusUserId, onBan, onNotice }: { allowed: { suspend: boolean, super: boolean }, focusUserId: string | null, onBan: (account: string) => void, onNotice: (m: string) => void }) {
-  const [query, setQuery] = useState('')
-  const [state, setState] = useState('All account states')
-  const [activeUser, setActiveUser] = useState<typeof users[number] | null>(null)
-  const [statuses, setStatuses] = useState<Record<string, string>>({})
-  const [roles, setRoles] = useState<Record<string, string>>({})
-  useEffect(() => { if (focusUserId) setActiveUser(users.find(user => user.id === focusUserId) ?? null) }, [focusUserId])
-  const resolved = (u: typeof users[number]) => ({ ...u, status: statuses[u.id] ?? u.status, role: roles[u.id] ?? u.role })
-  const filtered = users.map(resolved).filter(u => `${u.email} ${u.id}`.toLowerCase().includes(query.toLowerCase()) && (state === 'All account states' || u.status === state))
-  const selected = activeUser ? resolved(activeUser) : null
-  const suspend = (u: typeof users[number]) => { setStatuses(current => ({ ...current, [u.id]: 'Suspended' })); onNotice(`Account ${u.id} suspended. Immutable audit event created.`) }
-  const assign = (u: typeof users[number], role: string) => { setRoles(current => ({ ...current, [u.id]: role })); onNotice(`Role assignment for ${u.id} recorded in audit log.`) }
-  const reportedFlags = selected ? flags.filter(flag => flag.reporter === selected.id) : []
-  const ownedContent = selected ? contentItems.filter(item => item.owner_id === selected.id) : []
-  return <><PageTitle kicker="User management" title="Account control"><p className="font-mono text-[10px] uppercase tracking-[.14em] text-[#758078]">Search · view · status control · role map</p></PageTitle><div className="toolbar"><input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search by account ID or email"/><select value={state} onChange={e => setState(e.target.value)}><option>All account states</option><option>Active</option><option>Suspended</option></select><span className="ml-auto font-mono text-[10px] uppercase tracking-wider text-[#727d75]">{filtered.length} matched accounts</span></div><div className="mt-5 grid grid-cols-1 gap-5"><div className="overflow-hidden border border-[#d8d9cf] bg-[#fcfbf7]"><table><thead><tr><th>View</th><th>Account</th><th>Account ID</th><th>Role</th><th>Status</th><th>Created</th><th className="text-right">Actions</th></tr></thead><tbody>{filtered.map(u => <tr key={u.id} className={activeUser?.id === u.id ? 'bg-[#f1f5ed]' : ''}><td><button className="minor-button" onClick={() => setActiveUser(u)}>View</button></td><td className="font-medium">{u.email}</td><td className="mono">{u.id}</td><td>{u.role}</td><td><Pill label="Status" tone={u.status === 'Active' ? 'active' : 'suspended'}>{u.status}</Pill></td><td className="text-[#66716a]">{u.created}</td><td><div className="flex justify-end gap-2">{allowed.suspend && u.status === 'Active' && <button className="minor-button" onClick={() => suspend(u)}>Suspend</button>}{!allowed.suspend && <span className="mono text-[#8c938c]">Read-only</span>}</div></td></tr>)}</tbody></table></div><aside className="border border-[#d8d9cf] bg-[#eeece4] p-5">{selected ? <><div className="flex items-start justify-between"><p className="eyebrow">Account record</p><button onClick={() => setActiveUser(null)} className="text-sm text-[#69746c]" aria-label="Close account record">×</button></div><h2 className="mt-4 break-all font-serif text-2xl leading-tight">{selected.email}</h2><dl className="detail-list"><div><dt>Account ID</dt><dd className="mono">{selected.id}</dd></div><div><dt>Role</dt><dd>{selected.role}</dd></div><div><dt>Status</dt><dd><Pill label="Status" tone={selected.status === 'Active' ? 'active' : 'suspended'}>{selected.status}</Pill></dd></div><div><dt>Created</dt><dd>{selected.created}</dd></div></dl><div className="history-block"><p className="eyebrow">Flags reported · {reportedFlags.length}</p>{reportedFlags.length ? reportedFlags.map(flag => <p key={flag.id} className="history-item"><span className="mono">{flag.id}</span><Pill label="Severity" tone={flag.severity.toLowerCase() as 'high' | 'medium' | 'low'}>{flag.severity}</Pill></p>) : <p className="history-empty">No reported flags in this record.</p>}<p className="eyebrow mt-4">Content owned · {ownedContent.length}</p>{ownedContent.length ? ownedContent.map(item => <p key={item.id} className="history-item"><span>{item.content_type}</span><span className="mono">{item.id}</span></p>) : <p className="history-empty">No owned content in this record.</p>}</div><div className="mt-6 border-t border-[#d3d5cb] pt-5">{allowed.suspend && selected.status === 'Active' && <button className="minor-button w-full" onClick={() => suspend(selected)}>Suspend account</button>}{allowed.super && <div className="mt-3"><label className="field-label">Assign role<select defaultValue={selected.role} onChange={e => assign(selected, e.target.value)}><option>Viewer</option><option>Moderator</option><option>Super Admin</option></select></label><button className="danger-button mt-4 w-full" onClick={() => onBan(selected.email)}>Permanently ban <span>→</span></button></div>}{!allowed.suspend && <p className="text-sm leading-6 text-[#707971]">This role can view account records only. No account actions are authorized.</p>}{allowed.suspend && !allowed.super && <p className="mt-4 text-xs leading-5 text-[#707971]">Role assignment and permanent bans require Super Admin authority.</p>}</div></> : <div className="flex h-full min-h-[300px] flex-col justify-between"><div><p className="eyebrow">Account record</p><h2 className="mt-4 font-serif text-2xl leading-tight">Select an account to view its authorized controls.</h2></div><p className="font-mono text-[10px] uppercase tracking-[.1em] text-[#768078]">No create, delete, or arbitrary update controls</p></div>}</aside></div>{!allowed.super && <p className="mt-4 text-xs text-[#7b837c]">Role assignment and permanent bans are not available to this operator role.</p>}</> }
-function Queue({ allowed, selected, setSelected, onNotice, onBulk, onBan, onOpenUser }: { allowed: { moderation: boolean, super: boolean }, selected: string[], setSelected: (ids: string[]) => void, onNotice: (m: string) => void, onBulk: (action: string) => void, onBan: (item: string) => void, onOpenUser: (id: string) => void }) {
-  const [lane, setLane] = useState<'queue' | 'escalated'>('queue')
-  const visibleFlags = lane === 'escalated' ? flags.filter(flag => flag.flag_status === 'Escalated') : flags
-  const toggle = (id: string) => setSelected(selected.includes(id) ? selected.filter(i => i !== id) : [...selected, id])
-  return <><PageTitle kicker="Content moderation" title={lane === 'escalated' ? 'Escalation review' : 'Review queue'}><div className="text-right"><p className="font-mono text-[10px] uppercase tracking-[.14em] text-[#758078]">Rule-based priority queue</p><p className="mt-1 text-xs text-[#758078]">{allowed.moderation ? 'Decision authority active' : 'Read-only operator view'}</p></div></PageTitle>{allowed.super && <div className="mb-5 flex gap-2"><button onClick={() => { setLane('queue'); setSelected([]) }} className={`lane-tab ${lane === 'queue' ? 'lane-active' : ''}`}>Moderation queue</button><button onClick={() => { setLane('escalated'); setSelected([]) }} className={`lane-tab ${lane === 'escalated' ? 'lane-active' : ''}`}>Escalation review <span>1</span></button></div>}{lane === 'escalated' && <div className="escalation-note">Super Admin review lane · An escalated item may be overruled to approved, or upheld with a permanent account ban, as specified in the activity diagram.</div>}<div className="toolbar"><select><option>All severity levels</option><option>High</option><option>Medium</option><option>Low</option></select><select><option>All flag_status values</option><option>Pending</option><option>Escalated</option></select><span className="ml-auto font-mono text-[10px] uppercase tracking-wider text-[#707a72]">{visibleFlags.length} flagged items</span></div>{selected.length > 0 && <div className="bulkbar"><span className="font-mono text-[10px] uppercase tracking-wider">{selected.length} selected</span>{allowed.moderation ? <div className="flex gap-2">{lane === 'escalated' ? <><button onClick={() => onBulk('overrule')} className="minor-button">Overrule</button><button onClick={() => onBulk('uphold and ban')} className="minor-button">Uphold and ban</button></> : <><button onClick={() => onBulk('approve')} className="minor-button">Approve selected</button><button onClick={() => onBulk('reject')} className="minor-button">Reject selected</button><button onClick={() => onBulk('escalate')} className="minor-button">Escalate selected</button></>}</div> : <span className="text-xs text-[#68736b]">Moderation actions require Moderator or Super Admin</span>}</div>}<div className="mt-5 overflow-hidden border border-[#d8d9cf] bg-[#fcfbf7]"><table><thead><tr><th><input type="checkbox" aria-label="Select all flags" checked={visibleFlags.length > 0 && selected.length === visibleFlags.length} onChange={() => setSelected(selected.length === visibleFlags.length ? [] : visibleFlags.map(f => f.id))}/></th><th>Target content item</th><th>Reporting user</th><th>severity</th><th>Status</th><th>Created</th></tr></thead><tbody>{visibleFlags.map(f => <tr key={f.id}><td><input type="checkbox" checked={selected.includes(f.id)} onChange={() => toggle(f.id)} aria-label={`Select ${f.id}`}/></td><td><p className="font-medium">{f.content}</p><p className="mono mt-1 text-[#858c85]">{f.id} · content_item_id</p></td><td><button onClick={() => onOpenUser(f.reporter)} className="mono hover:underline">{f.reporter}</button></td><td><Pill label="Severity" tone={f.severity.toLowerCase() as 'high' | 'medium' | 'low'}>{f.severity}</Pill></td><td><Pill>{f.flag_status}</Pill></td><td className="text-[#66716a]">{f.age}</td></tr>)}</tbody></table></div></> }
-function Audit() { return <><PageTitle kicker="Immutable record" title="Audit log explorer"><button onClick={() => alert('CSV export initiated.')} className="primary-button">Export CSV <span>↓</span></button></PageTitle><div className="toolbar"><label className="inline-label">From<input type="date" defaultValue="2026-09-17"/></label><label className="inline-label">To<input type="date" defaultValue="2026-09-17"/></label><input placeholder="Filter by actor / operator ID"/><button className="minor-button">Apply filters</button></div><p className="mt-4 font-mono text-[10px] uppercase tracking-[.1em] text-[#718078]">Append-only · server-generated timestamp · no update or delete privileges</p><div className="mt-4 overflow-hidden border border-[#d8d9cf] bg-[#fcfbf7]"><table><thead><tr><th>Event ID</th><th>Operator / actor ID</th><th>Action type</th><th>Target entity ID</th><th>Created at</th></tr></thead><tbody>{events.map(e => <tr key={e.id}><td className="mono">{e.id}</td><td className="mono">{e.actor}</td><td><Pill>{e.action}</Pill></td><td className="mono">{e.target}</td><td>{e.time}</td></tr>)}</tbody></table></div></> }
-function Settings({ enabled, onToggle }: { enabled: boolean, onToggle: () => void }) { const value = String(enabled); return <><PageTitle kicker="Super Admin only" title="System settings"><p className="font-mono text-[10px] uppercase tracking-[.14em] text-[#758078]">Configuration changes are audited</p></PageTitle><div className="max-w-4xl overflow-hidden border border-[#d8d9cf] bg-[#fcfbf7]"><table><thead><tr><th>Configuration key</th><th>value</th><th>Updated at</th><th className="text-right">Control</th></tr></thead><tbody><tr><td className="mono">[Key not specified]</td><td><input className="table-input" placeholder="Configuration value" /></td><td className="text-[#879087]">[Timestamp]</td><td className="text-right"><button className="minor-button">Save value</button></td></tr><tr><td className="mono">[Feature toggle not specified]</td><td><Pill tone={enabled ? 'active' : 'suspended'}>{value}</Pill></td><td className="text-[#879087]">[Timestamp]</td><td className="text-right"><button onClick={onToggle} className="toggle" aria-label="Request feature toggle change"><span className={enabled ? 'translate-x-5' : 'translate-x-0'} /></button></td></tr></tbody></table></div><p className="mt-5 max-w-xl text-sm leading-6 text-[#727b73]">The source documentation establishes a key/value interface and feature toggles, but does not name individual keys or toggles. These fields are intentionally marked rather than fabricated.</p></> }
-function ConfirmModal({ item, step, onConfirm, onCancel }: { item: { type: 'ban' | 'toggle' | 'bulk', label: string }, step: number, onConfirm: () => void, onCancel: () => void }) { const ban = item.type === 'ban'; const bulk = item.type === 'bulk'; return <div className="fixed inset-0 z-50 grid place-items-center bg-[#183a35]/45 p-6"><div className="w-full max-w-md border border-[#c9c8bd] bg-[#fcfbf6] p-7 shadow-2xl"><p className="eyebrow">Step {step} of 2 · confirmation required</p><h2 className="mt-3 font-serif text-3xl">{step === 1 ? (ban ? 'Permanent account ban?' : bulk ? 'Confirm bulk decision?' : 'Change feature state?') : 'Confirm this action.'}</h2><p className="mt-4 text-sm leading-6 text-[#626f67]">{step === 1 ? (ban ? 'This permanently bans the selected account. This action is destructive and will create an immutable audit event.' : bulk ? 'This applies one moderation decision to multiple flagged records. Each state change will create an immutable audit event.' : 'This changes a platform-wide operational state. The change will be written to the immutable audit ledger.') : `You are about to finalize: ${item.label}. This cannot be undone from this interface.`}</p><div className="mt-8 flex justify-end gap-3"><button className="minor-button" onClick={onCancel}>Cancel</button><button className={ban ? 'danger-button' : 'primary-button'} onClick={onConfirm}>{step === 1 ? 'Continue' : ban ? 'Permanently ban' : bulk ? 'Apply decision' : 'Confirm change'} <span>→</span></button></div></div></div> }
+export default function App() {
+  return (
+    <Routes>
+      <Route element={<PublicLayout />}>
+        <Route index element={<LandingPage />} />
+      </Route>
+      <Route path="/login" element={<LoginPage />} />
+      <Route
+        path="/console"
+        element={
+          <RequireAuth>
+            <ConsoleLayout />
+          </RequireAuth>
+        }
+      >
+        <Route index element={<Navigate to="/console/dashboard" replace />} />
+        <Route path="dashboard" element={<DashboardPage />} />
+        <Route path="users" element={<UsersPage />} />
+        <Route path="queue" element={<QueuePage />} />
+        <Route path="audit" element={<AuditPage />} />
+        <Route path="settings" element={<SettingsGate />} />
+      </Route>
+      <Route path="*" element={<NotFoundPage />} />
+    </Routes>
+  )
+}

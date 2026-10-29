@@ -8,10 +8,10 @@ Generated 2026-10-29 by `docs/traceability-gen.mjs` (rerun: `node docs/traceabil
 
 | ID | Statement | Source | Screen/area | Layer | Status |
 |---|---|---|---|---|---|
-| CON-AUTH-001 | Operators sign in with email + password; credentials verified with bcrypt | Ch5 §3.6.2 | Login | frontend + backend + database | not started |
-| CON-AUTH-002 | Role comes from the signed JWT; wireframe role switcher and hard-coded operator removed | BRIEF 2026-10-29 + Ch5 JWT role claims | All screens | frontend + backend | not started |
-| CON-AUTH-003 | Suspended or terminated operators cannot authenticate | Ch5 §3.4 actors (cf. BR-USR-005) | Login | backend + database | not started |
-| CON-RBAC-001 | Three tiers: Viewer read-only; Moderator queue decisions + suspend; Super Admin role assignment, bans, settings | Ch5 §1.5.1/§3.4 (cf. SEC-RBAC-001…007) | All screens | frontend + backend + database | not started |
+| CON-AUTH-001 | Operators sign in with email + password; credentials verified with bcrypt | Ch5 §3.6.2 | Login | frontend + backend + database | done — code complete; DB verification pending bootstrap |
+| CON-AUTH-002 | Role comes from the signed JWT; wireframe role switcher and hard-coded operator removed | BRIEF 2026-10-29 + Ch5 JWT role claims | All screens | frontend + backend | done — role switcher and hard-coded operator removed |
+| CON-AUTH-003 | Suspended or terminated operators cannot authenticate | Ch5 §3.4 actors (cf. BR-USR-005) | Login | backend + database | in progress — implemented; Jest verification pending bootstrap |
+| CON-RBAC-001 | Three tiers: Viewer read-only; Moderator queue decisions + suspend; Super Admin role assignment, bans, settings | Ch5 §1.5.1/§3.4 (cf. SEC-RBAC-001…007) | All screens | frontend + backend + database | in progress — matrix seeded, middleware live; tests pending bootstrap |
 | CON-USR-001 | Account view / search / filter by query and status | Ch5 §3.6.3 | User Control Centre | frontend + backend + database | not started |
 | CON-USR-002 | No account create or delete; accounts originate in the marketplace platform | BRIEF 2026-10-29 overriding Ch5 "account CRUD"; Figma export | User Control Centre | frontend + backend | not started |
 | CON-USR-003 | Suspend account (Moderator+), audited | Ch5 §3.6.3 | User Control Centre | frontend + backend + database | not started |
@@ -22,20 +22,20 @@ Generated 2026-10-29 by `docs/traceability-gen.mjs` (rerun: `node docs/traceabil
 | CON-MOD-002 | Approve / reject / escalate a flag (Moderator+), audited | Ch5 §3.6.4; Note 8 UC4–UC6 | Moderation Queue | frontend + backend + database | not started |
 | CON-MOD-003 | Bulk approve and bulk reject | Ch5 §3.6.4 | Moderation Queue | frontend + backend | not started |
 | CON-MOD-004 | Super Admin escalation lane: overrule or uphold with permanent ban | Note 8 activity diagram; Figma export | Moderation Queue | frontend + backend + database | not started |
-| CON-AUD-001 | Every state change writes an audit event (actor, action, target, UTC timestamp); store is INSERT-only | Ch5 §3.6.5 (cf. SEC-AUD-001…006) | Audit Explorer | backend + database | not started |
+| CON-AUD-001 | Every state change writes an audit event (actor, action, target, UTC timestamp); store is INSERT-only | Ch5 §3.6.5 (cf. SEC-AUD-001…006) | Audit Explorer | backend + database | in progress — AuditLogger live on auth routes; ledger INSERT-only enforced by migration 006 |
 | CON-AUD-002 | Audit explorer: date-range + actor filters, read-only table | Ch5 §3.6.5 | Audit Explorer | frontend + backend | not started |
 | CON-AUD-003 | CSV export restricted to Moderator and Super Admin; server 403 for Viewer; control hidden for Viewer | BRIEF 2026-10-29 overriding Ch5 §3.6.5 all-operator export (cf. FR-ADM-037, SEC-AUD-007) | Audit Explorer | frontend + backend | not started |
 | CON-AUD-004 | Adversarial immutability test: application DB role cannot UPDATE/DELETE audit_log | Ch5 §3.3 testing; BRIEF never-cut list | tests | database + tests | not started |
 | CON-SET-001 | Settings panel Super Admin only; key/value config + feature toggle; changes audited | Ch5 §3.6.6 (cf. FR-ADM-004/019/026) | System Settings | frontend + backend + database | not started |
 | CON-SET-002 | Settings keys and toggles stay named placeholders until the user supplies them | OQ-2 default confirmed in BRIEF | System Settings | frontend | not started |
 | CON-DASH-001 | Dashboard shell present; analytics deliberately unpopulated ("Metric definitions pending") | BRIEF/OQ-2 (cf. FR-ADM-008/046) | Dashboard | frontend | not started |
-| CON-WEB-001 | Landing page: minimal, reuses export tokens only; product name Kaziforce (replaces "Tendaji") | BRIEF 2026-10-29 | Landing | frontend | not started |
-| CON-WEB-002 | 404 page for unknown routes | BRIEF 2026-10-29 | 404 | frontend | not started |
+| CON-WEB-001 | Landing page: minimal, reuses export tokens only; product name Kaziforce (replaces "Tendaji") | BRIEF 2026-10-29 | Landing | frontend | done (slice 0) |
+| CON-WEB-002 | 404 page for unknown routes | BRIEF 2026-10-29 | 404 | frontend | done (slice 0) |
 | CON-UI-001 | Every panel listing report content or options scrolls inside its container instead of clipping | BRIEF 2026-10-29 | All screens | frontend | not started |
-| CON-ML-A-001 | Suggestion-only ML: per-flag predicted severity + suggested action + confidence (Random Forest vs logistic regression + baselines); moderator always decides | BRIEF ML-A; AGENTS.md ML rules | Moderation Queue | backend (model service) + frontend | reserved (slice 9) |
-| CON-ML-B-001 | Stretch: Isolation Forest anomaly score over operator activity, shown to Super Admin in audit explorer | BRIEF ML-B (first to cut) | Audit Explorer | backend (model service) + frontend | reserved (slice 10, first cut) |
-| CON-DEP-001 | Deployment artifacts + runbook for Azure VPS + Nginx; agent provisions nothing | BRIEF deployment | infra | backend (infra) | reserved (slice 11) |
-| CON-TST-001 | Jest + Supertest API tests including role enforcement and audit immutability | BRIEF stack; Ch5 §3.5 | tests | backend + tests | not started |
+| CON-ML-A-001 | Suggestion-only ML: per-flag predicted severity + suggested action + confidence (Random Forest vs logistic regression + baselines); moderator always decides | BRIEF ML-A; AGENTS.md ML rules | Moderation Queue | backend (model service) + frontend | reserved (slice 8) |
+| CON-ML-B-001 | Stretch: Isolation Forest anomaly score over operator activity, shown to Super Admin in audit explorer | BRIEF ML-B (first to cut) | Audit Explorer | backend (model service) + frontend | reserved (slice 9, first cut) |
+| CON-DEP-001 | Deployment artifacts + runbook for Azure VPS + Nginx; agent provisions nothing | BRIEF deployment | infra | backend (infra) | reserved (slice 10) |
+| CON-TST-001 | Jest + Supertest API tests including role enforcement and audit immutability | BRIEF stack; Ch5 §3.5 | tests | backend + tests | in progress — suites written (9 tests); DB-backed runs pending bootstrap |
 
 ## B. SRS IDs in scope (mapped to a Figma screen)
 

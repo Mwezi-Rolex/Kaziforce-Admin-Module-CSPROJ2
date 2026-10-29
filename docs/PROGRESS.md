@@ -22,13 +22,15 @@ Three-line status after every meaningful step: **done / next / blockers**.
 
 **Blockers:** user's answers to the question batch.
 
-## Phase 2 — Foundation (started 2026-10-29)
+## Phase 2 — Foundation (2026-10-29)
 
-**Done:** BRIEF answers recorded (D-015…D-021); PLAN.md updated (schedule, cut line, ML + deployment slices, placeholders); `docs/TRACEABILITY_SCOPE.md` generated (28 CON rows + 55 SRS rows); `docs/draft/DISCREPANCIES.md` created (10 items); FIGMA_AUDIT scroll-panel list added. Step 1: git initialised, `.gitignore` added, baseline commit of untouched export. Step 2: `src/assets/attachments/` moved to `reference/attachments/` (D-022), committed.
+**Done:** git initialised + baseline + attachments move (D-022). Frontend foundation: react-router routes (`/`, `/login`, `/console/*` guarded, `*` 404), SessionContext over the httpOnly-cookie API session, Public/Console layouts (Kaziforce brand, no role switcher, no hard-coded operator), shared UI (Button/Pill/Field/Panel/ConfirmDialog 2-step/Notice/Toolbar), landing + login + 404 pages, console placeholders per slice; `index.css` deduped + scroll containers (CON-UI-001 classes); site.json title/lang/skip-link. Backend foundation: `server/` Express + TS (env validation, rate limit, cookie JWT auth, permission middleware, error envelope), 6 migrations (roles/permissions/users/content+flags/audit_log/settings + restricted `kaziforce_app` grants: audit_log SELECT+INSERT only), AuditLogger service (wired into login/logout), health + auth routes, seed script (roles, matrix, 3 demo operators, sample data labelled), Jest+Supertest suites (9 tests, incl. adversarial audit-immutability test) and Vitest+RTL (3 tests).
 
-**Next:** **BLOCKED at step 3** — PostgreSQL is not reachable: no `psql`/`pg_isready` on PATH, no PostgreSQL install under Program Files, no Windows service, nothing listening on 5432, Docker Desktop not running. Awaiting user: install/start PostgreSQL (or provide connection details), then continue steps 4–7 (frontend + backend foundation).
+**Commands run (2026-10-29):** frontend `tsc --noEmit` exit 0; `vite build` exit 0 (353.70 kB JS / 109.49 kB gzip, CSS 30.14 kB / 7.28 kB); `vitest run` 3 passed; server `tsc --noEmit` exit 0; `jest` 9 skipped (clean skip without DB env).
 
-**Blockers:** PostgreSQL unreachable (user instruction: stop and report).
+**Next:** operator runs the one-time bootstrap (`PGPASSWORD='<postgres password>' npm run bootstrap` in `server/`), then agent runs migrate + seed + full Jest against the real DB and continues Phase 3 (slice 2: user management).
+
+**Blockers:** DB bootstrap requires the operator's local superuser password (agent never asks for or stores credentials).
 
 ## Phase 3 — Vertical slices
 
