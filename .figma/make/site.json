@@ -4,7 +4,9 @@
     "index": false
   },
   "accessibility": {
-    "addBypassLinks": false,
+    "addBypassLinks": true,
     "ignoreReducedMotion": false
-  }
+  },
+  "title": "Kaziforce — Governance Console",
+  "language": "en"
 }

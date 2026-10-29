@@ -33,6 +33,10 @@ export default defineConfig(({ mode }) => {
       host: process.env.FIGMA_DEV_SERVER_HOST || '0.0.0.0',
       port: parseInt(process.env.PORT || '8443'),
       strictPort: true,
+      // Admin & Moderation API (server/) — same-origin in production via Nginx.
+      proxy: {
+        '/api': { target: process.env.API_ORIGIN || 'http://localhost:3000', changeOrigin: true },
+      },
       watch: {
         ignored: [
           '**/.figma/**',

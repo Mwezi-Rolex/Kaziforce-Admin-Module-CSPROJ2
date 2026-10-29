@@ -320,7 +320,19 @@ const CON_ROWS = [
   ['CON-DEP-001', 'Deployment artifacts + runbook for Azure VPS + Nginx; agent provisions nothing', 'BRIEF deployment', 'infra', 'backend (infra)'],
   ['CON-TST-001', 'Jest + Supertest API tests including role enforcement and audit immutability', 'BRIEF stack; Ch5 §3.5', 'tests', 'backend + tests'],
 ]
-const CON_STATUS = { 'CON-ML-A-001': 'reserved (slice 9)', 'CON-ML-B-001': 'reserved (slice 10, first cut)', 'CON-DEP-001': 'reserved (slice 11)' }
+const CON_STATUS = {
+  'CON-WEB-001': 'done (slice 0)',
+  'CON-WEB-002': 'done (slice 0)',
+  'CON-AUTH-001': 'done — code complete; DB verification pending bootstrap',
+  'CON-AUTH-002': 'done — role switcher and hard-coded operator removed',
+  'CON-AUTH-003': 'in progress — implemented; Jest verification pending bootstrap',
+  'CON-RBAC-001': 'in progress — matrix seeded, middleware live; tests pending bootstrap',
+  'CON-AUD-001': 'in progress — AuditLogger live on auth routes; ledger INSERT-only enforced by migration 006',
+  'CON-TST-001': 'in progress — suites written (9 tests); DB-backed runs pending bootstrap',
+  'CON-ML-A-001': 'reserved (slice 8)',
+  'CON-ML-B-001': 'reserved (slice 9, first cut)',
+  'CON-DEP-001': 'reserved (slice 10)',
+}
 
 const scope = []
 scope.push('# TRACEABILITY_SCOPE.md — in-scope requirements only')
