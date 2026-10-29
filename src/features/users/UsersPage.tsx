@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useSession } from '../../app/SessionContext'
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
 import { Notice } from '../../components/ui/Notice'
@@ -28,6 +29,15 @@ export function UsersPage() {
   const [status, setStatus] = useState<'All' | AccountStatus>('All')
   const [role, setRole] = useState<'All' | 'viewer' | 'moderator' | 'super_admin'>('All')
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [searchParams, setSearchParams] = useSearchParams()
+  // Deep link from the moderation queue (?focus=<accountId>) opens the record.
+  useEffect(() => {
+    const focus = searchParams.get('focus')
+    if (focus) {
+      setSelectedId(focus)
+      setSearchParams({}, { replace: true })
+    }
+  }, [searchParams, setSearchParams])
   const [notice, setNotice] = useState('')
   const [banTarget, setBanTarget] = useState<Account | null>(null)
   const [acting, setActing] = useState(false)

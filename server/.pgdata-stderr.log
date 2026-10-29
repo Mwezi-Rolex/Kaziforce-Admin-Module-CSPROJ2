@@ -63,3 +63,24 @@
 2026-10-30 00:17:02.379 EAT [8812] STATEMENT:  TRUNCATE audit_log
 2026-10-30 00:17:37.605 EAT [12928] LOG:  checkpoint starting: time
 2026-10-30 00:17:39.826 EAT [12928] LOG:  checkpoint complete: wrote 16 buffers (0.1%), wrote 1 SLRU buffers; 0 WAL file(s) added, 0 removed, 0 recycled; write=1.862 s, sync=0.231 s, total=2.221 s; sync files=17, longest=0.046 s, average=0.014 s; distance=91 kB, estimate=4517 kB; lsn=0/1D43C58, redo lsn=0/1D43C00
+2026-10-30 00:22:07.822 EAT [7992] ERROR:  permission denied for table audit_log
+2026-10-30 00:22:07.822 EAT [7992] STATEMENT:  UPDATE audit_log SET action_type = 'tampered'
+2026-10-30 00:22:07.853 EAT [2068] ERROR:  permission denied for table audit_log
+2026-10-30 00:22:07.853 EAT [2068] STATEMENT:  DELETE FROM audit_log
+2026-10-30 00:22:07.885 EAT [23708] ERROR:  permission denied for table audit_log
+2026-10-30 00:22:07.885 EAT [23708] STATEMENT:  TRUNCATE audit_log
+2026-10-30 00:22:37.834 EAT [12928] LOG:  checkpoint starting: time
+2026-10-30 00:22:41.724 EAT [12928] LOG:  checkpoint complete: wrote 34 buffers (0.2%), wrote 1 SLRU buffers; 0 WAL file(s) added, 0 removed, 0 recycled; write=3.765 s, sync=0.104 s, total=3.891 s; sync files=32, longest=0.009 s, average=0.004 s; distance=114 kB, estimate=4076 kB; lsn=0/1D60670, redo lsn=0/1D60618
+2026-10-30 00:23:10.067 EAT [21460] ERROR:  permission denied for table audit_log
+2026-10-30 00:23:10.067 EAT [21460] STATEMENT:  UPDATE audit_log SET action_type = 'tampered'
+2026-10-30 00:23:10.099 EAT [15164] ERROR:  permission denied for table audit_log
+2026-10-30 00:23:10.099 EAT [15164] STATEMENT:  DELETE FROM audit_log
+2026-10-30 00:23:10.125 EAT [5700] ERROR:  permission denied for table audit_log
+2026-10-30 00:23:10.125 EAT [5700] STATEMENT:  TRUNCATE audit_log
+2026-10-30 00:24:39.051 EAT [22104] ERROR:  permission denied for table audit_log
+2026-10-30 00:24:39.051 EAT [22104] STATEMENT:  UPDATE audit_log SET action_type = 'tampered'
+2026-10-30 00:24:39.081 EAT [9460] ERROR:  permission denied for table audit_log
+2026-10-30 00:24:39.081 EAT [9460] STATEMENT:  DELETE FROM audit_log
+2026-10-30 00:24:39.105 EAT [5132] ERROR:  permission denied for table audit_log
+2026-10-30 00:24:39.105 EAT [5132] STATEMENT:  TRUNCATE audit_log
+2026-10-30 00:26:38.680 EAT [3180] LOG:  could not reserve shared memory region (addr=000001E790A70000) for child 0000000000001668: error code 487

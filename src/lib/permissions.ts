@@ -9,6 +9,7 @@ export const PERMISSIONS = {
   usersAssignRole: 'users.assign_role',
   usersBan: 'users.ban',
   moderationDecide: 'moderation.decide',
+  moderationEscalate: 'moderation.escalation',
   auditView: 'audit.view',
   auditExport: 'audit.export',
   settingsManage: 'settings.manage',
