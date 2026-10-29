@@ -321,6 +321,10 @@ const CON_ROWS = [
   ['CON-TST-001', 'Jest + Supertest API tests including role enforcement and audit immutability', 'BRIEF stack; Ch5 §3.5', 'tests', 'backend + tests'],
 ]
 const CON_STATUS = {
+  'CON-MOD-001': 'done (slice 3) — severity-ranked queue + filters, Jest-verified',
+  'CON-MOD-002': 'done (slice 3) — approve/reject/escalate audited, 409 on already-decided flags',
+  'CON-MOD-003': 'done (slice 3) — bulk endpoint with per-flag audit events',
+  'CON-MOD-004': 'done (slice 3) — Super Admin lane overrule/uphold+ban; denied to Moderators (403)',
   'CON-WEB-001': 'done (slice 0)',
   'CON-WEB-002': 'done (slice 0)',
   'CON-AUTH-001': 'done — Jest-verified end-to-end (login, cookie, /me)',

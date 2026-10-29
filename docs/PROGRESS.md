@@ -43,3 +43,15 @@ Not started.
 ## Phase 5 — Documentation sync
 
 Not started (only if the user asks).
+
+---
+
+## Phase 3 — Vertical slices (2026-10-30)
+
+**Done:** DB unblocked (agent-owned cluster on 5433, D-029) → bootstrap/migrate/seed green. **Slice 2 user management**: API (list/search/role/status filters, detail with flags+content, suspend/ban/role all audited and permission-gated), full UI (toolbar, scrolling table + record panel, 2-step ban modal, notices), 15 tests incl. per-role denials and suspended-operator login block. **Slice 3 moderation queue**: API (severity-ranked list, single/bulk decisions, Super Admin escalation lane overrule/uphold+ban), full UI (lane tabs, bulk bar, read-only states), 13 tests incl. 403s and 409s. Jest 38/38 passing; Vitest 3/3; frontend+server typecheck and build green.
+
+**Schedule check:** 6 Nov gate (foundation, auth+RBAC, user management) met 6 days early; moderation queue (10 Nov gate) also done. **Not behind; no cuts needed.**
+
+**Next:** slice 4 audit explorer + restricted CSV export (server 403 for Viewer), slice 5 settings, slice 6 dashboard shell.
+
+**Blockers:** none.
