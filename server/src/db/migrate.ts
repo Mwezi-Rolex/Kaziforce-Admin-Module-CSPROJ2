@@ -20,7 +20,7 @@ async function main() {
       filename text PRIMARY KEY,
       applied_at timestamptz NOT NULL DEFAULT now()
     )`)
-    const dir = join(__dirname, '..', 'migrations')
+    const dir = join(__dirname, '..', '..', 'migrations')
     const files = readdirSync(dir).filter((f) => f.endsWith('.sql')).sort()
     const { rows } = await conn.query<{ filename: string }>('SELECT filename FROM schema_migrations')
     const applied = new Set(rows.map((r) => r.filename))

@@ -42,4 +42,8 @@ const d = hasDb ? describe : describe.skip
   it('cannot DELETE audit rows (permission denied)', async () => {
     await expect(pool.query('DELETE FROM audit_log')).rejects.toMatchObject({ code: '42501' })
   })
+
+  it('cannot TRUNCATE audit rows (permission denied)', async () => {
+    await expect(pool.query('TRUNCATE audit_log')).rejects.toMatchObject({ code: '42501' })
+  })
 })

@@ -3,6 +3,7 @@ import express from 'express'
 import { env } from './config/env'
 import { authRouter } from './routes/auth'
 import { healthRouter } from './routes/health'
+import { usersRouter } from './routes/users'
 import { errorHandler, notFound } from './middleware/errors'
 import { rateLimit } from './middleware/rateLimit'
 
@@ -17,6 +18,7 @@ export function createApp() {
   app.use('/api/v1', rateLimit)
 
   app.use('/api/v1/auth', authRouter)
+  app.use('/api/v1/users', usersRouter)
   app.use('/api/v1', healthRouter)
 
   app.use(notFound)

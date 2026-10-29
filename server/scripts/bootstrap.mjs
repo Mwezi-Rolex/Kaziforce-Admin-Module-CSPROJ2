@@ -81,8 +81,10 @@ const lines = Object.fromEntries(
     .filter((l) => l.includes('=') && !l.trim().startsWith('#'))
     .map((l) => [l.slice(0, l.indexOf('=')).trim(), l.slice(l.indexOf('=') + 1).trim()]),
 )
-lines.DATABASE_URL = `postgresql://kaziforce_app:${appPassword}@localhost:5432/kaziforce`
-lines.OWNER_DATABASE_URL = `postgresql://kaziforce_owner:${ownerPassword}@localhost:5432/kaziforce`
+const pgHost = process.env.PGHOST || 'localhost'
+const pgPort = process.env.PGPORT || 5432
+lines.DATABASE_URL = `postgresql://kaziforce_app:${appPassword}@${pgHost}:${pgPort}/kaziforce`
+lines.OWNER_DATABASE_URL = `postgresql://kaziforce_owner:${ownerPassword}@${pgHost}:${pgPort}/kaziforce`
 lines.JWT_SECRET = jwtSecret
 lines.PORT = lines.PORT || '3000'
 lines.NODE_ENV = lines.NODE_ENV || 'development'
