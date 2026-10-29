@@ -1,0 +1,16 @@
+# DISCREPANCIES.md
+
+Documentation discrepancies the report (Chapters 1–4) will need to reconcile, per BRIEF.md "Notes for the agent". This file lists them; the draft chapters (Phase 5) and the "changes Chapters 1–4 need" list will resolve each one. Sources are cited by document and section.
+
+| # | Discrepancy | Documents in conflict | Resolution direction |
+|---|---|---|---|
+| 1 | "Account CRUD" wording vs no create/delete | `chapter 5 update` §1.5.1 says user management encompasses "account CRUD operations"; the Figma export states "No create, delete, or arbitrary update controls"; BRIEF confirms view/search/filter/suspend/ban/assign-role only | Report wording changes to "account review and state control (suspend, ban, role assignment)"; no create/delete. Per BRIEF override, logged as D-015/CON-USR-002 |
+| 2 | Bootstrap vs Tailwind | Proposal Table 3.1 lists "React.js & Bootstrap"; the actual implementation is Vite + React + Tailwind CSS v4 | Tools table in the report updates to the real stack; logged as D-009 |
+| 3 | Python, scikit-learn, FastAPI missing from the Chapter 3 tool list | Proposal Table 3.1 has ML tools only in the Phase-2 framing; BRIEF adds Python 3 + scikit-learn + FastAPI to the delivered stack (ML component A) | Tools table gains the model-service row; ML section added to implementation chapter |
+| 4 | ML described as deferred vs delivered | Chapters 1 and 3 defer ML flagging to Phase 2 (§1.5.2); Chapter 4 prose already describes a "severity-aware hybrid ML threat detection engine" (internal contradiction); BRIEF makes ML component A required for this build | Implementation chapter describes the suggestion-only model as built (component A), with the Chapter 4 wording corrected to match what exists; logged as D-014 |
+| 5 | All-operator CSV export vs restricted export | Chapter 5 §3.6.5 (and proposal §1.5.1) allow every operator to export the audit log; BRIEF restricts export to Moderators and Super Admins with server-side 403 | Report wording updates; requirement tracked as CON-AUD-003 (BRIEF override, D-016) |
+| 6 | SRS filename vs internal version | File is named `…SRS__v2-2.md` while the document's title block says "Version 1.0" | Cite the document as delivered; note the file name in the appendix if needed |
+| 7 | Wireframe role switcher vs JWT role claims | The Figma export's sidebar contains a role-select wireframe affordance; Chapter 5 derives the role from signed JWT claims; BRIEF removes the switcher | Describe role as session-derived (CON-AUTH-002); switcher never existed as a feature |
+| 8 | Product brand name | Figma export shows "Tendaji"; the platform is Kaziforce (BRIEF); prose must say "the industry partner" | UI rebranded to Kaziforce; documentation prose never uses the name (BRIEF CONFIRM answer) |
+| 9 | Dashboard KPI set / settings keys unnamed | No document defines dashboard metrics or settings key names; export shows deliberate placeholders | Report describes the deliberate-placeholder decision (CON-DASH-001, CON-SET-002) |
+| 10 | Queue badge count defect | Export sidebar badge hardcodes "3" while the seed data holds 4 flags | Fixed when the queue became data-driven; noted as an export defect, not a requirement |

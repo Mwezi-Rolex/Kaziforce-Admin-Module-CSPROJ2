@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.env
+.env.local
+ml/models/
+ml/__pycache__/
+__pycache__/
+*.pyc
+.venv/
