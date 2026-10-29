@@ -22,9 +22,13 @@ Three-line status after every meaningful step: **done / next / blockers**.
 
 **Blockers:** user's answers to the question batch.
 
-## Phase 2 — Foundation
+## Phase 2 — Foundation (started 2026-10-29)
 
-Not started.
+**Done:** BRIEF answers recorded (D-015…D-021); PLAN.md updated (schedule, cut line, ML + deployment slices, placeholders); `docs/TRACEABILITY_SCOPE.md` generated (28 CON rows + 55 SRS rows); `docs/draft/DISCREPANCIES.md` created (10 items); FIGMA_AUDIT scroll-panel list added. Step 1: git initialised, `.gitignore` added, baseline commit of untouched export. Step 2: `src/assets/attachments/` moved to `reference/attachments/` (D-022), committed.
+
+**Next:** **BLOCKED at step 3** — PostgreSQL is not reachable: no `psql`/`pg_isready` on PATH, no PostgreSQL install under Program Files, no Windows service, nothing listening on 5432, Docker Desktop not running. Awaiting user: install/start PostgreSQL (or provide connection details), then continue steps 4–7 (frontend + backend foundation).
+
+**Blockers:** PostgreSQL unreachable (user instruction: stop and report).
 
 ## Phase 3 — Vertical slices
 
