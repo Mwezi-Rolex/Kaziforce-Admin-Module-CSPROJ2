@@ -113,7 +113,7 @@ async function main() {
       const { rows } = await conn.query(
         `INSERT INTO users (email, password_hash, full_name, status, is_operator)
          VALUES (lower($1), $2, $3, $4, $5)
-         ON CONFLICT (email) DO UPDATE
+         ON CONFLICT (lower(email)) DO UPDATE
            SET password_hash = EXCLUDED.password_hash,
                full_name = EXCLUDED.full_name,
                status = EXCLUDED.status,

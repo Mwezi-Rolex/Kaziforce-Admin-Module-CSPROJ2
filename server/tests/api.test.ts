@@ -1,5 +1,10 @@
 import request from 'supertest'
 import type { Express } from 'express'
+import { pool } from '../src/db/pool'
+
+afterAll(async () => {
+  await pool.end()
+})
 
 // Skips cleanly when the database has not been bootstrapped yet (CI/dev without
 // server/.env). Runs once `npm run bootstrap && npm run migrate && npm run seed` completed.

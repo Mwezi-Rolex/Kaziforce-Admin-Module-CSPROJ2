@@ -7,3 +7,7 @@ ml/__pycache__/
 __pycache__/
 *.pyc
 .venv/
+
+# Agent-owned local PostgreSQL cluster (see D-029)
+server/.pgdata/
+server/.pgdata.log

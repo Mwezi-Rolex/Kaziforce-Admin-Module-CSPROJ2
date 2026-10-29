@@ -1,0 +1,65 @@
+2026-10-30 00:07:35.288 EAT [3180] LOG:  starting PostgreSQL 18.6 on x86_64-windows, compiled by msvc-19.44.35229, 64-bit
+2026-10-30 00:07:35.305 EAT [3180] LOG:  listening on IPv6 address "::1", port 5433
+2026-10-30 00:07:35.310 EAT [3180] LOG:  listening on IPv4 address "127.0.0.1", port 5433
+2026-10-30 00:07:35.387 EAT [2852] LOG:  database system was interrupted; last known up at 2026-10-30 00:01:15 EAT
+2026-10-30 00:07:37.646 EAT [2852] LOG:  database system was not properly shut down; automatic recovery in progress
+2026-10-30 00:07:37.664 EAT [2852] LOG:  redo starts at 0/1848BF8
+2026-10-30 00:07:37.665 EAT [2852] LOG:  invalid record length at 0/1848C30: expected at least 24, got 0
+2026-10-30 00:07:37.667 EAT [2852] LOG:  redo done at 0/1848BF8 system usage: CPU: user: 0.01 s, system: 0.00 s, elapsed: 0.00 s
+2026-10-30 00:07:37.678 EAT [12928] LOG:  checkpoint starting: end-of-recovery immediate wait
+2026-10-30 00:07:37.708 EAT [12928] LOG:  checkpoint complete: wrote 0 buffers (0.0%), wrote 3 SLRU buffers; 0 WAL file(s) added, 0 removed, 0 recycled; write=0.003 s, sync=0.007 s, total=0.036 s; sync files=2, longest=0.005 s, average=0.004 s; distance=0 kB, estimate=0 kB; lsn=0/1848C30, redo lsn=0/1848C30
+2026-10-30 00:07:37.727 EAT [3180] LOG:  database system is ready to accept connections
+2026-10-30 00:08:19.025 EAT [2500] ERROR:  relation "roles" does not exist at character 13
+2026-10-30 00:08:19.025 EAT [2500] STATEMENT:  INSERT INTO roles (name, description) VALUES ($1, $2)
+	         ON CONFLICT (name) DO UPDATE SET description = EXCLUDED.description
+	         RETURNING id
+2026-10-30 00:08:38.599 EAT [9424] ERROR:  there is no unique or exclusion constraint matching the ON CONFLICT specification
+2026-10-30 00:08:38.599 EAT [9424] STATEMENT:  INSERT INTO users (email, password_hash, full_name, status, is_operator)
+	         VALUES (lower($1), $2, $3, $4, $5)
+	         ON CONFLICT (email) DO UPDATE
+	           SET password_hash = EXCLUDED.password_hash,
+	               full_name = EXCLUDED.full_name,
+	               status = EXCLUDED.status,
+	               is_operator = EXCLUDED.is_operator,
+	               is_deleted = false
+	         RETURNING id
+2026-10-30 00:09:05.131 EAT [17152] ERROR:  permission denied for table audit_log
+2026-10-30 00:09:05.131 EAT [17152] STATEMENT:  UPDATE audit_log SET action_type = 'tampered'
+2026-10-30 00:09:05.162 EAT [21536] ERROR:  permission denied for table audit_log
+2026-10-30 00:09:05.162 EAT [21536] STATEMENT:  DELETE FROM audit_log
+2026-10-30 00:11:33.429 EAT [7384] ERROR:  bind message supplies 1 parameters, but prepared statement "" requires 0
+2026-10-30 00:11:33.429 EAT [7384] STATEMENT:  SELECT count(*) AS total FROM users u WHERE u.is_deleted = false
+2026-10-30 00:11:38.285 EAT [8312] ERROR:  permission denied for table audit_log
+2026-10-30 00:11:38.285 EAT [8312] STATEMENT:  UPDATE audit_log SET action_type = 'tampered'
+2026-10-30 00:11:38.320 EAT [15036] ERROR:  permission denied for table audit_log
+2026-10-30 00:11:38.320 EAT [15036] STATEMENT:  DELETE FROM audit_log
+2026-10-30 00:11:38.350 EAT [5700] ERROR:  permission denied for table audit_log
+2026-10-30 00:11:38.350 EAT [5700] STATEMENT:  TRUNCATE audit_log
+2026-10-30 00:12:20.392 EAT [2400] ERROR:  permission denied for table audit_log
+2026-10-30 00:12:20.392 EAT [2400] STATEMENT:  UPDATE audit_log SET action_type = 'tampered'
+2026-10-30 00:12:20.427 EAT [3164] ERROR:  permission denied for table audit_log
+2026-10-30 00:12:20.427 EAT [3164] STATEMENT:  DELETE FROM audit_log
+2026-10-30 00:12:20.452 EAT [15244] ERROR:  permission denied for table audit_log
+2026-10-30 00:12:20.452 EAT [15244] STATEMENT:  TRUNCATE audit_log
+2026-10-30 00:12:37.717 EAT [12928] LOG:  checkpoint starting: time
+2026-10-30 00:12:51.794 EAT [8672] ERROR:  permission denied for table audit_log
+2026-10-30 00:12:51.794 EAT [8672] STATEMENT:  UPDATE audit_log SET action_type = 'tampered'
+2026-10-30 00:12:51.832 EAT [3024] ERROR:  permission denied for table audit_log
+2026-10-30 00:12:51.832 EAT [3024] STATEMENT:  DELETE FROM audit_log
+2026-10-30 00:12:51.863 EAT [3128] ERROR:  permission denied for table audit_log
+2026-10-30 00:12:51.863 EAT [3128] STATEMENT:  TRUNCATE audit_log
+2026-10-30 00:14:42.582 EAT [12928] LOG:  checkpoint complete: wrote 1074 buffers (6.6%), wrote 1 SLRU buffers; 1 WAL file(s) added, 0 removed, 0 recycled; write=119.975 s, sync=3.524 s, total=124.866 s; sync files=356, longest=0.057 s, average=0.010 s; distance=5008 kB, estimate=5008 kB; lsn=0/1D3AB08, redo lsn=0/1D2CF78
+2026-10-30 00:16:06.685 EAT [15036] ERROR:  permission denied for table audit_log
+2026-10-30 00:16:06.685 EAT [15036] STATEMENT:  UPDATE audit_log SET action_type = 'tampered'
+2026-10-30 00:16:06.818 EAT [8580] ERROR:  permission denied for table audit_log
+2026-10-30 00:16:06.818 EAT [8580] STATEMENT:  DELETE FROM audit_log
+2026-10-30 00:16:06.841 EAT [10292] ERROR:  permission denied for table audit_log
+2026-10-30 00:16:06.841 EAT [10292] STATEMENT:  TRUNCATE audit_log
+2026-10-30 00:17:02.322 EAT [24328] ERROR:  permission denied for table audit_log
+2026-10-30 00:17:02.322 EAT [24328] STATEMENT:  UPDATE audit_log SET action_type = 'tampered'
+2026-10-30 00:17:02.352 EAT [15600] ERROR:  permission denied for table audit_log
+2026-10-30 00:17:02.352 EAT [15600] STATEMENT:  DELETE FROM audit_log
+2026-10-30 00:17:02.379 EAT [8812] ERROR:  permission denied for table audit_log
+2026-10-30 00:17:02.379 EAT [8812] STATEMENT:  TRUNCATE audit_log
+2026-10-30 00:17:37.605 EAT [12928] LOG:  checkpoint starting: time
+2026-10-30 00:17:39.826 EAT [12928] LOG:  checkpoint complete: wrote 16 buffers (0.1%), wrote 1 SLRU buffers; 0 WAL file(s) added, 0 removed, 0 recycled; write=1.862 s, sync=0.231 s, total=2.221 s; sync files=17, longest=0.046 s, average=0.014 s; distance=91 kB, estimate=4517 kB; lsn=0/1D43C58, redo lsn=0/1D43C00
