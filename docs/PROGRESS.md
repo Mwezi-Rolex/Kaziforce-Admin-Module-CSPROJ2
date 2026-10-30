@@ -55,3 +55,15 @@ Not started (only if the user asks).
 **Next:** slice 4 audit explorer + restricted CSV export (server 403 for Viewer), slice 5 settings, slice 6 dashboard shell.
 
 **Blockers:** none.
+
+---
+
+## Phase 3 — ML slice (2026-10-30)
+
+**Done:** `ml/` built — synthetic generator with fixed seed + documented label noise (15% severity / 12% action); train/validation/test split before fitting; Random Forest vs logistic regression vs majority baseline vs keyword-rule baseline for severity and action; Isolation Forest for operator-activity windows; `ml/reports/metrics.json` written by `evaluate.py` (no hand-typed numbers); FastAPI `/predict` + `/health` on loopback only; Node client with short timeout and fail-safe; queue shows "Suggestion only" and can sort by predicted severity; audit entries carry the suggestion, model version, and followed/overridden flag; migration 007 adds `flags.reason_category`. Tests: pytest 7, Jest 44, Vitest 7 — all passing.
+
+**Schedule check:** 13 Nov ML-A/B gate met ~2 weeks early. Not behind; no cuts.
+
+**Next:** slice 4 (audit explorer + restricted CSV export), then settings, dashboard shell, deployment artifacts.
+
+**Blockers:** none.
