@@ -1,0 +1,59 @@
+# Kaziforce API — systemd unit
+#
+# Install to /etc/systemd/system/kaziforce-api.service, then:
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now kaziforce-api
+#   systemctl status kaziforce-api
+#   journalctl -u kaziforce-api -n 50 --no-pager
+#
+# Prerequisite: /opt/kaziforce/server/dist/index.js exists (npm run build) and
+# /etc/kaziforce/api.env is populated from deploy/.env.production.example.
+# The process listens on 127.0.0.1:3000 and is reached only through Nginx.
+
+[Unit]
+Description=Kaziforce Admin & Moderation API
+Documentation=file:/opt/kaziforce/docs/DEPLOY.md
+After=network-online.target postgresql.service
+Wants=network-online.target
+# The model service is optional: the API fails safe when it is absent, so a
+# hard dependency is deliberately NOT declared here.
+After=kaziforce-model.service
+
+[Service]
+Type=simple
+User=kaziforce
+Group=kaziforce
+WorkingDirectory=/opt/kaziforce/server
+EnvironmentFile=/etc/kaziforce/api.env
+ExecStart=/usr/bin/node dist/index.js
+Restart=always
+RestartSec=3
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=kaziforce-api
+
+# ---- Hardening ----
+# The API needs no filesystem writes (the audit ledger is INSERT-only in
+# PostgreSQL), so the whole filesystem can be read-only to the process.
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+RestrictNamespaces=true
+LockPersonality=true
+MemoryDenyWriteExecute=false
+CapabilityBoundingSet=
+AmbientCapabilities=
+SystemCallArchitectures=native
+
+# Basic resource guard so a runaway process cannot take the VPS down.
+MemoryMax=512M
+TasksMax=256
+
+[Install]
+WantedBy=multi-user.target

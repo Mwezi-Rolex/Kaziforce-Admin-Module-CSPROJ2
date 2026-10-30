@@ -41,6 +41,7 @@ export type Flag = {
 export type AuditEvent = {
   id: string
   operatorId: string | null
+  operatorEmail?: string | null
   actionType: string
   targetEntityType: string
   targetEntityId: string | null

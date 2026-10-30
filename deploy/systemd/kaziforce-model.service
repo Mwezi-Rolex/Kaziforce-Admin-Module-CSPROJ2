@@ -1,0 +1,57 @@
+# Kaziforce model service — systemd unit
+#
+# Install to /etc/systemd/system/kaziforce-model.service, then:
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now kaziforce-model
+#   curl -s http://127.0.0.1:8000/health    # expect {"status":"ok","model_version":"..."}
+#
+# SECURITY: this service binds 127.0.0.1 ONLY and must never appear in the Nginx
+# configuration. It is reached by the API over loopback. Do not change --host.
+#
+# Prerequisite: /opt/kaziforce/ml/models/models.joblib exists (train.py). If the
+# model files are missing the service still starts and /health reports
+# model_version "unavailable"; the console then shows "Suggestion unavailable".
+
+[Unit]
+Description=Kaziforce moderation suggestion model service (loopback only)
+Documentation=file:/opt/kaziforce/docs/DEPLOY.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=kaziforce
+Group=kaziforce
+WorkingDirectory=/opt/kaziforce/ml
+# No EnvironmentFile needed: this service has no secrets and takes no config.
+ExecStart=/opt/kaziforce/ml/.venv/bin/python -m uvicorn service:app --host 127.0.0.1 --port 8000 --log-level warning
+Restart=always
+RestartSec=3
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=kaziforce-model
+
+# ---- Hardening ----
+# Read-only root: the service loads a joblib artifact and serves predictions.
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+RestrictNamespaces=true
+LockPersonality=true
+CapabilityBoundingSet=
+AmbientCapabilities=
+# The inference stack (numpy/scikit-learn) uses native extensions.
+MemoryDenyWriteExecute=false
+SystemCallArchitectures=native
+
+MemoryMax=1G
+TasksMax=128
+
+[Install]
+WantedBy=multi-user.target

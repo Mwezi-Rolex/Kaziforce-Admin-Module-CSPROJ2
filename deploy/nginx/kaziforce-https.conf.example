@@ -1,0 +1,93 @@
+# Kaziforce — Nginx site configuration (HTTPS, requires a domain + certbot)
+#
+# Use this ONLY after certbot has issued a certificate, i.e. after:
+#   sudo certbot --nginx -d kaziforce.example.com -d www.kaziforce.example.com
+# certbot rewrites the HTTP block itself; this file documents the intended
+# end state so the redirect + HSTS are explicit rather than assumed.
+#
+# Replace kaziforce.example.com with your domain throughout before installing.
+# Prefer letting `certbot --nginx` edit /etc/nginx/sites-available/kaziforce
+# directly; this file is the reference/manual alternative.
+
+server {
+    listen 80;
+    listen [::]:80;
+    server_name kaziforce.example.com www.kaziforce.example.com;
+
+    # Leave the ACME challenge reachable over HTTP so renewals keep working.
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    http2 on;
+    server_name kaziforce.example.com www.kaziforce.example.com;
+
+    ssl_certificate     /etc/letsencrypt/live/kaziforce.example.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/kaziforce.example.com/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers off;
+    ssl_session_timeout 1d;
+    ssl_session_cache shared:SSL:10m;
+
+    # Enable only once you are certain HTTPS works; it locks out plain HTTP.
+    add_header Strict-Transport-Security "max-age=31536000" always;
+
+    root /var/www/kaziforce;
+    index index.html;
+    client_max_body_size 1m;
+
+    add_header X-Frame-Options "DENY" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    add_header Permissions-Policy "geolocation=(), microphone=(), camera=()" always;
+    add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'" always;
+
+    gzip on;
+    gzip_vary on;
+    gzip_min_length 1024;
+    gzip_types text/plain text/css application/javascript application/json image/svg+xml;
+
+    # The model service is NOT proxied here — loopback only, by design.
+    location /api/ {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_connect_timeout 5s;
+        proxy_send_timeout 30s;
+        proxy_read_timeout 30s;
+        add_header Cache-Control "no-store" always;
+    }
+
+    location /assets/ {
+        access_log off;
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+        try_files $uri =404;
+    }
+
+    location = /index.html {
+        add_header Cache-Control "no-store" always;
+    }
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    location ~ /\.(?!well-known) {
+        deny all;
+    }
+
+    access_log /var/log/nginx/kaziforce.access.log;
+    error_log  /var/log/nginx/kaziforce.error.log warn;
+}

@@ -151,3 +151,37 @@
 2026-10-30 19:14:21.847 EAT [25492] STATEMENT:  DELETE FROM audit_log
 2026-10-30 19:14:21.904 EAT [12420] ERROR:  permission denied for table audit_log
 2026-10-30 19:14:21.904 EAT [12420] STATEMENT:  TRUNCATE audit_log
+2026-10-30 19:18:22.547 EAT [27012] ERROR:  permission denied for table audit_log
+2026-10-30 19:18:22.547 EAT [27012] STATEMENT:  UPDATE audit_log SET action_type = 'tampered'
+2026-10-30 19:18:22.640 EAT [32148] ERROR:  permission denied for table audit_log
+2026-10-30 19:18:22.640 EAT [32148] STATEMENT:  DELETE FROM audit_log
+2026-10-30 19:18:22.709 EAT [23076] ERROR:  permission denied for table audit_log
+2026-10-30 19:18:22.709 EAT [23076] STATEMENT:  TRUNCATE audit_log
+2026-10-30 19:18:35.050 EAT [12928] LOG:  checkpoint starting: time
+2026-10-30 19:18:39.770 EAT [12928] LOG:  checkpoint complete: wrote 42 buffers (0.3%), wrote 3 SLRU buffers; 0 WAL file(s) added, 0 removed, 0 recycled; write=4.606 s, sync=0.084 s, total=4.723 s; sync files=28, longest=0.019 s, average=0.003 s; distance=219 kB, estimate=2067 kB; lsn=0/1EEF6B8, redo lsn=0/1EE07F0
+2026-10-30 19:25:14.709 EAT [132] ERROR:  permission denied for table audit_log
+2026-10-30 19:25:14.709 EAT [132] STATEMENT:  UPDATE audit_log SET action_type = action_type WHERE false
+2026-10-30 19:25:14.935 EAT [9656] ERROR:  permission denied for table audit_log
+2026-10-30 19:25:14.935 EAT [9656] STATEMENT:  DELETE FROM audit_log WHERE false
+2026-10-30 19:25:15.166 EAT [10464] ERROR:  permission denied for table audit_log
+2026-10-30 19:25:15.166 EAT [10464] STATEMENT:  TRUNCATE audit_log
+2026-10-30 19:25:38.005 EAT [25368] ERROR:  permission denied for table audit_log
+2026-10-30 19:25:38.005 EAT [25368] STATEMENT:  UPDATE audit_log SET action_type = action_type WHERE false
+2026-10-30 19:25:38.227 EAT [14864] ERROR:  permission denied for table audit_log
+2026-10-30 19:25:38.227 EAT [14864] STATEMENT:  DELETE FROM audit_log WHERE false
+2026-10-30 19:25:38.449 EAT [26108] ERROR:  permission denied for table audit_log
+2026-10-30 19:25:38.449 EAT [26108] STATEMENT:  TRUNCATE audit_log
+2026-10-30 19:25:41.505 EAT [25900] ERROR:  permission denied for table audit_log
+2026-10-30 19:25:41.505 EAT [25900] STATEMENT:  UPDATE audit_log SET action_type = action_type WHERE false
+2026-10-30 19:25:41.718 EAT [20356] ERROR:  permission denied for table audit_log
+2026-10-30 19:25:41.718 EAT [20356] STATEMENT:  DELETE FROM audit_log WHERE false
+2026-10-30 19:25:41.962 EAT [31732] ERROR:  permission denied for table audit_log
+2026-10-30 19:25:41.962 EAT [31732] STATEMENT:  TRUNCATE audit_log
+2026-10-30 19:26:30.978 EAT [12928] LOG:  checkpoint starting: immediate force wait
+2026-10-30 19:26:31.200 EAT [12928] LOG:  checkpoint complete: wrote 65 buffers (0.4%), wrote 1 SLRU buffers; 0 WAL file(s) added, 0 removed, 1 recycled; write=0.058 s, sync=0.132 s, total=0.223 s; sync files=55, longest=0.006 s, average=0.003 s; distance=4928 kB, estimate=4928 kB; lsn=0/23B0988, redo lsn=0/23B0930
+2026-10-30 19:27:52.615 EAT [16272] ERROR:  permission denied for table audit_log
+2026-10-30 19:27:52.615 EAT [16272] STATEMENT:  UPDATE audit_log SET action_type = 'tampered'
+2026-10-30 19:27:52.724 EAT [29744] ERROR:  permission denied for table audit_log
+2026-10-30 19:27:52.724 EAT [29744] STATEMENT:  DELETE FROM audit_log
+2026-10-30 19:27:52.802 EAT [25704] ERROR:  permission denied for table audit_log
+2026-10-30 19:27:52.802 EAT [25704] STATEMENT:  TRUNCATE audit_log
