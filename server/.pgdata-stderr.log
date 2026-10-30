@@ -185,3 +185,5 @@
 2026-10-30 19:27:52.724 EAT [29744] STATEMENT:  DELETE FROM audit_log
 2026-10-30 19:27:52.802 EAT [25704] ERROR:  permission denied for table audit_log
 2026-10-30 19:27:52.802 EAT [25704] STATEMENT:  TRUNCATE audit_log
+2026-10-30 19:31:30.220 EAT [12928] LOG:  checkpoint starting: time
+2026-10-30 19:31:35.852 EAT [12928] LOG:  checkpoint complete: wrote 49 buffers (0.3%), wrote 1 SLRU buffers; 0 WAL file(s) added, 0 removed, 0 recycled; write=5.489 s, sync=0.116 s, total=5.633 s; sync files=36, longest=0.020 s, average=0.004 s; distance=228 kB, estimate=4458 kB; lsn=0/23E9A68, redo lsn=0/23E9A10
