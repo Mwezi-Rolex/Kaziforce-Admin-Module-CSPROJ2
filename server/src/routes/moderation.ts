@@ -5,6 +5,9 @@ import { requireAuth, type AuthedRequest } from '../middleware/auth'
 import { requirePermission } from '../middleware/requirePermission'
 import { ApiError } from '../middleware/errors'
 import { writeEvent } from '../services/auditLogger'
+import { createModelClient, type PredictInput, type SuggestionResult } from '../services/modelClient'
+
+const modelClient = createModelClient()
 
 // Moderation queue API (CON-MOD-001…004; Ch5 §3.6.4; Note 8 UC3–UC6 + activity diagram).
 // Every decision writes an immutable audit event (Ch5 §3.6.5). The model never
@@ -80,9 +83,80 @@ const DECISION_TO_AUDIT: Record<string, string> = {
   escalate: 'Content Escalated',
 }
 
+// Build the feature payload the model service expects (ml/generate_data.py
+// features). Everything is derived from the database; nothing is trusted from
+// the client. Reporter history and prior flags are counted as at flag creation.
+async function buildPredictionInput(flagId: string): Promise<PredictInput | null> {
+  const { rows } = await pool.query(
+    `SELECT f.reason, f.reason_category AS "reasonCategory", f.created_at AS "createdAt",
+            f.reported_by AS "reportedBy",
+            c.content_type AS "contentType", c.owner_id AS "ownerId",
+            owner.created_at AS "ownerCreatedAt",
+            (SELECT count(*) FROM flags rf WHERE rf.reported_by = f.reported_by AND rf.created_at < f.created_at) AS "reporterHistory",
+            (SELECT count(*) FROM flags pf JOIN content_items pc ON pc.id = pf.content_item_id
+               WHERE pc.owner_id = c.owner_id AND pf.created_at < f.created_at) AS "priorFlagsAccount"
+     FROM flags f
+     JOIN content_items c ON c.id = f.content_item_id
+     LEFT JOIN users owner ON owner.id = c.owner_id
+     WHERE f.id = $1`,
+    [flagId],
+  )
+  const row = rows[0]
+  if (!row) return null
+  const ageDays = row.ownerCreatedAt
+    ? Math.max(0, Math.round((new Date(row.createdAt).getTime() - new Date(row.ownerCreatedAt).getTime()) / 86_400_000))
+    : 0
+  return {
+    reason_category: row.reasonCategory ?? 'other',
+    content_type: row.contentType,
+    report_text: row.reason ?? '',
+    reporter_history: Number(row.reporterHistory) || 0,
+    account_age_days: ageDays,
+    prior_flags_account: Number(row.priorFlagsAccount) || 0,
+  }
+}
+
+// GET a suggestion for one flag (fail-safe: unavailable on any model error).
+moderationRouter.get('/flags/:id/suggestion', async (req: AuthedRequest, res, next) => {
+  try {
+    const flagId = z.string().uuid('Flag ID must be a UUID').parse(req.params.id)
+    const input = await buildPredictionInput(flagId)
+    if (!input) throw new ApiError(404, 'FLAG-001', 'Flag not found')
+    const suggestion = await modelClient.predict(input)
+    res.json({ success: true, data: suggestion, timestamp: new Date().toISOString() })
+  } catch (err) {
+    next(err)
+  }
+})
+
+const suggestionsSchema = z.object({ flagIds: z.array(z.string().uuid()).min(1).max(100) })
+
+// Batch suggestions for the queue view. Each flag resolves independently and
+// fails safe, so one model failure never blocks the moderation workflow.
+moderationRouter.post('/suggestions', async (req: AuthedRequest, res, next) => {
+  try {
+    const parsed = suggestionsSchema.safeParse(req.body)
+    if (!parsed.success) throw new ApiError(422, 'VALIDATION', 'flagIds must be a non-empty array of UUIDs')
+    const entries = await Promise.all(
+      parsed.data.flagIds.map(async (id) => {
+        const input = await buildPredictionInput(id)
+        if (!input) return [id, { available: false, reason: 'flag not found' } satisfies SuggestionResult] as const
+        return [id, await modelClient.predict(input)] as const
+      }),
+    )
+    res.json({
+      success: true,
+      data: Object.fromEntries(entries),
+      timestamp: new Date().toISOString(),
+    })
+  } catch (err) {
+    next(err)
+  }
+})
+
 async function decideFlag(actorId: string, flagId: string, decision: keyof typeof DECISION_TO_STATUS) {
   const { rows } = await pool.query(
-    `SELECT f.id, f.flag_status AS "flagStatus", c.owner_id AS "ownerId"
+    `SELECT f.id, f.flag_status AS "flagStatus", f.content_item_id AS "contentItemId", c.owner_id AS "ownerId"
      FROM flags f JOIN content_items c ON c.id = f.content_item_id WHERE f.id = $1`,
     [flagId],
   )
@@ -91,6 +165,21 @@ async function decideFlag(actorId: string, flagId: string, decision: keyof typeo
   if (flag.flagStatus !== 'Pending') {
     throw new ApiError(409, 'FLAG-002', `Flag is already ${flag.flagStatus}; only Pending flags can be decided`)
   }
+  // Record the model's suggestion, its version, and whether the moderator
+  // followed or overrode it. Fail-safe: the decision is never blocked by the model.
+  const input = await buildPredictionInput(flagId)
+  const suggestion = input ? await modelClient.predict(input) : ({ available: false, reason: 'no input' } as SuggestionResult)
+  const suggestionMeta = suggestion.available
+    ? {
+        available: true,
+        severity: suggestion.severity,
+        action: suggestion.action,
+        confidence: suggestion.confidence,
+        modelVersion: suggestion.modelVersion,
+        followed: suggestion.action === decision,
+      }
+    : { available: false, reason: suggestion.reason }
+
   await pool.query(`UPDATE flags SET flag_status = $2, decided_by = $3, decided_at = now() WHERE id = $1`, [
     flagId,
     DECISION_TO_STATUS[decision],
@@ -101,7 +190,7 @@ async function decideFlag(actorId: string, flagId: string, decision: keyof typeo
     actionType: DECISION_TO_AUDIT[decision],
     targetEntityType: 'flag',
     targetEntityId: flagId,
-    metadata: { decision, contentItemId: flag.contentItemId, ownerId: flag.ownerId },
+    metadata: { decision, contentItemId: flag.contentItemId, ownerId: flag.ownerId, suggestion: suggestionMeta },
   })
 }
 

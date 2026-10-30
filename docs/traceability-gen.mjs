@@ -339,8 +339,8 @@ const CON_STATUS = {
   'CON-RBAC-001': 'done — matrix seeded; Viewer/Moderator denial tests passing (403 per route)',
   'CON-AUD-001': 'done — AuditLogger on auth + user endpoints; Jest asserts audit rows; app role denied UPDATE/DELETE/TRUNCATE (42501)',
   'CON-TST-001': 'on track — 26 Jest tests passing incl. role denials and immutability; Vitest 3 passing',
-  'CON-ML-A-001': 'reserved (slice 8)',
-  'CON-ML-B-001': 'reserved (slice 9, first cut)',
+  'CON-ML-A-001': 'done (slice 8) — RF severity+action suggestion, version + followed/overridden in audit; fail-safe verified',
+  'CON-ML-B-001': 'done (slice 9) — Isolation Forest operator-window anomalies; recovery metrics in ml/reports/metrics.json',
   'CON-DEP-001': 'reserved (slice 10)',
 }
 

@@ -52,10 +52,10 @@ const SAMPLE_USERS = [
 ]
 
 const SAMPLE_CONTENT = [
-  { type: 'Gig listing', ownerIdx: 0, flag: { severity: 'High', status: 'Pending', reason: 'Possible off-platform payment request' } },
-  { type: 'Review', ownerIdx: 1, flag: { severity: 'Medium', status: 'Pending', reason: 'Review references undisclosed contact details' } },
-  { type: 'Portfolio submission', ownerIdx: 2, flag: { severity: 'Low', status: 'Pending', reason: 'Portfolio item flagged for policy review' } },
-  { type: 'Gig listing', ownerIdx: 3, flag: { severity: 'High', status: 'Escalated', reason: 'Repeated policy violations; escalated to Super Admin' } },
+  { type: 'Gig listing', ownerIdx: 0, flag: { severity: 'High', status: 'Pending', category: 'off_platform_payment', reason: 'Possible off-platform payment request' } },
+  { type: 'Review', ownerIdx: 1, flag: { severity: 'Medium', status: 'Pending', category: 'abusive_language', reason: 'Review references undisclosed contact details' } },
+  { type: 'Portfolio submission', ownerIdx: 2, flag: { severity: 'Low', status: 'Pending', category: 'ip_infringement', reason: 'Portfolio item flagged for policy review' } },
+  { type: 'Gig listing', ownerIdx: 3, flag: { severity: 'High', status: 'Escalated', category: 'spam_or_promotion', reason: 'Repeated policy violations; escalated to Super Admin' } },
 ]
 
 const SAMPLE_SETTINGS: Array<[string, string, boolean]> = [
@@ -167,9 +167,9 @@ async function main() {
         [item.type, ownerIds[item.ownerIdx]],
       )
       await conn.query(
-        `INSERT INTO flags (content_item_id, reported_by, severity, flag_status, reason)
-         VALUES ($1, $2, $3, $4, $5)`,
-        [rows[0].id, reporter, item.flag.severity, item.flag.status, item.flag.reason],
+        `INSERT INTO flags (content_item_id, reported_by, severity, flag_status, reason, reason_category)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        [rows[0].id, reporter, item.flag.severity, item.flag.status, item.flag.reason, item.flag.category],
       )
     }
 
