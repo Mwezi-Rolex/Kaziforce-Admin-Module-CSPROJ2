@@ -341,7 +341,9 @@ const CON_STATUS = {
   'CON-TST-001': 'on track — 26 Jest tests passing incl. role denials and immutability; Vitest 3 passing',
   'CON-ML-A-001': 'done (slice 8) — RF severity+action suggestion, version + followed/overridden in audit; fail-safe verified',
   'CON-ML-B-001': 'done (slice 9) — Isolation Forest operator-window anomalies; recovery metrics in ml/reports/metrics.json',
-  'CON-DEP-001': 'reserved (slice 10)',
+  'CON-AUD-002': 'done (slice 4) — filters (date/actor/action), read-only table, all tiers',
+  'CON-AUD-003': 'done (slice 4) — CSV export Moderator+ only; Viewer 403 verified in Jest and the deploy smoke test',
+  'CON-DEP-001': 'done (slice 10) — deploy/ artifacts + docs/DEPLOY.md; smoke test verified locally (12/0/1); VPS run pending operator',
 }
 
 const scope = []

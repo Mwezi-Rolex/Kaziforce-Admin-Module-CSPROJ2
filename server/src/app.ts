@@ -5,6 +5,7 @@ import { authRouter } from './routes/auth'
 import { healthRouter } from './routes/health'
 import { usersRouter } from './routes/users'
 import { moderationRouter } from './routes/moderation'
+import { auditRouter } from './routes/audit'
 import { errorHandler, notFound } from './middleware/errors'
 import { rateLimit } from './middleware/rateLimit'
 
@@ -14,6 +15,10 @@ import { rateLimit } from './middleware/rateLimit'
 export function createApp() {
   const app = express()
   app.disable('x-powered-by')
+  // Behind Nginx the client IP arrives in X-Forwarded-For; without this the
+  // rate limiter would bucket every request under the proxy address. Enabled
+  // only when TRUST_PROXY is set, so direct/local runs are unaffected.
+  if (process.env.TRUST_PROXY) app.set('trust proxy', Number(process.env.TRUST_PROXY) || 1)
   app.use(express.json({ limit: '256kb' }))
   app.use(cookieParser())
   app.use('/api/v1', rateLimit)
@@ -21,6 +26,7 @@ export function createApp() {
   app.use('/api/v1/auth', authRouter)
   app.use('/api/v1/users', usersRouter)
   app.use('/api/v1/moderation', moderationRouter)
+  app.use('/api/v1/audit', auditRouter)
   app.use('/api/v1', healthRouter)
 
   app.use(notFound)
