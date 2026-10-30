@@ -17,6 +17,10 @@ beforeAll(async () => {
   await pool.query(`
     UPDATE flags SET flag_status = 'Pending', decided_by = NULL, decided_at = NULL;
     UPDATE flags SET flag_status = 'Escalated' WHERE reason LIKE 'Repeated policy%';
+    UPDATE flags SET severity = 'High'   WHERE reason LIKE 'Possible off-platform%';
+    UPDATE flags SET severity = 'Medium' WHERE reason LIKE 'Review references%';
+    UPDATE flags SET severity = 'Low'    WHERE reason LIKE 'Portfolio item%';
+    UPDATE flags SET severity = 'High'   WHERE reason LIKE 'Repeated policy%';
     UPDATE users SET status = 'Active'
       WHERE email IN ('adwoa.mensah@example.com', 'zainab.okafor@example.com', 'moses.kato@example.com');
   `)
@@ -28,6 +32,18 @@ afterAll(async () => {
 async function loginAs(email: string, password: string): Promise<string> {
   const res = await request(app).post('/api/v1/auth/login').send({ email, password }).expect(200)
   return res.headers['set-cookie'][0]
+}
+
+// Reset one flag to Pending and return it, so tests that need a decidable flag
+// are independent of execution order and of flags consumed by other tests.
+async function ensurePendingFlag(severity = 'Medium'): Promise<{ id: string; ownerId: string }> {
+  const { rows } = await pool.query(
+    `UPDATE flags SET flag_status = 'Pending', decided_by = NULL, decided_at = NULL, severity = $1
+     WHERE id = (SELECT id FROM flags ORDER BY created_at LIMIT 1)
+     RETURNING id, (SELECT owner_id FROM content_items WHERE content_items.id = flags.content_item_id) AS "ownerId"`,
+    [severity],
+  )
+  return rows[0]
 }
 
 d('GET /api/v1/moderation/queue', () => {
@@ -104,6 +120,33 @@ d('single decision (moderation.decide)', () => {
     void queue
   })
 
+  it('records the model suggestion (version + followed flag) in the audit payload (CON-ML-A-001)', async () => {
+    const cookie = await loginAs('moderator@kaziforce.local', 'ModeratorDemo!2026')
+    const flag = await ensurePendingFlag('Medium')
+    await request(app)
+      .post(`/api/v1/moderation/flags/${flag.id}/decision`)
+      .set('Cookie', cookie)
+      .send({ decision: 'reject' })
+      .expect(200)
+    const audit = await pool.query(
+      `SELECT metadata FROM audit_log WHERE target_entity_id = $1 AND action_type = 'Content Rejected'
+       ORDER BY created_at DESC LIMIT 1`,
+      [flag.id],
+    )
+    const meta = audit.rows[0].metadata
+    // The suggestion block is always present; when the model service is not
+    // running it is the fail-safe form, when it is running it carries the
+    // version and the followed/overridden determination.
+    expect(meta).toHaveProperty('suggestion')
+    if (meta.suggestion.available) {
+      expect(typeof meta.suggestion.modelVersion).toBe('string')
+      expect(typeof meta.suggestion.followed).toBe('boolean')
+      expect(meta.suggestion.followed).toBe(meta.suggestion.action === 'reject')
+    } else {
+      expect(meta.suggestion.available).toBe(false)
+    }
+  })
+
   it('rejects an unknown decision with 422', async () => {
     const cookie = await loginAs('moderator@kaziforce.local', 'ModeratorDemo!2026')
     const queue = await request(app).get('/api/v1/moderation/queue?status=Pending').set('Cookie', cookie).expect(200)
@@ -118,11 +161,8 @@ d('single decision (moderation.decide)', () => {
 d('bulk decisions (moderation.decide)', () => {
   it('applies one decision to many flags, reporting per-flag failures', async () => {
     const cookie = await loginAs('moderator@kaziforce.local', 'ModeratorDemo!2026')
-    const queue = await request(app)
-      .get('/api/v1/moderation/queue?status=Pending&severity=Medium')
-      .set('Cookie', cookie)
-      .expect(200)
-    const pending = queue.body.data[0]
+    // Ensure a Pending flag exists (earlier tests consume the seeded ones).
+    const pending = await ensurePendingFlag('Medium')
     const res = await request(app)
       .post('/api/v1/moderation/bulk')
       .set('Cookie', cookie)
@@ -179,18 +219,14 @@ d('escalation lane (moderation.escalation, Super Admin only)', () => {
 
   it('lets a Super Admin uphold with ban (content owner becomes Terminated, audited)', async () => {
     const moderator = await loginAs('moderator@kaziforce.local', 'ModeratorDemo!2026')
-    // Escalate a pending flag to have one for the uphold path.
-    const queue = await request(app)
-      .get('/api/v1/moderation/queue?status=Pending&severity=Low')
-      .set('Cookie', moderator)
-      .expect(200)
-    expect(queue.body.data.length).toBeGreaterThan(0)
-    const flag = queue.body.data[0]
+    // Ensure a Pending flag exists to escalate, then escalate it.
+    const pending = await ensurePendingFlag('Low')
     await request(app)
-      .post(`/api/v1/moderation/flags/${flag.id}/decision`)
+      .post(`/api/v1/moderation/flags/${pending.id}/decision`)
       .set('Cookie', moderator)
       .send({ decision: 'escalate' })
       .expect(200)
+    const flag = { id: pending.id, ownerId: pending.ownerId }
 
     const admin = await loginAs('superadmin@kaziforce.local', 'SuperDemo!2026')
     const res = await request(app)

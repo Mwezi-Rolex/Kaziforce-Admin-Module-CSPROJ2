@@ -17,6 +17,32 @@ const STATUS_TONE: Partial<Record<FlagStatus, 'neutral' | 'active' | 'suspended'
   Escalated: 'suspended',
 }
 
+// Shape returned by POST /api/v1/moderation/suggestions (per flag).
+type Suggestion = { available: true; severity: Severity; action: string; confidence: number; modelVersion: string } | { available: false; reason: string }
+
+const SEVERITY_ORDER: Record<Severity, number> = { High: 3, Medium: 2, Low: 1 }
+
+// Suggestion-only display. Never a decision: the moderator approves, rejects or
+// escalates. When the model service is unavailable this shows the fail-safe text
+// and the queue is unaffected (CON-ML-A-001).
+export function SuggestionCell({ suggestion }: { suggestion: Suggestion | undefined }) {
+  if (!suggestion || !suggestion.available) {
+    return <span className="mono text-[#8c938c]">Suggestion unavailable</span>
+  }
+  return (
+    <span className="flex flex-col gap-1">
+      <span className="eyebrow" style={{ color: '#8a661d' }}>
+        Suggestion only
+      </span>
+      <span className="flex items-center gap-2">
+        <Pill tone={SEVERITY_TONE[suggestion.severity]}>{suggestion.severity}</Pill>
+        <span className="mono text-[#5d6961]">{suggestion.action}</span>
+        <span className="mono text-[#8c938c]">{Math.round(suggestion.confidence * 100)}%</span>
+      </span>
+    </span>
+  )
+}
+
 // Moderation Queue (CON-MOD-001…004). Decisions are Moderator+; the
 // escalation lane is Super Admin only. ML suggestions join in slice 8 as
 // "Suggestion only" — the moderator always decides.
@@ -30,6 +56,8 @@ export function QueuePage() {
   const [notice, setNotice] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [acting, setActing] = useState(false)
+  const [suggestions, setSuggestions] = useState<Record<string, Suggestion>>({})
+  const [sortByPredicted, setSortByPredicted] = useState(false)
 
   const canDecide = can(user?.permissions, PERMISSIONS.moderationDecide)
   const canEscalate = can(user?.permissions, PERMISSIONS.moderationEscalate)
@@ -41,6 +69,41 @@ export function QueuePage() {
   )
   const list = useApi<Flag[]>(listPath)
   const flags = list.data ?? []
+
+  // Fetch suggestion-only predictions for the visible flags. Fail-safe: if the
+  // model service is unreachable the response is available:false per flag and
+  // the queue still works (CON-ML-A-001, AGENTS.md ML rules).
+  useEffect(() => {
+    const ids = (list.data ?? []).map((f) => f.id)
+    if (!ids.length) {
+      setSuggestions({})
+      return
+    }
+    let cancelled = false
+    api<Record<string, Suggestion>>('/api/v1/moderation/suggestions', {
+      method: 'POST',
+      body: JSON.stringify({ flagIds: ids }),
+    })
+      .then(({ data }) => {
+        if (!cancelled) setSuggestions(data)
+      })
+      .catch(() => {
+        if (!cancelled) setSuggestions({})
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [list.data])
+
+  const displayedFlags = useMemo(() => {
+    if (!sortByPredicted) return flags
+    // Sort by predicted severity where a suggestion exists, else by stored severity.
+    const rank = (f: Flag) => {
+      const s = suggestions[f.id]
+      return SEVERITY_ORDER[(s && s.available ? s.severity : f.severity) as Severity] ?? 0
+    }
+    return [...flags].sort((a, b) => rank(b) - rank(a))
+  }, [flags, suggestions, sortByPredicted])
 
   useEffect(() => setSelected([]), [listPath])
 
@@ -134,6 +197,15 @@ export function QueuePage() {
             <option value="Rejected">Rejected</option>
           </select>
         )}
+        <label className="inline-label">
+          <input
+            type="checkbox"
+            checked={sortByPredicted}
+            onChange={(e) => setSortByPredicted(e.target.checked)}
+            aria-label="Sort by predicted severity"
+          />
+          Sort by predicted severity
+        </label>
         <span className="ml-auto font-mono text-[10px] uppercase tracking-wider text-[#707a72]">
           {list.loading ? 'Loading…' : `${list.meta?.total ?? 0} flagged items`}
         </span>
@@ -206,13 +278,14 @@ export function QueuePage() {
                   <th>Target content item</th>
                   <th>Reporting user</th>
                   <th>Severity</th>
+                  <th>Model suggestion</th>
                   <th>Status</th>
                   <th>Created</th>
                   <th className="text-right">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {flags.map((f) => (
+                {displayedFlags.map((f) => (
                   <tr key={f.id}>
                     <td>
                       <input
@@ -239,6 +312,9 @@ export function QueuePage() {
                       <Pill label="Severity" tone={SEVERITY_TONE[f.severity]}>
                         {f.severity}
                       </Pill>
+                    </td>
+                    <td data-testid={`suggestion-${f.id}`}>
+                      <SuggestionCell suggestion={suggestions[f.id]} />
                     </td>
                     <td>
                       <Pill tone={STATUS_TONE[f.flagStatus] ?? 'neutral'}>{f.flagStatus}</Pill>

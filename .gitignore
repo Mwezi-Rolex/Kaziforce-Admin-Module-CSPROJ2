@@ -11,3 +11,7 @@ __pycache__/
 # Agent-owned local PostgreSQL cluster (see D-029)
 server/.pgdata/
 server/.pgdata.log
+ml/.venv/
+ml/models/
+ml/__pycache__/
+ml/tests/__pycache__/

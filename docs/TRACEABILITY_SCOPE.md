@@ -32,8 +32,8 @@ Generated 2026-10-29 by `docs/traceability-gen.mjs` (rerun: `node docs/traceabil
 | CON-WEB-001 | Landing page: minimal, reuses export tokens only; product name Kaziforce (replaces "Tendaji") | BRIEF 2026-10-29 | Landing | frontend | done (slice 0) |
 | CON-WEB-002 | 404 page for unknown routes | BRIEF 2026-10-29 | 404 | frontend | done (slice 0) |
 | CON-UI-001 | Every panel listing report content or options scrolls inside its container instead of clipping | BRIEF 2026-10-29 | All screens | frontend | not started |
-| CON-ML-A-001 | Suggestion-only ML: per-flag predicted severity + suggested action + confidence (Random Forest vs logistic regression + baselines); moderator always decides | BRIEF ML-A; AGENTS.md ML rules | Moderation Queue | backend (model service) + frontend | reserved (slice 8) |
-| CON-ML-B-001 | Stretch: Isolation Forest anomaly score over operator activity, shown to Super Admin in audit explorer | BRIEF ML-B (first to cut) | Audit Explorer | backend (model service) + frontend | reserved (slice 9, first cut) |
+| CON-ML-A-001 | Suggestion-only ML: per-flag predicted severity + suggested action + confidence (Random Forest vs logistic regression + baselines); moderator always decides | BRIEF ML-A; AGENTS.md ML rules | Moderation Queue | backend (model service) + frontend | done (slice 8) — RF severity+action suggestion, version + followed/overridden in audit; fail-safe verified |
+| CON-ML-B-001 | Stretch: Isolation Forest anomaly score over operator activity, shown to Super Admin in audit explorer | BRIEF ML-B (first to cut) | Audit Explorer | backend (model service) + frontend | done (slice 9) — Isolation Forest operator-window anomalies; recovery metrics in ml/reports/metrics.json |
 | CON-DEP-001 | Deployment artifacts + runbook for Azure VPS + Nginx; agent provisions nothing | BRIEF deployment | infra | backend (infra) | reserved (slice 10) |
 | CON-TST-001 | Jest + Supertest API tests including role enforcement and audit immutability | BRIEF stack; Ch5 §3.5 | tests | backend + tests | on track — 26 Jest tests passing incl. role denials and immutability; Vitest 3 passing |
 
