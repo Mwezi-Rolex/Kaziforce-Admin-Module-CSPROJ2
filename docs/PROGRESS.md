@@ -81,3 +81,17 @@ Not started (only if the user asks).
 **Next:** slice 5 settings, slice 6 dashboard shell, then Phase 4 hardening and Phase 5 documentation drafts.
 
 **Blockers:** VPS deployment cannot be verified by the agent (no provisioning) — awaiting the operator running `docs/DEPLOY.md` and pasting the smoke-test output. Nothing is claimed as deployed.
+
+---
+
+## Phase 4 — Hardening (2026-10-30)
+
+**Done:** Slice 5 settings API+UI (Super Admin only, key/value + feature toggle, all changes audited) and slice 6 dashboard shell (real role-scope panel, analytics deliberately unpopulated). Accessibility: measured every text colour's WCAG ratio and darkened 31 tokens below 4.5:1; focus ring was 2.48:1 and is now `#ad7f2d` (≥3:1). Responsive: rebuilt around semantic hooks with breakpoints at 1200 px and 900 px, verified present in the built CSS. Security: `SEC-AUD-002` implemented (refused authorizations recorded as `Authorization Denied`); `ZodError` now maps to 422 instead of 500. Scope walk: every row of `TRACEABILITY_SCOPE.md` resolved — **32 done, 11 partial, 12 out of scope, 0 not started**; the 23 non-done rows are recorded in `OPEN_QUESTIONS.md` OQ-6…OQ-13 with reasons. `docs/BROWSER_CHECKLIST.md` (Chrome/Firefox/Edge, with a Result column) and the root `README.md` written.
+
+**Commands run (output quoted in the report):** `npm test` → **66 passed / 7 suites** (3 consecutive runs); `pnpm test` → **7 passed**; `pytest ml/tests` → **7 passed**; both `tsc --noEmit` clean; `pnpm build` ok; `deploy/smoke-test.sh` → **12 passed, 0 failed, 1 skipped** (skip is the Nginx-only exposure check).
+
+**Schedule check:** Phase 4 is running ~2 weeks ahead of the 13 Nov freeze. Not behind; no cuts.
+
+**Next:** Phase 5 documentation drafts in `docs/draft/` (BRIEF requires it), and the operator's VPS run + browser checklist results.
+
+**Blockers:** browser checks and the VPS run can only be done by the operator; nothing is claimed until they are reported back.
