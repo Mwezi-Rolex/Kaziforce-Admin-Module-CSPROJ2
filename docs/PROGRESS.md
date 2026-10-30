@@ -67,3 +67,17 @@ Not started (only if the user asks).
 **Next:** slice 4 (audit explorer + restricted CSV export), then settings, dashboard shell, deployment artifacts.
 
 **Blockers:** none.
+
+---
+
+## Phase 3 — Audit Explorer + deployment slice (2026-10-30)
+
+**Done:** **Slice 4 Audit Explorer** — `server/src/routes/audit.ts` (filtered read-only listing for all tiers; CSV export gated on `audit.export`, Moderator+ only, Viewer refused 403 before any query) + full `AuditPage` UI (date/actor/action filters, scrolling table, export control hidden for Viewers) + `server/tests/audit.test.ts` (10 tests incl. Viewer 403 and anonymous 401) and RFC 4180 CSV escaping tests. **Slice 10 deployment artifacts** — `deploy/nginx/kaziforce.conf` (SPA + `/api` proxy; no route to the model service), `kaziforce-https.conf.example`, `deploy/systemd/kaziforce-{api,model}.service` (hardened, loopback-only), `deploy/sql/01_roles_database.sql` + `02_grants.sql`, `deploy/.env.production.example`, `deploy/smoke-test.sh`; `docs/DEPLOY.md` runbook (12 numbered steps, certbot and no-domain paths, rollback, every unverified step marked).
+
+**Commands run (all output quoted in the report):** smoke test against a live API + real PostgreSQL → **12 passed, 0 failed, 1 skipped** (skip = Nginx-only model-exposure check); `02_grants.sql` against the real DB → `can_select=t, can_insert=t, can_update=f, can_delete=f, can_truncate=f`; `01_roles_database.sql` against scratch names → ran clean, second run idempotent, app role `rolcreatedb=f, rolcreaterole=f`; pytest 7; Jest **54**; Vitest 7; both `tsc --noEmit` clean; `vite build` ok.
+
+**Schedule check:** 14–15 Nov deployment gate met ~2 weeks early. Not behind; no cuts.
+
+**Next:** slice 5 settings, slice 6 dashboard shell, then Phase 4 hardening and Phase 5 documentation drafts.
+
+**Blockers:** VPS deployment cannot be verified by the agent (no provisioning) — awaiting the operator running `docs/DEPLOY.md` and pasting the smoke-test output. Nothing is claimed as deployed.
