@@ -48,6 +48,26 @@ An Isolation Forest scores each operator's hourly activity window on
 Scored windows are surfaced to a Super Admin in the audit log explorer for
 review. The detector never acts on its own.
 
+## Known limitations (recorded honestly)
+
+- **Part B recovery is easy by construction.** The injected anomalies sit far
+  outside the normal distribution (25–70 actions vs a normal rate of 1.5–6), so
+  the Isolation Forest recovers nearly all of them. The near-perfect precision and
+  recall measure how separated the injected anomalies are in *this generator*,
+  not how well the detector would perform on real operator behaviour. A future
+  version should inject subtler, borderline anomalies.
+- **The Random Forest does not win every task.** On suggested action, logistic
+  regression's macro-F1 is slightly higher than the Random Forest's in the
+  current run. Both beat the majority and keyword-rule baselines. This is
+  reported as measured (see `reports/metrics.json`), not smoothed over.
+- **The queue "sort by predicted severity" sorts the current page**, not the
+  whole server-side result set, because pagination happens in the API. A
+  server-side sort by predicted severity would require the model to run before
+  the query, which is out of scope for this phase.
+- **Label noise defines the ceiling.** With 15% severity noise and 12% action
+  noise, no model can reach 100% even in principle; the numbers above should be
+  read against that ceiling and against the baselines, not in absolute terms.
+
 ## Data generation and assumptions
 
 `generate_data.py` is deterministic: one `numpy.random.default_rng(SEED)` with
