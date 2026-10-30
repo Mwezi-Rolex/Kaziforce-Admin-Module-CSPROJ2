@@ -6,6 +6,7 @@ import { healthRouter } from './routes/health'
 import { usersRouter } from './routes/users'
 import { moderationRouter } from './routes/moderation'
 import { auditRouter } from './routes/audit'
+import { settingsRouter } from './routes/settings'
 import { errorHandler, notFound } from './middleware/errors'
 import { rateLimit } from './middleware/rateLimit'
 
@@ -27,6 +28,7 @@ export function createApp() {
   app.use('/api/v1/users', usersRouter)
   app.use('/api/v1/moderation', moderationRouter)
   app.use('/api/v1/audit', auditRouter)
+  app.use('/api/v1/settings', settingsRouter)
   app.use('/api/v1', healthRouter)
 
   app.use(notFound)

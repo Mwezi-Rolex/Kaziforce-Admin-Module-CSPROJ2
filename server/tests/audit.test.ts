@@ -103,3 +103,21 @@ d('GET /api/v1/audit/export.csv (audit.export — Moderator+ only, CON-AUD-003)'
     await request(app).get('/api/v1/audit/export.csv').set('Cookie', cookie).expect(200)
   })
 })
+
+d('authorization denials are audited (SEC-AUD-002)', () => {
+  it('records an Authorization Denied event when a Viewer attempts the CSV export', async () => {
+    const cookie = await loginAs('viewer@kaziforce.local', 'ViewerDemo!2026')
+    const before = await pool.query(
+      `SELECT count(*)::int AS n FROM audit_log WHERE action_type = 'Authorization Denied'`,
+    )
+    await request(app).get('/api/v1/audit/export.csv').set('Cookie', cookie).expect(403)
+    const after = await pool.query(
+      `SELECT metadata FROM audit_log WHERE action_type = 'Authorization Denied' ORDER BY created_at DESC LIMIT 1`,
+    )
+    const { rows } = await pool.query(
+      `SELECT count(*)::int AS n FROM audit_log WHERE action_type = 'Authorization Denied'`,
+    )
+    expect(rows[0].n).toBeGreaterThan(before.rows[0].n)
+    expect(after.rows[0].metadata).toMatchObject({ requiredPermission: 'audit.export', role: 'viewer' })
+  })
+})

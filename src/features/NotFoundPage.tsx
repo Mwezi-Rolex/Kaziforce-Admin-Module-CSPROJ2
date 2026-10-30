@@ -11,7 +11,7 @@ export function NotFoundPage() {
         </div>
         <p className="eyebrow">404 · not found</p>
         <h1 className="mt-3 font-serif text-4xl">This page does not exist.</h1>
-        <p className="mt-4 text-sm leading-6 text-[#68736c]">
+        <p className="mt-4 text-sm leading-6 text-[#636d67]">
           The address may be mistyped, or the page may have moved.
         </p>
         <div className="mt-8 flex justify-center gap-3">

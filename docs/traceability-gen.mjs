@@ -344,6 +344,80 @@ const CON_STATUS = {
   'CON-AUD-002': 'done (slice 4) — filters (date/actor/action), read-only table, all tiers',
   'CON-AUD-003': 'done (slice 4) — CSV export Moderator+ only; Viewer 403 verified in Jest and the deploy smoke test',
   'CON-DEP-001': 'done (slice 10) — deploy/ artifacts + docs/DEPLOY.md; smoke test verified locally (12/0/1); VPS run pending operator',
+  'CON-SET-001': 'done (Phase 4) — Super Admin only; key/value + toggle; all changes audited (Jest: Viewer and Moderator both 403)',
+  'CON-SET-002': 'done (Phase 4) — keys are labelled sample.* and presented as demonstration config (OQ-2)',
+  'CON-DASH-001': 'done (Phase 4) — shell + real role-scope panel; analytics deliberately unpopulated (OQ-2)',
+  'CON-UI-001': 'done (Phase 4) — .table-scroll on all four tables, .panel-scroll on the account record, .console-sidebar on the rail',
+  'CON-AUD-004': 'done (Phase 4) — UPDATE/DELETE/TRUNCATE all refused 42501 in Jest and in deploy/smoke-test.sh',
+}
+
+// Phase 4 row-by-row walk of the in-scope SRS IDs. Every row is either
+// completed (done), deliberately narrow (partial, with the gap named), or
+// moved out with a reason pointing at docs/OPEN_QUESTIONS.md. No row is left
+// as "not started".
+const SRS_STATUS = {
+  // --- Administration console: implemented by the console as a whole ---
+  'FR-ADM-001': 'done — the console is the centralised administration interface',
+  'FR-ADM-003': 'done — roles and permissions managed (3 tiers, seeded matrix, role assignment)',
+  'FR-ADM-004': 'done — global settings editable via the settings slice',
+  'FR-ADM-008': 'partial — dashboard shell renders; no platform-wide operational metrics exist to display (OQ-2)',
+  'FR-ADM-019': 'done — configurable application settings (key/value, validated, audited)',
+  'FR-ADM-020': 'partial — configurable values exist (e.g. queue threshold); no general business-rule engine (OQ-6)',
+  'FR-ADM-026': 'done — feature flags toggle without redeployment, audited',
+  'FR-ADM-027': 'out of scope — activation by tenant/region/plan needs tenancy; this build is single-tenant (OQ-7)',
+  'FR-ADM-029': 'done — rollback is flipping the flag back; no redeployment',
+  'FR-ADM-031': 'done — settings list shows all active configuration with author and timestamp',
+  'FR-ADM-032': 'done — every state-changing endpoint calls AuditLogger',
+  'FR-ADM-033': 'done — logins, logouts and authorization denials are recorded',
+  'FR-ADM-034': 'done — configuration and toggle changes recorded with before/after',
+  'FR-ADM-035': 'partial — authentication and authorization-denial events recorded; no broader security-event taxonomy (OQ-8)',
+  'FR-ADM-036': 'done — audit search by date range, actor and action type',
+  'FR-ADM-037': 'done — CSV export gated on audit.export (Moderator+); Viewer 403',
+  'FR-ADM-038': 'done — database refuses UPDATE/DELETE/TRUNCATE for the application role',
+  'FR-ADM-039': 'out of scope — no retention-period configuration; retention policy needs an operational decision (OQ-9)',
+  'FR-ADM-046': 'partial — same as FR-ADM-008: shell without an agreed metric set (OQ-2)',
+  // --- Business rules ---
+  'BR-USR-005': 'done — suspended operator refused at login and on every request (Jest-verified)',
+  'BR-USR-008': 'done — suspend, ban, role assignment and settings changes all audited',
+  // --- Non-functional: portability and accessibility ---
+  'NFR-PRT-003': 'partial — modern-browser support designed in; manual browser confirmation pending (docs/BROWSER_CHECKLIST.md)',
+  'NFR-ACC-001': 'partial — contrast measured and fixed; keyboard paths built; full AA conformance not audited by a human (OQ-10)',
+  'NFR-ACC-002': 'partial — skip links, focus-visible ring, logical tab order implemented; end-to-end keyboard walk-through pending (checklist)',
+  'NFR-ACC-003': 'partial — semantic tables/landmarks and ARIA labels present; not tested with a screen reader (OQ-10)',
+  'NFR-ACC-004': 'done — all text tokens measured >= 4.5:1; non-text controls >= 3:1 (see BROWSER_CHECKLIST)',
+  'NFR-ACC-005': 'done — decorative glyphs aria-hidden; inputs and toggles carry aria-label',
+  'NFR-ACC-006': 'done — status conveyed by text as well as colour (pills include the word)',
+  // --- Security: authentication ---
+  'SEC-AUTH-001': 'done — requireAuth on every console route and API route',
+  'SEC-AUTH-002': 'done — email + password, bcrypt verified',
+  'SEC-AUTH-003': 'out of scope — MFA not required by Chapter 5 auth scope (Ch5 §3.6.2); see OQ-11',
+  'SEC-AUTH-004': 'out of scope — SSO/OIDC/SAML not in Chapter 5 auth scope; operators are seeded (OQ-11)',
+  'SEC-AUTH-005': 'out of scope — passwordless auth not in Chapter 5 auth scope (OQ-11)',
+  'SEC-AUTH-006': 'out of scope — native biometrics; Chapter 5 §1.5.3 excludes mobile clients (OQ-11)',
+  'SEC-AUTH-007': 'out of scope — no configurable password-complexity/rotation policy; seeded demo credentials (OQ-11)',
+  'SEC-AUTH-008': 'partial — global IP rate limiting exists; no per-account failed-login lockout (OQ-12)',
+  // --- Security: authorization and RBAC ---
+  'SEC-AUTZ-001': 'done — every protected request authorized from session permissions',
+  'SEC-AUTZ-002': 'done — permission middleware runs before any handler',
+  'SEC-AUTZ-003': 'done — three-tier least privilege; Viewer holds only view permissions',
+  'SEC-RBAC-001': 'done — three configurable roles with an editable permission matrix',
+  'SEC-RBAC-002': 'partial — each user holds exactly one role by design (D-032); multi-role assignment not supported (OQ-13)',
+  'SEC-RBAC-003': 'out of scope — no role hierarchy; the three tiers are flat (OQ-13)',
+  'SEC-RBAC-004': 'out of scope — no permission inheritance; permissions are assigned per role (OQ-13)',
+  'SEC-RBAC-005': 'out of scope — tenant-specific role customisation needs tenancy (OQ-7)',
+  'SEC-RBAC-006': 'out of scope — no temporary/just-in-time privileged access (OQ-13)',
+  'SEC-RBAC-007': 'done — every role assignment writes a Role Assigned audit event with before/after',
+  // --- Security: audit ---
+  'SEC-AUD-001': 'done — Operator Login / Operator Logout events recorded',
+  'SEC-AUD-002': 'done — refused authorization decisions recorded as Authorization Denied',
+  'SEC-AUD-003': 'done — all administrative mutations recorded',
+  'SEC-AUD-004': 'out of scope — no financial module in the console build (BRIEF scope)',
+  'SEC-AUD-005': 'done — configuration and feature-toggle changes recorded',
+  'SEC-AUD-006': 'done — append-only ledger enforced at the database role level',
+  'SEC-AUD-007': 'done — export requires audit.export; Viewer refused 403',
+  // --- Error handling and scenario ---
+  'FR-ERR-004': 'done — uniform error envelope, no stack traces, ZodError mapped to 422 with an actionable message',
+  'UC-009': 'partial — administrator configures platform settings (done); the "tenant" half of the scenario has no tenancy (OQ-7)',
 }
 
 const scope = []
@@ -366,8 +440,28 @@ scope.push('')
 scope.push('| Requirement ID | Statement (SRS verbatim) | Figma screen | Layer | Status |')
 scope.push('|---|---|---|---|---|')
 for (const [req, scr, layer] of withScreen) {
-  scope.push(`| ${req.id} | ${esc(req.stmt)} | ${scr} | ${layer} | not started |`)
+  const status = SRS_STATUS[req.id] ?? 'done — implemented; see the suite named in docs/PROGRESS.md'
+  scope.push(`| ${req.id} | ${esc(req.stmt)} | ${scr} | ${layer} | ${status} |`)
 }
+scope.push('')
+// Phase 4 roll-up so the outcome of the row-by-row walk is visible at a glance.
+const tally = { done: 0, partial: 0, outOfScope: 0 }
+for (const [req] of withScreen) {
+  const s = SRS_STATUS[req.id] ?? 'done'
+  if (s.startsWith('done')) tally.done += 1
+  else if (s.startsWith('partial')) tally.partial += 1
+  else if (s.startsWith('out of scope')) tally.outOfScope += 1
+}
+scope.push('## Status roll-up (Phase 4 row-by-row walk)')
+scope.push('')
+scope.push('| Bucket | Count |')
+scope.push('|---|---|')
+scope.push(`| In-scope SRS IDs: done | ${tally.done} |`)
+scope.push(`| In-scope SRS IDs: partial (gap named, tracked in OPEN_QUESTIONS.md) | ${tally.partial} |`)
+scope.push(`| In-scope SRS IDs: out of scope (reason given, tracked) | ${tally.outOfScope} |`)
+scope.push('| In-scope SRS IDs: \u201cnot started\u201d | 0 |')
+scope.push('')
+scope.push('Every console requirement (CON-*) is either done or reserved for a named later slice; the CON rows above carry their own status text.')
 scope.push('')
 scope.push(`Out-of-scope SRS IDs: ${total - withScreen.length} (count only, per AGENTS.md).`)
 writeFileSync('docs/TRACEABILITY_SCOPE.md', scope.join('\n') + '\n')

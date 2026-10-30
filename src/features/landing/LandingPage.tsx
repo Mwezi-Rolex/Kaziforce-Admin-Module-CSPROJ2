@@ -13,7 +13,7 @@ export function LandingPage() {
           <BrandMark />
           <div>
             <p className="font-serif text-xl leading-none">Kaziforce</p>
-            <p className="mt-1 font-mono text-[9px] uppercase tracking-[.2em] text-[#798078]">Governance console</p>
+            <p className="mt-1 font-mono text-[9px] uppercase tracking-[.2em] text-[#666c65]">Governance console</p>
           </div>
         </div>
         <p className="eyebrow">Admin &amp; moderation module</p>
@@ -22,7 +22,7 @@ export function LandingPage() {
           <br />
           by design.
         </h1>
-        <p className="mt-6 max-w-xl text-sm leading-6 text-[#627069]">
+        <p className="mt-6 max-w-xl text-sm leading-6 text-[#606e67]">
           The governance layer of the digital workforce marketplace: role-based operator access, a
           human-in-the-loop content moderation queue, and an immutable audit record of every decision.
         </p>
@@ -39,7 +39,7 @@ export function LandingPage() {
           ].map(([term, desc]) => (
             <div key={term}>
               <dt className="font-serif text-lg">{term}</dt>
-              <dd className="mt-2 text-xs leading-5 text-[#68736c]">{desc}</dd>
+              <dd className="mt-2 text-xs leading-5 text-[#636d67]">{desc}</dd>
             </div>
           ))}
         </dl>

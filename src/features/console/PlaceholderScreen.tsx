@@ -7,7 +7,7 @@ export function PlaceholderScreen({ area, slice }: { area: string; slice: string
     <Panel>
       <p className="eyebrow">{area}</p>
       <h1 className="mt-3 font-serif text-3xl">Under construction — Phase 3, slice {slice}</h1>
-      <p className="mt-3 max-w-lg text-sm leading-6 text-[#68736c]">
+      <p className="mt-3 max-w-lg text-sm leading-6 text-[#636d67]">
         The routing, layout, session, and permission scaffolding are live; this area is implemented
         in its own vertical slice per the plan.
       </p>

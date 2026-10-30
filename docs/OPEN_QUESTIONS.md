@@ -16,3 +16,78 @@ BRIEF.md is now filled and confirmed: project/deadline/demo dates, scope, backen
 ## OQ-4 — Which stack is authoritative? — ANSWERED, see top
 
 ## OQ-5 — Which document set wins on contradictions? — ANSWERED, see top
+
+---
+
+## Phase 4 walk — in-scope rows moved out of the build
+
+Raised while walking every row of `docs/TRACEABILITY_SCOPE.md`. Each names the
+requirement it carries, why it is not built, and a proposed default. None blocks
+the demo: the console works without them.
+
+### OQ-6 — FR-ADM-020 "configurable business rules"
+
+The console exposes key/value configuration (e.g. a moderation queue threshold),
+but there is no general business-rule engine (no expression language, no
+rule editing). **Proposed default:** treat the key/value values that gate
+behaviour as the configurable rules for this phase, and record that a rule engine
+is a future extension. Building one is out of scale for a capstone with a
+10 Nov queue gate.
+
+### OQ-7 — Tenancy: FR-ADM-027, SEC-RBAC-005, part of UC-009
+
+Several SRS rows assume multi-tenancy (feature activation by tenant, tenant-level
+role customisation, a Platform Administrator configuring *tenant* settings). The
+console is deliberately single-tenant: Chapter 5 has no tenancy concept, and the
+SRS's own multi-tenancy requirements (FR-TEN-001…005) are outside the console
+subset. **Proposed default:** single-tenant console; note this explicitly in the
+report so the panel does not read the omission as an oversight.
+
+### OQ-8 — FR-ADM-035 "record security-related events"
+
+Authentication events and refused authorization decisions are recorded. There is
+no wider security-event taxonomy (privilege-escalation attempts, anomalous login
+detection, etc.). **Proposed default:** accept login + denial logging as the
+security-event record for this phase; the broader taxonomy belongs with the
+threat-detection requirements (SEC-THR-*), which are whole-platform, not console.
+
+### OQ-9 — FR-ADM-039 "configurable audit retention periods"
+
+There is no retention configuration and no retention job; the ledger simply
+grows. **Proposed default:** leave retention as an operational policy decision
+for the industry partner, because choosing a retention period has legal
+implications the documents do not settle. Documented, not silently omitted.
+
+### OQ-10 — NFR-ACC-001/003: full accessibility conformance audit
+
+Colour contrast was measured and corrected (see `docs/BROWSER_CHECKLIST.md`),
+keyboard paths and semantic markup are built, but no human has run a screen
+reader or a full WCAG 2.1 AA audit. **Proposed default:** the automated checks
+stand as the evidence for this phase; a manual screen-reader pass is the user's
+to run and record in the checklist. I cannot test a screen reader I do not have.
+
+### OQ-11 — SEC-AUTH-003…007: MFA, SSO, passwordless, biometrics, password policy
+
+Chapter 5 defines the authentication module as email + password with JWT role
+claims only (§3.6.2), and BRIEF confirms seeded demo operators. MFA, SSO/OIDC/
+SAML, passwordless login, biometrics and configurable password policies are
+therefore not built. **Proposed default:** these are out of scope by Chapter 5's
+own direction, not by omission; the v2 SRS rows are recorded here so the
+distinction is auditable.
+
+### OQ-12 — SEC-AUTH-008: account lockout after failed logins
+
+A global per-IP rate limit exists (600 requests / 5 minutes), which throttles
+brute force, but there is no per-account failed-attempt lockout. **Proposed
+default:** add a per-account counter (N failed attempts → temporary lock,
+audited) if time allows after the 10 Nov queue gate; otherwise record the IP
+throttle as the mitigation. **This is the one item here I would prioritise**,
+because the panel probes authentication.
+
+### OQ-13 — SEC-RBAC-002…006: multi-role, hierarchy, inheritance, temporary access
+
+Each user holds exactly one role (D-032); there is no role hierarchy, no
+permission inheritance, and no temporary privileged access. **Proposed default:**
+a flat three-tier model matches Chapter 5's three privilege tiers exactly;
+hierarchy and inheritance are enterprise features the SRS itself notes are
+disproportionate to a mid-scale marketplace (proposal §2.3.3).

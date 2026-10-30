@@ -54,6 +54,7 @@ export type SystemSetting = {
   value: string
   isFeatureToggle: boolean
   updatedAt: string
+  updatedByEmail?: string | null
 }
 
 export type Page<T> = {

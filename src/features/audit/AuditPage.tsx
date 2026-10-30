@@ -42,7 +42,7 @@ export function AuditPage() {
             Export CSV <span aria-hidden="true">↓</span>
           </a>
         ) : (
-          <p className="max-w-xs text-right font-mono text-[10px] uppercase leading-4 tracking-[.1em] text-[#7a8179]">
+          <p className="max-w-xs text-right font-mono text-[10px] uppercase leading-4 tracking-[.1em] text-[#666c66]">
             Log download requires Moderator or Super Admin
           </p>
         )}
@@ -71,12 +71,12 @@ export function AuditPage() {
             </option>
           ))}
         </select>
-        <span className="ml-auto font-mono text-[10px] uppercase tracking-wider text-[#718078]">
+        <span className="ml-auto font-mono text-[10px] uppercase tracking-wider text-[#616e67]">
           {list.loading ? 'Loading…' : `${meta?.total ?? 0} events`}
         </span>
       </Toolbar>
 
-      <p className="mt-4 font-mono text-[10px] uppercase tracking-[.1em] text-[#718078]">
+      <p className="mt-4 font-mono text-[10px] uppercase tracking-[.1em] text-[#616e67]">
         Append-only · server-generated timestamp · no update or delete privileges
       </p>
 
@@ -115,7 +115,7 @@ export function AuditPage() {
                       {e.targetEntityType}
                       {e.targetEntityId ? ` · ${e.targetEntityId.slice(0, 8)}…` : ''}
                     </td>
-                    <td className="text-[#66716a]">{new Date(e.createdAt).toLocaleString()}</td>
+                    <td className="text-[#626c66]">{new Date(e.createdAt).toLocaleString()}</td>
                   </tr>
                 ))}
               </tbody>
@@ -125,7 +125,7 @@ export function AuditPage() {
       </div>
 
       {!canExport && (
-        <p className="mt-4 text-xs leading-5 text-[#7b837c]">
+        <p className="mt-4 text-xs leading-5 text-[#656b66]">
           This role may read the audit log but not download it. The restriction is enforced by the server, not
           only by hiding the control.
         </p>

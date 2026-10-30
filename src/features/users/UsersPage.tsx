@@ -95,7 +95,7 @@ export function UsersPage() {
   return (
     <>
       <PageTitle kicker="User management" title="Account control">
-        <p className="font-mono text-[10px] uppercase tracking-[.14em] text-[#758078]">
+        <p className="font-mono text-[10px] uppercase tracking-[.14em] text-[#636d66]">
           Search · view · status control · role map
         </p>
       </PageTitle>
@@ -119,7 +119,7 @@ export function UsersPage() {
           <option value="moderator">Moderator</option>
           <option value="super_admin">Super Admin</option>
         </select>
-        <span className="ml-auto font-mono text-[10px] uppercase tracking-wider text-[#727d75]">
+        <span className="ml-auto font-mono text-[10px] uppercase tracking-wider text-[#636d66]">
           {list.loading ? 'Loading…' : `${list.meta?.total ?? 0} matched accounts`}
         </span>
       </Toolbar>
@@ -172,7 +172,7 @@ export function UsersPage() {
                           {u.status}
                         </Pill>
                       </td>
-                      <td className="text-[#66716a]">{new Date(u.createdAt).toLocaleString()}</td>
+                      <td className="text-[#626c66]">{new Date(u.createdAt).toLocaleString()}</td>
                       <td>
                         <div className="flex justify-end gap-2">
                           {canSuspend && u.status === 'Active' && (
@@ -180,7 +180,7 @@ export function UsersPage() {
                               Suspend
                             </Button>
                           )}
-                          {!canSuspend && <span className="mono text-[#8c938c]">Read-only</span>}
+                          {!canSuspend && <span className="mono text-[#666b66]">Read-only</span>}
                         </div>
                       </td>
                     </tr>
@@ -200,7 +200,7 @@ export function UsersPage() {
             <>
               <div className="flex items-start justify-between">
                 <p className="eyebrow">Account record</p>
-                <button onClick={() => setSelectedId(null)} className="text-sm text-[#69746c]" aria-label="Close account record">
+                <button onClick={() => setSelectedId(null)} className="text-sm text-[#636d66]" aria-label="Close account record">
                   ×
                 </button>
               </div>
@@ -279,7 +279,7 @@ export function UsersPage() {
                             <option value="super_admin">Super Admin</option>
                           </select>
                         </label>
-                        <p className="mt-2 text-xs text-[#707971]">Assignment is audited and takes effect on next sign-in.</p>
+                        <p className="mt-2 text-xs text-[#656d66]">Assignment is audited and takes effect on next sign-in.</p>
                       </>
                     )}
                     {canBan && selected.status !== 'Terminated' && (
@@ -290,12 +290,12 @@ export function UsersPage() {
                   </div>
                 )}
                 {!canSuspend && (
-                  <p className="text-sm leading-6 text-[#707971]">
+                  <p className="text-sm leading-6 text-[#656d66]">
                     This role can view account records only. No account actions are authorized.
                   </p>
                 )}
                 {canSuspend && !canBan && (
-                  <p className="mt-4 text-xs leading-5 text-[#707971]">
+                  <p className="mt-4 text-xs leading-5 text-[#656d66]">
                     Role assignment and permanent bans require Super Admin authority.
                   </p>
                 )}
@@ -307,14 +307,14 @@ export function UsersPage() {
                 <p className="eyebrow">Account record</p>
                 <h2 className="mt-4 font-serif text-2xl leading-tight">Select an account to view its authorized controls.</h2>
               </div>
-              <p className="font-mono text-[10px] uppercase tracking-[.1em] text-[#768078]">No create, delete, or arbitrary update controls</p>
+              <p className="font-mono text-[10px] uppercase tracking-[.1em] text-[#646d66]">No create, delete, or arbitrary update controls</p>
             </div>
           )}
         </aside>
       </div>
 
       {!canSuspend && (
-        <p className="mt-4 text-xs text-[#7b837c]">Role assignment and permanent bans are not available to this operator role.</p>
+        <p className="mt-4 text-xs text-[#656b66]">Role assignment and permanent bans are not available to this operator role.</p>
       )}
 
       {banTarget && (

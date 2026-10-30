@@ -1,4 +1,5 @@
 import type { NextFunction, Request, Response } from 'express'
+import { ZodError } from 'zod'
 
 // BED §6 conventions: uniform envelope, standard status codes, no stack traces to clients.
 export class ApiError extends Error {
@@ -24,6 +25,17 @@ export function errorHandler(err: unknown, _req: Request, res: Response, _next: 
     res.status(err.status).json({
       success: false,
       error: { code: err.code, message: err.message },
+      timestamp: new Date().toISOString(),
+    })
+    return
+  }
+  // A validation failure raised by a schema parse must be a 422 with an
+  // actionable message, never a 500 that leaks an internal error shape
+  // (FR-ERR-002/FR-ERR-004).
+  if (err instanceof ZodError) {
+    res.status(422).json({
+      success: false,
+      error: { code: 'VALIDATION', message: err.issues[0]?.message ?? 'Invalid input' },
       timestamp: new Date().toISOString(),
     })
     return

@@ -53,7 +53,7 @@ export function LoginPage() {
           <BrandMark />
           <div>
             <p className="font-serif text-xl">Kaziforce</p>
-            <p className="font-mono text-[9px] uppercase tracking-[.2em] text-[#798078]">Governance console</p>
+            <p className="font-mono text-[9px] uppercase tracking-[.2em] text-[#666c65]">Governance console</p>
           </div>
         </div>
         <p className="eyebrow">Operator access</p>
@@ -62,7 +62,7 @@ export function LoginPage() {
           <br />
           by design.
         </h1>
-        <p className="mt-5 max-w-sm text-sm leading-6 text-[#627069]">
+        <p className="mt-5 max-w-sm text-sm leading-6 text-[#606e67]">
           Sign in to access the marketplace governance system. Your role claim determines the actions available to you.
         </p>
         {apiError && (
@@ -109,15 +109,15 @@ export function LoginPage() {
             {submitting ? 'Authenticating…' : 'Authenticate'} <span aria-hidden="true">→</span>
           </button>
         </form>
-        <div className="mt-8 border-t border-[#deded4] pt-4 font-mono text-[9px] uppercase tracking-[.1em] text-[#7a8279]">
+        <div className="mt-8 border-t border-[#deded4] pt-4 font-mono text-[9px] uppercase tracking-[.1em] text-[#666d66]">
           JWT session · role-gated routes · secure credential validation
         </div>
-        <div className="mt-4 text-xs leading-5 text-[#778078]">
+        <div className="mt-4 text-xs leading-5 text-[#656d66]">
           Demo operators are seeded by the server seed script (viewer@, moderator@, superadmin@kaziforce.local).
           Passwords are printed by <span className="mono">npm run seed</span> and are for local use only.
         </div>
         <div className="mt-4">
-          <Link to="/" className="text-xs text-[#69746c] underline">
+          <Link to="/" className="text-xs text-[#636d66] underline">
             ← Back to overview
           </Link>
         </div>
