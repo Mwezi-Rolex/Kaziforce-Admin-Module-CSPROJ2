@@ -27,7 +27,7 @@ const SEVERITY_ORDER: Record<Severity, number> = { High: 3, Medium: 2, Low: 1 }
 // and the queue is unaffected (CON-ML-A-001).
 export function SuggestionCell({ suggestion }: { suggestion: Suggestion | undefined }) {
   if (!suggestion || !suggestion.available) {
-    return <span className="mono text-[#8c938c]">Suggestion unavailable</span>
+    return <span className="mono text-[#666b66]">Suggestion unavailable</span>
   }
   return (
     <span className="flex flex-col gap-1">
@@ -37,7 +37,7 @@ export function SuggestionCell({ suggestion }: { suggestion: Suggestion | undefi
       <span className="flex items-center gap-2">
         <Pill tone={SEVERITY_TONE[suggestion.severity]}>{suggestion.severity}</Pill>
         <span className="mono text-[#5d6961]">{suggestion.action}</span>
-        <span className="mono text-[#8c938c]">{Math.round(suggestion.confidence * 100)}%</span>
+        <span className="mono text-[#666b66]">{Math.round(suggestion.confidence * 100)}%</span>
       </span>
     </span>
   )
@@ -152,8 +152,8 @@ export function QueuePage() {
     <>
       <PageTitle kicker="Content moderation" title={lane === 'escalated' ? 'Escalation review' : 'Review queue'}>
         <div className="text-right">
-          <p className="font-mono text-[10px] uppercase tracking-[.14em] text-[#758078]">Rule-based priority queue</p>
-          <p className="mt-1 text-xs text-[#758078]">{canDecide ? 'Decision authority active' : 'Read-only operator view'}</p>
+          <p className="font-mono text-[10px] uppercase tracking-[.14em] text-[#636d66]">Rule-based priority queue</p>
+          <p className="mt-1 text-xs text-[#636d66]">{canDecide ? 'Decision authority active' : 'Read-only operator view'}</p>
         </div>
       </PageTitle>
 
@@ -206,7 +206,7 @@ export function QueuePage() {
           />
           Sort by predicted severity
         </label>
-        <span className="ml-auto font-mono text-[10px] uppercase tracking-wider text-[#707a72]">
+        <span className="ml-auto font-mono text-[10px] uppercase tracking-wider text-[#646d65]">
           {list.loading ? 'Loading…' : `${list.meta?.total ?? 0} flagged items`}
         </span>
       </Toolbar>
@@ -233,7 +233,7 @@ export function QueuePage() {
               </Button>
             </div>
           ) : (
-            <span className="text-xs text-[#68736b]">Moderation actions require Moderator or Super Admin</span>
+            <span className="text-xs text-[#636d66]">Moderation actions require Moderator or Super Admin</span>
           )}
         </div>
       )}
@@ -297,7 +297,7 @@ export function QueuePage() {
                     </td>
                     <td>
                       <p className="font-medium">{f.contentType}</p>
-                      <p className="mono mt-1 text-[#858c85]">{f.id.slice(0, 8)}… · {f.reason || 'No reason recorded'}</p>
+                      <p className="mono mt-1 text-[#666c66]">{f.id.slice(0, 8)}… · {f.reason || 'No reason recorded'}</p>
                     </td>
                     <td>
                       <button
@@ -319,7 +319,7 @@ export function QueuePage() {
                     <td>
                       <Pill tone={STATUS_TONE[f.flagStatus] ?? 'neutral'}>{f.flagStatus}</Pill>
                     </td>
-                    <td className="text-[#66716a]">{new Date(f.createdAt).toLocaleString()}</td>
+                    <td className="text-[#626c66]">{new Date(f.createdAt).toLocaleString()}</td>
                     <td>
                       <div className="flex justify-end gap-2">
                         {lane === 'queue' && canDecide && f.flagStatus === 'Pending' && (
@@ -346,7 +346,7 @@ export function QueuePage() {
                           </>
                         )}
                         {((lane === 'queue' && (!canDecide || f.flagStatus !== 'Pending')) || (lane === 'escalated' && !canEscalate)) && (
-                          <span className="mono text-[#8c938c]">Read-only</span>
+                          <span className="mono text-[#666b66]">Read-only</span>
                         )}
                       </div>
                     </td>

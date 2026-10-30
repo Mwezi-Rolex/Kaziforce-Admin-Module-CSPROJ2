@@ -25,7 +25,7 @@ export function AccessDenied({ requiredPermission }: { requiredPermission: strin
     <Panel>
       <p className="eyebrow">Access denied</p>
       <h1 className="mt-3 font-serif text-3xl">You are not authorised to open this area.</h1>
-      <p className="mt-3 max-w-lg text-sm leading-6 text-[#68736c]">
+      <p className="mt-3 max-w-lg text-sm leading-6 text-[#636d67]">
         This screen requires the <span className="mono">{requiredPermission}</span> permission, which your
         operator role does not hold. If you believe this is an error, contact a Super Admin.
       </p>

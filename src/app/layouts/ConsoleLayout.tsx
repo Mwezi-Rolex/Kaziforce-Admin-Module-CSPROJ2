@@ -29,15 +29,15 @@ export function ConsoleLayout() {
       >
         Skip to content
       </a>
-      <aside className="console-sidebar fixed inset-y-0 left-0 z-20 flex w-[252px] flex-col border-r border-[#d8d8ce] bg-[#eeece3] px-4 py-5">
+      <aside className="console-sidebar console-rail fixed inset-y-0 left-0 z-20 flex w-[252px] flex-col border-r border-[#d8d8ce] bg-[#eeece3] px-4 py-5">
         <div className="flex items-center gap-3 px-2">
           <BrandMark />
           <div>
             <p className="font-serif text-lg leading-none">Kaziforce</p>
-            <p className="mt-1 font-mono text-[9px] uppercase tracking-[.18em] text-[#6c756e]">Governance console</p>
+            <p className="mt-1 font-mono text-[9px] uppercase tracking-[.18em] text-[#646d66]">Governance console</p>
           </div>
         </div>
-        <div className="mt-12 px-2 font-mono text-[10px] uppercase tracking-[.16em] text-[#7c817a]">Operations</div>
+        <div className="mt-12 px-2 font-mono text-[10px] uppercase tracking-[.16em] text-[#686c66]">Operations</div>
         <nav className="mt-3 space-y-1" aria-label="Console">
           {NAV.filter((entry) => !entry.permission || can(user.permissions, entry.permission)).map((entry) => (
             <NavLink
@@ -59,7 +59,7 @@ export function ConsoleLayout() {
             </div>
             <div className="min-w-0 flex-1">
               <p className="truncate text-xs font-semibold">{user.fullName}</p>
-              <p className="font-mono text-[9px] uppercase tracking-wider text-[#747a72]">{ROLE_LABEL[user.role]}</p>
+              <p className="font-mono text-[9px] uppercase tracking-wider text-[#666b64]">{ROLE_LABEL[user.role]}</p>
             </div>
           </div>
           <div className="mt-3 px-2">
@@ -75,18 +75,18 @@ export function ConsoleLayout() {
           </div>
         </div>
       </aside>
-      <section className="ml-[252px] min-h-screen">
-        <header className="flex h-[76px] items-center justify-between border-b border-[#deded5] bg-[#faf9f4] px-10">
+      <section className="console-main ml-[252px] min-h-screen">
+        <header className="console-header flex h-[76px] items-center justify-between border-b border-[#deded5] bg-[#faf9f4] px-10">
           <div className="flex items-center gap-3">
-            <span className="font-mono text-[10px] uppercase tracking-[.15em] text-[#718078]">Authenticated · JWT session verified</span>
+            <span className="font-mono text-[10px] uppercase tracking-[.15em] text-[#616e67]">Authenticated · JWT session verified</span>
             <span className="h-1.5 w-1.5 rounded-full bg-[#3e7d5b]" aria-hidden="true" />
           </div>
-          <div className="flex items-center gap-3">
+          <div className="header-meta flex items-center gap-3">
             <Pill tone="active">{ROLE_LABEL[user.role]}</Pill>
-            <span className="font-mono text-[10px] uppercase tracking-[.12em] text-[#7a8179]">{user.email}</span>
+            <span className="font-mono text-[10px] uppercase tracking-[.12em] text-[#666c66]">{user.email}</span>
           </div>
         </header>
-        <div id="console-content" className="mx-auto max-w-[1440px] px-10 py-9">
+        <div id="console-content" className="console-content mx-auto max-w-[1440px] px-10 py-9">
           <Outlet />
         </div>
       </section>

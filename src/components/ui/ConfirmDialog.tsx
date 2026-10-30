@@ -42,7 +42,7 @@ export function ConfirmDialog({ title, detail, target, confirmLabel, destructive
       >
         <p className="eyebrow">Step {step} of 2 · confirmation required</p>
         <h2 className="mt-3 font-serif text-3xl">{step === 1 ? title : 'Confirm this action.'}</h2>
-        <p className="mt-4 text-sm leading-6 text-[#626f67]">
+        <p className="mt-4 text-sm leading-6 text-[#616e66]">
           {step === 1 ? detail : `You are about to finalize: ${target}. This cannot be undone from this interface.`}
         </p>
         <div className="mt-8 flex justify-end gap-3">

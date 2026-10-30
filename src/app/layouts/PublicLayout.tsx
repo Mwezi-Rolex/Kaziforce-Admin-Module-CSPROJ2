@@ -15,7 +15,7 @@ export function PublicLayout() {
         <Link to="/" className="flex items-center gap-3">
           <BrandMark />
           <span className="font-serif text-lg">Kaziforce</span>
-          <span className="font-mono text-[9px] uppercase tracking-[.18em] text-[#6c756e]">Governance console</span>
+          <span className="font-mono text-[9px] uppercase tracking-[.18em] text-[#646d66]">Governance console</span>
         </Link>
         <Link to="/login" className="minor-button">
           Operator sign in
@@ -25,7 +25,7 @@ export function PublicLayout() {
         <Outlet />
       </main>
       <footer className="border-t border-[#deded5] bg-[#faf9f4] px-8 py-6">
-        <p className="font-mono text-[10px] uppercase tracking-[.12em] text-[#7a8179]">
+        <p className="font-mono text-[10px] uppercase tracking-[.12em] text-[#666c66]">
           Kaziforce · admin &amp; moderation module · capstone build
         </p>
       </footer>

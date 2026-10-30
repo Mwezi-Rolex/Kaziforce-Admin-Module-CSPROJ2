@@ -25,13 +25,13 @@ Generated 2026-10-29 by `docs/traceability-gen.mjs` (rerun: `node docs/traceabil
 | CON-AUD-001 | Every state change writes an audit event (actor, action, target, UTC timestamp); store is INSERT-only | Ch5 §3.6.5 (cf. SEC-AUD-001…006) | Audit Explorer | backend + database | done — AuditLogger on auth + user endpoints; Jest asserts audit rows; app role denied UPDATE/DELETE/TRUNCATE (42501) |
 | CON-AUD-002 | Audit explorer: date-range + actor filters, read-only table | Ch5 §3.6.5 | Audit Explorer | frontend + backend | done (slice 4) — filters (date/actor/action), read-only table, all tiers |
 | CON-AUD-003 | CSV export restricted to Moderator and Super Admin; server 403 for Viewer; control hidden for Viewer | BRIEF 2026-10-29 overriding Ch5 §3.6.5 all-operator export (cf. FR-ADM-037, SEC-AUD-007) | Audit Explorer | frontend + backend | done (slice 4) — CSV export Moderator+ only; Viewer 403 verified in Jest and the deploy smoke test |
-| CON-AUD-004 | Adversarial immutability test: application DB role cannot UPDATE/DELETE audit_log | Ch5 §3.3 testing; BRIEF never-cut list | tests | database + tests | not started |
-| CON-SET-001 | Settings panel Super Admin only; key/value config + feature toggle; changes audited | Ch5 §3.6.6 (cf. FR-ADM-004/019/026) | System Settings | frontend + backend + database | not started |
-| CON-SET-002 | Settings keys and toggles stay named placeholders until the user supplies them | OQ-2 default confirmed in BRIEF | System Settings | frontend | not started |
-| CON-DASH-001 | Dashboard shell present; analytics deliberately unpopulated ("Metric definitions pending") | BRIEF/OQ-2 (cf. FR-ADM-008/046) | Dashboard | frontend | not started |
+| CON-AUD-004 | Adversarial immutability test: application DB role cannot UPDATE/DELETE audit_log | Ch5 §3.3 testing; BRIEF never-cut list | tests | database + tests | done (Phase 4) — UPDATE/DELETE/TRUNCATE all refused 42501 in Jest and in deploy/smoke-test.sh |
+| CON-SET-001 | Settings panel Super Admin only; key/value config + feature toggle; changes audited | Ch5 §3.6.6 (cf. FR-ADM-004/019/026) | System Settings | frontend + backend + database | done (Phase 4) — Super Admin only; key/value + toggle; all changes audited (Jest: Viewer and Moderator both 403) |
+| CON-SET-002 | Settings keys and toggles stay named placeholders until the user supplies them | OQ-2 default confirmed in BRIEF | System Settings | frontend | done (Phase 4) — keys are labelled sample.* and presented as demonstration config (OQ-2) |
+| CON-DASH-001 | Dashboard shell present; analytics deliberately unpopulated ("Metric definitions pending") | BRIEF/OQ-2 (cf. FR-ADM-008/046) | Dashboard | frontend | done (Phase 4) — shell + real role-scope panel; analytics deliberately unpopulated (OQ-2) |
 | CON-WEB-001 | Landing page: minimal, reuses export tokens only; product name Kaziforce (replaces "Tendaji") | BRIEF 2026-10-29 | Landing | frontend | done (slice 0) |
 | CON-WEB-002 | 404 page for unknown routes | BRIEF 2026-10-29 | 404 | frontend | done (slice 0) |
-| CON-UI-001 | Every panel listing report content or options scrolls inside its container instead of clipping | BRIEF 2026-10-29 | All screens | frontend | not started |
+| CON-UI-001 | Every panel listing report content or options scrolls inside its container instead of clipping | BRIEF 2026-10-29 | All screens | frontend | done (Phase 4) — .table-scroll on all four tables, .panel-scroll on the account record, .console-sidebar on the rail |
 | CON-ML-A-001 | Suggestion-only ML: per-flag predicted severity + suggested action + confidence (Random Forest vs logistic regression + baselines); moderator always decides | BRIEF ML-A; AGENTS.md ML rules | Moderation Queue | backend (model service) + frontend | done (slice 8) — RF severity+action suggestion, version + followed/overridden in audit; fail-safe verified |
 | CON-ML-B-001 | Stretch: Isolation Forest anomaly score over operator activity, shown to Super Admin in audit explorer | BRIEF ML-B (first to cut) | Audit Explorer | backend (model service) + frontend | done (slice 9) — Isolation Forest operator-window anomalies; recovery metrics in ml/reports/metrics.json |
 | CON-DEP-001 | Deployment artifacts + runbook for Azure VPS + Nginx; agent provisions nothing | BRIEF deployment | infra | backend (infra) | done (slice 10) — deploy/ artifacts + docs/DEPLOY.md; smoke test verified locally (12/0/1); VPS run pending operator |
@@ -41,60 +41,71 @@ Generated 2026-10-29 by `docs/traceability-gen.mjs` (rerun: `node docs/traceabil
 
 | Requirement ID | Statement (SRS verbatim) | Figma screen | Layer | Status |
 |---|---|---|---|---|
-| FR-ADM-001 | The system shall provide a centralized platform administration console. | All screens | frontend + backend + database | not started |
-| FR-ADM-003 | The system shall manage platform-wide roles and administrative permissions. | User Control Centre | frontend + backend + database | not started |
-| FR-ADM-004 | The system shall manage global platform settings. | System Settings | frontend + backend + database | not started |
-| FR-ADM-008 | The system shall display platform-wide operational dashboards. | Dashboard | frontend + backend | not started |
-| FR-ADM-019 | The system shall support configurable application settings. | System Settings | frontend + backend + database | not started |
-| FR-ADM-020 | The system shall support configurable business rules. | System Settings | frontend + backend + database | not started |
-| FR-ADM-026 | The system shall support enabling and disabling features using feature flags. | System Settings | frontend + backend + database | not started |
-| FR-ADM-027 | The system shall support feature activation by tenant, user role, region, or subscription plan. | System Settings | frontend + backend + database | not started |
-| FR-ADM-029 | The system shall support feature rollback without application redeployment. | System Settings | frontend + backend + database | not started |
-| FR-ADM-031 | The system shall provide administrative visibility into active feature configurations. | System Settings | frontend + backend | not started |
-| FR-ADM-032 | The system shall record all administrative actions. | Audit Explorer | backend + database | not started |
-| FR-ADM-033 | The system shall record authentication and authorization events. | Audit Explorer | backend + database | not started |
-| FR-ADM-034 | The system shall record configuration changes. | Audit Explorer | backend + database | not started |
-| FR-ADM-035 | The system shall record security-related events. | Audit Explorer | backend + database | not started |
-| FR-ADM-036 | The system shall support audit log search and filtering. | Audit Explorer | frontend + backend | not started |
-| FR-ADM-037 | The system shall support export of audit records subject to authorization. | Audit Explorer | frontend + backend | not started |
-| FR-ADM-038 | The system shall protect audit logs against unauthorized modification or deletion. | Audit Explorer | backend + database | not started |
-| FR-ADM-039 | The system shall support configurable audit retention periods. | Audit Explorer | backend + database | not started |
-| FR-ADM-046 | The system shall provide operational dashboards for administrators. | Dashboard | frontend + backend | not started |
-| BR-USR-005 | Suspended or deactivated users shall not authenticate or perform business operations. | Login, User Control Centre | backend + database | not started |
-| BR-USR-008 | All user lifecycle events shall be recorded in the audit log. | Audit Explorer | backend + database | not started |
-| NFR-PRT-003 | The system shall support modern web browsers. | All screens | frontend | not started |
-| NFR-ACC-001 | The system shall comply with WCAG 2.1 Level AA accessibility guidelines. | All screens | frontend | not started |
-| NFR-ACC-002 | The system shall support keyboard-only navigation. | All screens | frontend | not started |
-| NFR-ACC-003 | The system shall support screen readers through semantic markup and ARIA where appropriate. | All screens | frontend | not started |
-| NFR-ACC-004 | The system shall maintain sufficient color contrast for text and interactive elements. | All screens | frontend | not started |
-| NFR-ACC-005 | The system shall provide text alternatives for non-text content where applicable. | All screens | frontend | not started |
-| NFR-ACC-006 | The system shall avoid relying solely on color to convey information. | All screens | frontend | not started |
-| SEC-AUTH-001 | The system shall require authentication before granting access to protected resources. | Login | frontend + backend | not started |
-| SEC-AUTH-002 | The system shall support username/email and password authentication. | Login | frontend + backend | not started |
-| SEC-AUTH-003 | The system shall support Multi-Factor Authentication (MFA). | Login | frontend + backend | not started |
-| SEC-AUTH-004 | The system shall support Single Sign-On (SSO) using OpenID Connect (OIDC) and SAML 2.0. | Login | frontend + backend | not started |
-| SEC-AUTH-005 | The system shall support passwordless authentication where configured. | Login | frontend + backend | not started |
-| SEC-AUTH-006 | The system shall support biometric authentication on supported mobile devices. | Login | frontend + backend | not started |
-| SEC-AUTH-007 | The system shall enforce configurable password complexity and rotation policies where applicable. | Login | frontend + backend | not started |
-| SEC-AUTH-008 | The system shall lock or throttle authentication attempts after configurable failed login thresholds. | Login | frontend + backend | not started |
-| SEC-AUTZ-001 | The system shall authorize every protected request. | All screens | backend | not started |
-| SEC-AUTZ-002 | The system shall perform authorization before executing business operations. | All screens | backend | not started |
-| SEC-AUTZ-003 | The system shall enforce least-privilege access principles. | All screens | backend | not started |
-| SEC-RBAC-001 | The system shall support configurable platform and tenant roles. | All screens | frontend + backend + database | not started |
-| SEC-RBAC-002 | The system shall assign one or more roles to each user. | All screens | frontend + backend + database | not started |
-| SEC-RBAC-003 | The system shall support hierarchical roles. | All screens | frontend + backend + database | not started |
-| SEC-RBAC-004 | The system shall support permission inheritance. | All screens | frontend + backend + database | not started |
-| SEC-RBAC-005 | The system shall allow tenant-specific role customization. | All screens | frontend + backend + database | not started |
-| SEC-RBAC-006 | The system shall support temporary privileged access where approved. | All screens | frontend + backend + database | not started |
-| SEC-RBAC-007 | The system shall maintain complete role assignment history. | All screens | frontend + backend + database | not started |
-| SEC-AUD-001 | The system shall log authentication events. | Audit Explorer | backend + database | not started |
-| SEC-AUD-002 | The system shall log authorization decisions for privileged operations. | Audit Explorer | backend + database | not started |
-| SEC-AUD-003 | The system shall log administrative actions. | Audit Explorer | backend + database | not started |
-| SEC-AUD-004 | The system shall log financial operations. | Audit Explorer | backend + database | not started |
-| SEC-AUD-005 | The system shall log security configuration changes. | Audit Explorer | backend + database | not started |
-| SEC-AUD-006 | The system shall prevent unauthorized modification of audit records. | Audit Explorer | backend + database | not started |
-| SEC-AUD-007 | The system shall support secure export of audit logs. | Audit Explorer | backend + database | not started |
-| FR-ERR-004 | The system shall present user-facing error messages that are actionable and do not expose internal implementation details. | All screens | frontend + backend | not started |
-| UC-009 | Platform Administrator Configures Tenant Settings | System Settings | scenario (all layers) | not started |
+| FR-ADM-001 | The system shall provide a centralized platform administration console. | All screens | frontend + backend + database | done — the console is the centralised administration interface |
+| FR-ADM-003 | The system shall manage platform-wide roles and administrative permissions. | User Control Centre | frontend + backend + database | done — roles and permissions managed (3 tiers, seeded matrix, role assignment) |
+| FR-ADM-004 | The system shall manage global platform settings. | System Settings | frontend + backend + database | done — global settings editable via the settings slice |
+| FR-ADM-008 | The system shall display platform-wide operational dashboards. | Dashboard | frontend + backend | partial — dashboard shell renders; no platform-wide operational metrics exist to display (OQ-2) |
+| FR-ADM-019 | The system shall support configurable application settings. | System Settings | frontend + backend + database | done — configurable application settings (key/value, validated, audited) |
+| FR-ADM-020 | The system shall support configurable business rules. | System Settings | frontend + backend + database | partial — configurable values exist (e.g. queue threshold); no general business-rule engine (OQ-6) |
+| FR-ADM-026 | The system shall support enabling and disabling features using feature flags. | System Settings | frontend + backend + database | done — feature flags toggle without redeployment, audited |
+| FR-ADM-027 | The system shall support feature activation by tenant, user role, region, or subscription plan. | System Settings | frontend + backend + database | out of scope — activation by tenant/region/plan needs tenancy; this build is single-tenant (OQ-7) |
+| FR-ADM-029 | The system shall support feature rollback without application redeployment. | System Settings | frontend + backend + database | done — rollback is flipping the flag back; no redeployment |
+| FR-ADM-031 | The system shall provide administrative visibility into active feature configurations. | System Settings | frontend + backend | done — settings list shows all active configuration with author and timestamp |
+| FR-ADM-032 | The system shall record all administrative actions. | Audit Explorer | backend + database | done — every state-changing endpoint calls AuditLogger |
+| FR-ADM-033 | The system shall record authentication and authorization events. | Audit Explorer | backend + database | done — logins, logouts and authorization denials are recorded |
+| FR-ADM-034 | The system shall record configuration changes. | Audit Explorer | backend + database | done — configuration and toggle changes recorded with before/after |
+| FR-ADM-035 | The system shall record security-related events. | Audit Explorer | backend + database | partial — authentication and authorization-denial events recorded; no broader security-event taxonomy (OQ-8) |
+| FR-ADM-036 | The system shall support audit log search and filtering. | Audit Explorer | frontend + backend | done — audit search by date range, actor and action type |
+| FR-ADM-037 | The system shall support export of audit records subject to authorization. | Audit Explorer | frontend + backend | done — CSV export gated on audit.export (Moderator+); Viewer 403 |
+| FR-ADM-038 | The system shall protect audit logs against unauthorized modification or deletion. | Audit Explorer | backend + database | done — database refuses UPDATE/DELETE/TRUNCATE for the application role |
+| FR-ADM-039 | The system shall support configurable audit retention periods. | Audit Explorer | backend + database | out of scope — no retention-period configuration; retention policy needs an operational decision (OQ-9) |
+| FR-ADM-046 | The system shall provide operational dashboards for administrators. | Dashboard | frontend + backend | partial — same as FR-ADM-008: shell without an agreed metric set (OQ-2) |
+| BR-USR-005 | Suspended or deactivated users shall not authenticate or perform business operations. | Login, User Control Centre | backend + database | done — suspended operator refused at login and on every request (Jest-verified) |
+| BR-USR-008 | All user lifecycle events shall be recorded in the audit log. | Audit Explorer | backend + database | done — suspend, ban, role assignment and settings changes all audited |
+| NFR-PRT-003 | The system shall support modern web browsers. | All screens | frontend | partial — modern-browser support designed in; manual browser confirmation pending (docs/BROWSER_CHECKLIST.md) |
+| NFR-ACC-001 | The system shall comply with WCAG 2.1 Level AA accessibility guidelines. | All screens | frontend | partial — contrast measured and fixed; keyboard paths built; full AA conformance not audited by a human (OQ-10) |
+| NFR-ACC-002 | The system shall support keyboard-only navigation. | All screens | frontend | partial — skip links, focus-visible ring, logical tab order implemented; end-to-end keyboard walk-through pending (checklist) |
+| NFR-ACC-003 | The system shall support screen readers through semantic markup and ARIA where appropriate. | All screens | frontend | partial — semantic tables/landmarks and ARIA labels present; not tested with a screen reader (OQ-10) |
+| NFR-ACC-004 | The system shall maintain sufficient color contrast for text and interactive elements. | All screens | frontend | done — all text tokens measured >= 4.5:1; non-text controls >= 3:1 (see BROWSER_CHECKLIST) |
+| NFR-ACC-005 | The system shall provide text alternatives for non-text content where applicable. | All screens | frontend | done — decorative glyphs aria-hidden; inputs and toggles carry aria-label |
+| NFR-ACC-006 | The system shall avoid relying solely on color to convey information. | All screens | frontend | done — status conveyed by text as well as colour (pills include the word) |
+| SEC-AUTH-001 | The system shall require authentication before granting access to protected resources. | Login | frontend + backend | done — requireAuth on every console route and API route |
+| SEC-AUTH-002 | The system shall support username/email and password authentication. | Login | frontend + backend | done — email + password, bcrypt verified |
+| SEC-AUTH-003 | The system shall support Multi-Factor Authentication (MFA). | Login | frontend + backend | out of scope — MFA not required by Chapter 5 auth scope (Ch5 §3.6.2); see OQ-11 |
+| SEC-AUTH-004 | The system shall support Single Sign-On (SSO) using OpenID Connect (OIDC) and SAML 2.0. | Login | frontend + backend | out of scope — SSO/OIDC/SAML not in Chapter 5 auth scope; operators are seeded (OQ-11) |
+| SEC-AUTH-005 | The system shall support passwordless authentication where configured. | Login | frontend + backend | out of scope — passwordless auth not in Chapter 5 auth scope (OQ-11) |
+| SEC-AUTH-006 | The system shall support biometric authentication on supported mobile devices. | Login | frontend + backend | out of scope — native biometrics; Chapter 5 §1.5.3 excludes mobile clients (OQ-11) |
+| SEC-AUTH-007 | The system shall enforce configurable password complexity and rotation policies where applicable. | Login | frontend + backend | out of scope — no configurable password-complexity/rotation policy; seeded demo credentials (OQ-11) |
+| SEC-AUTH-008 | The system shall lock or throttle authentication attempts after configurable failed login thresholds. | Login | frontend + backend | partial — global IP rate limiting exists; no per-account failed-login lockout (OQ-12) |
+| SEC-AUTZ-001 | The system shall authorize every protected request. | All screens | backend | done — every protected request authorized from session permissions |
+| SEC-AUTZ-002 | The system shall perform authorization before executing business operations. | All screens | backend | done — permission middleware runs before any handler |
+| SEC-AUTZ-003 | The system shall enforce least-privilege access principles. | All screens | backend | done — three-tier least privilege; Viewer holds only view permissions |
+| SEC-RBAC-001 | The system shall support configurable platform and tenant roles. | All screens | frontend + backend + database | done — three configurable roles with an editable permission matrix |
+| SEC-RBAC-002 | The system shall assign one or more roles to each user. | All screens | frontend + backend + database | partial — each user holds exactly one role by design (D-032); multi-role assignment not supported (OQ-13) |
+| SEC-RBAC-003 | The system shall support hierarchical roles. | All screens | frontend + backend + database | out of scope — no role hierarchy; the three tiers are flat (OQ-13) |
+| SEC-RBAC-004 | The system shall support permission inheritance. | All screens | frontend + backend + database | out of scope — no permission inheritance; permissions are assigned per role (OQ-13) |
+| SEC-RBAC-005 | The system shall allow tenant-specific role customization. | All screens | frontend + backend + database | out of scope — tenant-specific role customisation needs tenancy (OQ-7) |
+| SEC-RBAC-006 | The system shall support temporary privileged access where approved. | All screens | frontend + backend + database | out of scope — no temporary/just-in-time privileged access (OQ-13) |
+| SEC-RBAC-007 | The system shall maintain complete role assignment history. | All screens | frontend + backend + database | done — every role assignment writes a Role Assigned audit event with before/after |
+| SEC-AUD-001 | The system shall log authentication events. | Audit Explorer | backend + database | done — Operator Login / Operator Logout events recorded |
+| SEC-AUD-002 | The system shall log authorization decisions for privileged operations. | Audit Explorer | backend + database | done — refused authorization decisions recorded as Authorization Denied |
+| SEC-AUD-003 | The system shall log administrative actions. | Audit Explorer | backend + database | done — all administrative mutations recorded |
+| SEC-AUD-004 | The system shall log financial operations. | Audit Explorer | backend + database | out of scope — no financial module in the console build (BRIEF scope) |
+| SEC-AUD-005 | The system shall log security configuration changes. | Audit Explorer | backend + database | done — configuration and feature-toggle changes recorded |
+| SEC-AUD-006 | The system shall prevent unauthorized modification of audit records. | Audit Explorer | backend + database | done — append-only ledger enforced at the database role level |
+| SEC-AUD-007 | The system shall support secure export of audit logs. | Audit Explorer | backend + database | done — export requires audit.export; Viewer refused 403 |
+| FR-ERR-004 | The system shall present user-facing error messages that are actionable and do not expose internal implementation details. | All screens | frontend + backend | done — uniform error envelope, no stack traces, ZodError mapped to 422 with an actionable message |
+| UC-009 | Platform Administrator Configures Tenant Settings | System Settings | scenario (all layers) | partial — administrator configures platform settings (done); the "tenant" half of the scenario has no tenancy (OQ-7) |
+
+## Status roll-up (Phase 4 row-by-row walk)
+
+| Bucket | Count |
+|---|---|
+| In-scope SRS IDs: done | 32 |
+| In-scope SRS IDs: partial (gap named, tracked in OPEN_QUESTIONS.md) | 11 |
+| In-scope SRS IDs: out of scope (reason given, tracked) | 12 |
+| In-scope SRS IDs: “not started” | 0 |
+
+Every console requirement (CON-*) is either done or reserved for a named later slice; the CON rows above carry their own status text.
 
 Out-of-scope SRS IDs: 1540 (count only, per AGENTS.md).
