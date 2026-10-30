@@ -74,11 +74,14 @@ sudo -u postgres psql -v ON_ERROR_STOP=1 -f ~/01_roles_database.sql
 Expected output ends with the two verification blocks; check that `kaziforce_app`
 shows `rolcreatedb = f` and `rolcreaterole = f`.
 
-Generate strong passwords for the two roles:
+Generate strong passwords for the two roles. **Use `-hex`, not `-base64`**: base64
+can emit `+`, `/` and `=`, which must be percent-encoded inside a PostgreSQL
+connection URL and will silently break `DATABASE_URL` if they are not. Hex output is
+alphanumeric and safe everywhere.
 
 ```bash
-openssl rand -base64 24   # paste into 01_roles_database.sql for kaziforce_owner
-openssl rand -base64 24   # paste into 01_roles_database.sql for kaziforce_app
+openssl rand -hex 24   # paste into 01_roles_database.sql for kaziforce_owner
+openssl rand -hex 24   # paste into 01_roles_database.sql for kaziforce_app
 ```
 
 Keep these for `/etc/kaziforce/api.env` in step 7. **[UNVERIFIED on the VPS]** the
@@ -138,13 +141,26 @@ generate `JWT_SECRET`:
 openssl rand -base64 48
 ```
 
-Then run migrations and the seed **once**, as the owner role:
+Then run migrations and the seed **once**, as the owner role. The CLI tools read
+their configuration from the process environment (`server/.env` does not exist on
+the VPS), so source the env file into the shell with `set -a`:
 
 ```bash
-cd /opt/kaziforce/server
-sudo -u kaziforce env $(sudo cat /etc/kaziforce/api.env | grep -v '^#' | xargs) npm run migrate
-sudo -u kaziforce env $(sudo cat /etc/kaziforce/api.env | grep -v '^#' | xargs) npm run seed
+sudo -u kaziforce bash -c '
+  set -a; . /etc/kaziforce/api.env; set +a
+  cd /opt/kaziforce/server
+  npm run migrate
+  npm run seed
+'
 ```
+
+`set -a` exports every variable the file defines and `.` reads the file as shell
+syntax, so `:`, `@`, `+` and `/` inside the connection URLs survive intact.
+
+Do **not** use the common `env $(cat .env | xargs)` idiom. It word-splits on
+whitespace: any value containing a space makes the command fail outright
+(verified locally — `env: 'world': No such file or directory`, exit 127), so the
+migration silently never runs. The `set -a` form above is equivalent and safe.
 
 **The seed prints the three demo operator passwords.** Capture them; the panel
 will use them. In a real deployment you would replace these accounts.
