@@ -1,17 +1,23 @@
 import request from 'supertest'
 import type { Express } from 'express'
-import { pool } from '../src/db/pool'
+import type { Pool } from 'pg'
+import { createPool, hasDb as envHasDb } from './helpers/db'
 
 // Settings slice tests (CON-SET-001/002; FR-ADM-004/019/020/026/027/029/031).
 // A Viewer and a Moderator must both be refused every mutation — BRIEF's
 // role-enforcement rule, which the panel will probe.
 
-const hasDb = Boolean(process.env.DATABASE_URL && process.env.JWT_SECRET)
+// A database is required for this suite. When one is not configured the suite
+// SKIPS with a readable reason instead of failing at import time.
+const hasDb = envHasDb
 const d = hasDb ? describe : describe.skip
+
+let pool: Pool
 
 let app: Express
 beforeAll(async () => {
   if (!hasDb) return
+  pool = createPool()
   const mod = await import('../src/app')
   app = mod.createApp()
   // Reset the sample settings so the suite is idempotent.
@@ -20,7 +26,7 @@ beforeAll(async () => {
   await pool.query(`UPDATE system_settings SET value = 'false' WHERE key = 'sample.feature.auto_triage'`)
 })
 afterAll(async () => {
-  await pool.end()
+  if (hasDb) await pool.end()
 })
 
 async function loginAs(email: string, password: string): Promise<string> {

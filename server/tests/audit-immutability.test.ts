@@ -1,4 +1,5 @@
-import { Pool } from 'pg'
+import type { Pool } from 'pg'
+import { createPool, hasDb as envHasDb } from './helpers/db'
 
 // CON-AUD-004 (BRIEF never-cut): adversarial database-level proof that the
 // application role cannot mutate the audit ledger. Mirrors Ch5 §3.3 ("Database
@@ -6,18 +7,20 @@ import { Pool } from 'pg'
 // the audit log table to confirm the write-once constraint").
 //
 // Requires a bootstrapped database (kaziforce_app credentials in server/.env).
+// Without one this suite SKIPS with a readable reason rather than failing.
 
-const hasDb = Boolean(process.env.DATABASE_URL)
+const hasDb = envHasDb
 const d = hasDb ? describe : describe.skip
 
 ;(hasDb ? describe : describe.skip)('audit_log immutability (application role)', () => {
   let pool: Pool
 
   beforeAll(() => {
-    pool = new Pool({ connectionString: process.env.DATABASE_URL })
+    if (!hasDb) return
+    pool = createPool()
   })
   afterAll(async () => {
-    await pool.end()
+    if (hasDb) await pool.end()
   })
 
   it('can INSERT and SELECT audit rows', async () => {

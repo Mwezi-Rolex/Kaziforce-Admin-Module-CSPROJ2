@@ -1,21 +1,25 @@
 import request from 'supertest'
 import type { Express } from 'express'
-import { pool } from '../src/db/pool'
-
-afterAll(async () => {
-  await pool.end()
-})
+import type { Pool } from 'pg'
+import { createPool, hasDb as envHasDb } from './helpers/db'
 
 // Skips cleanly when the database has not been bootstrapped yet (CI/dev without
 // server/.env). Runs once `npm run bootstrap && npm run migrate && npm run seed` completed.
-const hasDb = Boolean(process.env.DATABASE_URL && process.env.JWT_SECRET)
+const hasDb = envHasDb
 const d = hasDb ? describe : describe.skip
 
 let app: Express
+let pool: Pool
+
 beforeAll(async () => {
   if (!hasDb) return
+  pool = createPool()
   const mod = await import('../src/app')
   app = mod.createApp()
+})
+
+afterAll(async () => {
+  if (hasDb) await pool.end()
 })
 
 d('GET /api/v1/health', () => {

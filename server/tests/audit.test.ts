@@ -1,24 +1,30 @@
 import request from 'supertest'
 import type { Express } from 'express'
-import { pool } from '../src/db/pool'
-import { toCsv } from '../src/routes/audit'
+import type { Pool } from 'pg'
+import { createPool, hasDb as envHasDb } from './helpers/db'
+import { toCsv } from '../src/lib/csv'
 
 // Audit Explorer slice tests (CON-AUD-002/003).
 // The BRIEF restriction is the load-bearing behaviour here: a Viewer must get
 // 403 on the CSV download, a Moderator must succeed. Read-only listing is open
 // to every operator tier.
 
-const hasDb = Boolean(process.env.DATABASE_URL && process.env.JWT_SECRET)
+// A database is required for this suite. When one is not configured the suite
+// SKIPS with a readable reason instead of failing at import time.
+const hasDb = envHasDb
 const d = hasDb ? describe : describe.skip
+
+let pool: Pool
 
 let app: Express
 beforeAll(async () => {
   if (!hasDb) return
+  pool = createPool()
   const mod = await import('../src/app')
   app = mod.createApp()
 })
 afterAll(async () => {
-  await pool.end()
+  if (hasDb) await pool.end()
 })
 
 async function loginAs(email: string, password: string): Promise<string> {

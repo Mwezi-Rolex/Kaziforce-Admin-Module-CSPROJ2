@@ -119,3 +119,15 @@ Not started (only if the user asks).
 **Next:** operator to run the browser checklist and the deployment runbook, supply screenshots, and resolve the missing reference entries.
 
 **Blockers:** none from the agent; the outstanding evidence requires the operator.
+
+---
+
+## Teardown and test-suite hardening (2026-10-31)
+
+**Done:** Disposable cluster and its stale `server/.env` removed; both confirmed gitignored with 0 tracked files. Removed a real defect found during teardown: six database-backed test suites failed at import (rather than skipping) when no `.env` exists, because they imported the database pool at module load. Fixed by extracting `config/lockout.ts`, `lib/csv.ts` and `tests/helpers/db.ts` (D-054). Re-verified in both states.
+
+**Commands run:** with a database — Jest **81 passed / 81**, Vitest **7 passed**, pytest **7 passed**, smoke test **12 passed, 0 failed, 1 skipped**; without a database — Jest **6 suites skipped, 2 passed, 0 failed** with the 7 pure tests still running.
+
+**Next:** operator runs `cd server && PGPASSWORD='<postgres password>' npm run bootstrap && npm run migrate && npm run seed` (Path A), then the browser checklist and `docs/DEPLOY.md`.
+
+**Blockers:** none. The repository is in a clean initial state with no credentials and no local database.
