@@ -95,3 +95,27 @@ Not started (only if the user asks).
 **Next:** Phase 5 documentation drafts in `docs/draft/` (BRIEF requires it), and the operator's VPS run + browser checklist results.
 
 **Blockers:** browser checks and the VPS run can only be done by the operator; nothing is claimed until they are reported back.
+
+---
+
+## Post-Phase-4 user decisions (2026-10-31)
+
+**Done:** Login lockout implemented and tested (5 consecutive failures → 15-minute lock; counter reset on success; identical generic 401 for unknown/wrong-password/locked; Super Admin unlock via the new `users.unlock` permission; only lock/unlock audited, never individual attempts). Migration `008_login_lockout.sql`, `npm run demo:reset`, UI lock badge + Unlock control, and 15 tests in `server/tests/lockout.test.ts` (one per rule). Production seeding now reads `SEED_*_PASSWORD` variables and **refuses** to run with `NODE_ENV=production` without them or with a demo password; credentials are never printed. `bootstrap.mjs` refuses to overwrite an existing `server/.env`, checked before any database work. `npm run dev:all` starts API + frontend + model service with the model port defined once. ml/models decided as regenerate-not-commit (23.5 MB + 3.4 MB, gitignored). OQ-11 closed as won't do (passkeys → Future Work); OQ-12 closed as implemented.
+
+**Commands run:** `npm test` → **8 suites, 81 passed**; `pnpm test` → **7 passed**; `pytest` → **7 passed**; both `tsc --noEmit` clean; `pnpm build` ok (386.23 kB / 116.71 kB gzip); production-seed guard refused correctly in two cases and succeeded with strong values; `demo:reset` cleared locks without touching `audit_log`; `dev:all` verified end to end on alternate ports with the API reaching the model service on the same port.
+
+**Next:** Phase 5 drafts (below).
+
+**Blockers:** none.
+
+---
+
+## Phase 5 — Documentation drafts (2026-10-31)
+
+**Done:** Drafts written to `docs/draft/`: `chapter-5-implementation-and-testing.md` (environment tables with tested versions, per-module implementation, 30-row test-case table with observed results, defects found and fixed, accessibility measurements, version control, AI-use declaration, results by objective, limitations), `chapter-6-conclusion.md` (conclusions by objective, recommendations, Future Work including passkeys), `references.md` (25 sources with full entries from the project documents; 25 in-text citations flagged `[reference needed]`), `appendices.md` (traceability summary, 16-row command log, screenshot/browser/deployment registers, env-var and DB-role tables, model metrics, AI log), `chapters-1-4-changes.md` (6 required + 4 recommended + 3 tidy-up changes to Chapters 1–4, listed not rewritten), plus the existing `DISCREPANCIES.md`.
+
+**Marked not yet verified in the drafts:** all browser checks, the VPS deployment, the screen-reader pass, and every screenshot. Test coverage is recorded as "not measured".
+
+**Next:** operator to run the browser checklist and the deployment runbook, supply screenshots, and resolve the missing reference entries.
+
+**Blockers:** none from the agent; the outstanding evidence requires the operator.
