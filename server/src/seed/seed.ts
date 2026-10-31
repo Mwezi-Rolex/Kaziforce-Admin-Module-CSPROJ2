@@ -14,6 +14,7 @@ const PERMISSIONS: Array<[string, string]> = [
   ['users.suspend', 'Suspend platform accounts (Moderator+)'],
   ['users.assign_role', 'Assign operator roles (Super Admin)'],
   ['users.ban', 'Permanently ban accounts (Super Admin)'],
+  ['users.unlock', 'Clear a login lockout on an account (Super Admin)'],
   ['moderation.decide', 'Approve, reject, or escalate flags (Moderator+)'],
   ['moderation.escalation', 'Resolve escalated flags in the Super Admin lane (overrule / uphold and ban)'],
   ['audit.view', 'View and filter the audit log'],
@@ -29,6 +30,7 @@ const ROLE_MATRIX: Record<string, string[]> = {
     'users.suspend',
     'users.assign_role',
     'users.ban',
+    'users.unlock',
     'moderation.decide',
     'moderation.escalation',
     'audit.view',
@@ -37,10 +39,54 @@ const ROLE_MATRIX: Record<string, string[]> = {
   ],
 }
 
+// ---------------------------------------------------------------------------
+// Operator credentials
+// ---------------------------------------------------------------------------
+// The demo passwords exist so a fresh clone can be signed into immediately.
+// They are a development convenience and are REFUSED in production: with
+// NODE_ENV=production the three passwords must come from the environment and
+// must not be any of the demo values, and they are never printed.
+const DEMO_PASSWORDS: Record<string, string> = {
+  viewer: 'ViewerDemo!2026',
+  moderator: 'ModeratorDemo!2026',
+  super_admin: 'SuperDemo!2026',
+}
+
+const PASSWORD_ENV_KEYS: Record<string, string> = {
+  viewer: 'SEED_VIEWER_PASSWORD',
+  moderator: 'SEED_MODERATOR_PASSWORD',
+  super_admin: 'SEED_SUPERADMIN_PASSWORD',
+}
+
+function resolveOperatorPasswords(isProduction: boolean): Record<string, string> {
+  const resolved: Record<string, string> = {}
+  for (const role of ['viewer', 'moderator', 'super_admin']) {
+    const envKey = PASSWORD_ENV_KEYS[role]
+    const fromEnv = process.env[envKey]
+    if (isProduction) {
+      if (!fromEnv) {
+        throw new Error(
+          `NODE_ENV=production requires ${envKey}. Refusing to seed a development demo password into production.`,
+        )
+      }
+      if (Object.values(DEMO_PASSWORDS).includes(fromEnv)) {
+        throw new Error(`${envKey} is a development demo password. Set a distinct production password.`)
+      }
+      if (fromEnv.length < 12) {
+        throw new Error(`${envKey} must be at least 12 characters.`)
+      }
+      resolved[role] = fromEnv
+    } else {
+      resolved[role] = fromEnv || DEMO_PASSWORDS[role]
+    }
+  }
+  return resolved
+}
+
 const OPERATORS = [
-  { email: 'viewer@kaziforce.local', name: 'Vera Operator (Demo)', role: 'viewer', password: 'ViewerDemo!2026' },
-  { email: 'moderator@kaziforce.local', name: 'Marta Moderator (Demo)', role: 'moderator', password: 'ModeratorDemo!2026' },
-  { email: 'superadmin@kaziforce.local', name: 'Sasha Super Admin (Demo)', role: 'super_admin', password: 'SuperDemo!2026' },
+  { email: 'viewer@kaziforce.local', name: 'Vera Operator (Demo)', role: 'viewer' },
+  { email: 'moderator@kaziforce.local', name: 'Marta Moderator (Demo)', role: 'moderator' },
+  { email: 'superadmin@kaziforce.local', name: 'Sasha Super Admin (Demo)', role: 'super_admin' },
 ]
 
 // Sample platform accounts mirroring the Figma export's seed rows (usr_*) — SAMPLE DATA.
@@ -138,8 +184,10 @@ async function main() {
       return rows[0].id as string
     }
 
+    const isProduction = process.env.NODE_ENV === 'production'
+    const passwords = resolveOperatorPasswords(isProduction)
     for (const op of OPERATORS) {
-      const hash = await bcrypt.hash(op.password, 12)
+      const hash = await bcrypt.hash(passwords[op.role], 12)
       await upsertUser(op.email, op.name, op.role, 'Active', hash, true)
     }
     for (const u of SAMPLE_USERS) {
@@ -184,8 +232,13 @@ async function main() {
 
     await conn.query('COMMIT')
     console.log('seed complete — SAMPLE DATA inserted (roles, permissions, 3 demo operators, 4 sample accounts, 4 content items + flags, 3 settings keys)')
-    console.log('demo operator credentials (local development only):')
-    for (const op of OPERATORS) console.log(`  ${op.role.padEnd(12)} ${op.email}  /  ${op.password}`)
+    if (isProduction) {
+      // Never print production credentials.
+      console.log('operator accounts seeded from environment variables (passwords not shown).')
+    } else {
+      console.log('demo operator credentials (local development only — not for production):')
+      for (const op of OPERATORS) console.log(`  ${op.role.padEnd(12)} ${op.email}  /  ${passwords[op.role]}`)
+    }
   } catch (err) {
     await conn.query('ROLLBACK')
     throw err

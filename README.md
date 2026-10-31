@@ -27,7 +27,7 @@ wrapped in a minimal public site (landing, login, 404).
 
 | Tool | Version used | Notes |
 |---|---|---|
-| Node.js | 20.x LTS (tested on 20.15) | API and frontend |
+| Node.js | 20.x LTS (tested on 20.15) | API and frontend. Vite 8 prints a warning below 20.19; it still runs. |
 | pnpm | 10.x (`npx pnpm@10` works) | The repo has `pnpm-lock.yaml`. npm also works. |
 | PostgreSQL | 16+ (tested on 18) | Local server on port 5432 |
 | Python | 3.12 | Model service only |
@@ -35,6 +35,14 @@ wrapped in a minimal public site (landing, login, 404).
 
 Everything except PostgreSQL and Python is installed by the package manager of
 your choice. No cloud account is required to run this locally.
+
+### `server/.env` is required and is never committed
+
+The app **cannot start without `server/.env`** — it holds the database passwords
+and the JWT signing secret. It is gitignored and must never be committed, so a
+fresh clone does not have one: **you create it once** with `npm run bootstrap`
+(step 2 below). Never commit it, never paste its contents into a document, and
+treat the values as secrets.
 
 ---
 
@@ -58,7 +66,17 @@ npm run seed
 ```
 
 `bootstrap` generates random passwords for both roles, creates the database, and
-writes `server/.env` (gitignored). It never stores your superuser password.
+writes `server/.env` (gitignored). It never stores your superuser password, never
+prints the generated secrets, and **refuses to overwrite an existing
+`server/.env`** — it rotates the role passwords, so overwriting the file would
+lock you out of a database whose credentials you had recorded elsewhere. To
+really start over, delete `.env` first or pass `--force`.
+
+```bash
+# starter over deliberately
+rm server/.env && PGPASSWORD='...' npm run bootstrap
+```
+
 The generated passwords are printed nowhere — they live only in `server/.env`.
 
 ### Option B — manual SQL
@@ -95,17 +113,51 @@ Copy `server/.env.example` to `server/.env` (or let `npm run bootstrap` write it
 | `NODE_ENV` | no | `production` sets the `Secure` cookie flag |
 | `TRUST_PROXY` | behind Nginx | set to `1` so the rate limiter sees real client IPs |
 | `RATE_LIMIT_MAX` / `RATE_LIMIT_WINDOW_MS` | no | defaults 600 / 300000 |
-| `MODEL_SERVICE_URL` | no | default `http://127.0.0.1:8000` |
+| `MODEL_SERVICE_URL` | no | default `http://127.0.0.1:8000`. `npm run dev:all` overrides it to match the port it starts the service on. |
 | `MODEL_TIMEOUT_MS` | no | default 800 — the queue never waits longer than this |
+| `SEED_VIEWER_PASSWORD`, `SEED_MODERATOR_PASSWORD`, `SEED_SUPERADMIN_PASSWORD` | production seeding only | required when `NODE_ENV=production`; the seed refuses the demo passwords and never prints these |
 
 No secrets are committed. `server/.env` is gitignored; `deploy/.env.production.example`
 is the production template.
+
+### Login lockout (OQ-12)
+
+An operator account is locked for **15 minutes after 5 consecutive failed
+logins**. The counter resets on a successful login. Unknown account, wrong
+password and a locked account all return the same generic `401 Invalid
+credentials`, so the response does not disclose whether an address exists or is
+locked. A Super Admin can clear a lock from **User Control Centre → Unlock**
+(the `users.unlock` permission). Only `Account Locked` and `Account Unlocked`
+are audited — individual failed attempts are deliberately not written, so a
+guessing run cannot flood the ledger.
+
+To reset locks between demo runs:
+
+```bash
+cd server && npm run demo:reset
+```
 
 ---
 
 ## 4. Running it
 
-Four terminals, or fewer if you skip the model service.
+### One command (recommended)
+
+```bash
+npm run dev:all
+```
+
+Starts the API, the frontend and the model service together, colour-prefixed by
+service. The model service port is defined once inside `scripts/dev-all.mjs` and
+is used for both uvicorn and `MODEL_SERVICE_URL`, so the two cannot drift. If
+`ml/.venv` is missing it says so and starts the other two anyway. Press Ctrl+C to
+stop everything.
+
+```bash
+API_PORT=3100 MODEL_PORT=8100 PORT=8543 npm run dev:all   # override ports
+```
+
+### Or four terminals
 
 ```bash
 # 1. API  (http://localhost:3000)
@@ -193,6 +245,21 @@ and the known limitations.
 The model only ever suggests. A sorting rule and a human decision are always
 required; the audit entry records the model version and whether the operator
 followed or overrode the suggestion.
+
+### Model artifacts are regenerated, not committed
+
+`ml/models/models.joblib` is **23.5 MB** and `ml/models/anomaly_model.joblib` is
+**3.4 MB**. They are deliberately **not committed** (`ml/models/` is gitignored)
+because they are fully reproducible: the generator uses a fixed seed
+(`20261030`), so `generate_data.py → train.py → anomaly.py` rebuilds byte-identical
+artifacts. Committing 27 MB of binaries that regenerate in seconds would bloat the
+repository and invite the stale-artifact problem where code and model drift apart.
+
+The evidence that *is* committed is small and textual: `ml/reports/metrics.json`,
+which holds the measured per-model metrics and is the source of every number
+quoted in the report. `ml/models/train_summary.json` is written next to the
+binaries and is **not** committed either — it regenerates with the models.
+Rebuild everything with the four commands above.
 
 ---
 

@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "format": "oxfmt",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "dev:all": "node scripts/dev-all.mjs"
   },
   "dependencies": {
     "react": "^19.0.0",

@@ -8,6 +8,7 @@ export const PERMISSIONS = {
   usersSuspend: 'users.suspend',
   usersAssignRole: 'users.assign_role',
   usersBan: 'users.ban',
+  usersUnlock: 'users.unlock',
   moderationDecide: 'moderation.decide',
   moderationEscalate: 'moderation.escalation',
   auditView: 'audit.view',
