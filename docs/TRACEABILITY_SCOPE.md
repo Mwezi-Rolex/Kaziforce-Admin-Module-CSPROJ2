@@ -18,6 +18,7 @@ Generated 2026-10-29 by `docs/traceability-gen.mjs` (rerun: `node docs/traceabil
 | CON-USR-004 | Assign role (Super Admin only), audited | Ch5 §3.6.3 | User Control Centre | frontend + backend + database | done (slice 2) — Super Admin only, audited; self-change refused |
 | CON-USR-005 | Permanent ban behind 2-step confirmation (Super Admin), audited | Ch5 §3.6.3 + wireframes §3.4.6 | User Control Centre | frontend + backend + database | done (slice 2) — Super Admin only, 2-step modal, audited |
 | CON-USR-006 | Account record panel shows flags reported + content owned; lists scroll inside the panel | Figma export + BRIEF UI fix | User Control Centre | frontend | done (slice 2) — flags/content lists scroll in panel (.panel-scroll) |
+| CON-USR-007 | Login lockout: 5 consecutive failures locks for 15 minutes; Super Admin clears it; only lock/unlock audited | BRIEF/user decision 2026-10-31 (closes OQ-12, cf. SEC-AUTH-008) | User Control Centre, Login | frontend + backend + database | done (2026-10-31) — 5 failures/15 min lock, generic error, Super Admin unlock; 15 Jest tests in lockout.test.ts |
 | CON-MOD-001 | Prioritised flag queue ordered by severity; severity/status filters | Ch5 §3.6.4 | Moderation Queue | frontend + backend + database | done (slice 3) — severity-ranked queue + filters, Jest-verified |
 | CON-MOD-002 | Approve / reject / escalate a flag (Moderator+), audited | Ch5 §3.6.4; Note 8 UC4–UC6 | Moderation Queue | frontend + backend + database | done (slice 3) — approve/reject/escalate audited, 409 on already-decided flags |
 | CON-MOD-003 | Bulk approve and bulk reject | Ch5 §3.6.4 | Moderation Queue | frontend + backend | done (slice 3) — bulk endpoint with per-flag audit events |
@@ -76,7 +77,7 @@ Generated 2026-10-29 by `docs/traceability-gen.mjs` (rerun: `node docs/traceabil
 | SEC-AUTH-005 | The system shall support passwordless authentication where configured. | Login | frontend + backend | out of scope — passwordless auth not in Chapter 5 auth scope (OQ-11) |
 | SEC-AUTH-006 | The system shall support biometric authentication on supported mobile devices. | Login | frontend + backend | out of scope — native biometrics; Chapter 5 §1.5.3 excludes mobile clients (OQ-11) |
 | SEC-AUTH-007 | The system shall enforce configurable password complexity and rotation policies where applicable. | Login | frontend + backend | out of scope — no configurable password-complexity/rotation policy; seeded demo credentials (OQ-11) |
-| SEC-AUTH-008 | The system shall lock or throttle authentication attempts after configurable failed login thresholds. | Login | frontend + backend | partial — global IP rate limiting exists; no per-account failed-login lockout (OQ-12) |
+| SEC-AUTH-008 | The system shall lock or throttle authentication attempts after configurable failed login thresholds. | Login | frontend + backend | done — 5 consecutive failures lock the account 15 minutes; Super Admin unlock; Jest-verified (OQ-12 closed) |
 | SEC-AUTZ-001 | The system shall authorize every protected request. | All screens | backend | done — every protected request authorized from session permissions |
 | SEC-AUTZ-002 | The system shall perform authorization before executing business operations. | All screens | backend | done — permission middleware runs before any handler |
 | SEC-AUTZ-003 | The system shall enforce least-privilege access principles. | All screens | backend | done — three-tier least privilege; Viewer holds only view permissions |
@@ -101,8 +102,8 @@ Generated 2026-10-29 by `docs/traceability-gen.mjs` (rerun: `node docs/traceabil
 
 | Bucket | Count |
 |---|---|
-| In-scope SRS IDs: done | 32 |
-| In-scope SRS IDs: partial (gap named, tracked in OPEN_QUESTIONS.md) | 11 |
+| In-scope SRS IDs: done | 33 |
+| In-scope SRS IDs: partial (gap named, tracked in OPEN_QUESTIONS.md) | 10 |
 | In-scope SRS IDs: out of scope (reason given, tracked) | 12 |
 | In-scope SRS IDs: “not started” | 0 |
 
