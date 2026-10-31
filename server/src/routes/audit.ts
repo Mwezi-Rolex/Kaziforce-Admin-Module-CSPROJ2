@@ -4,6 +4,7 @@ import { pool } from '../db/pool'
 import { requireAuth, type AuthedRequest } from '../middleware/auth'
 import { requirePermission } from '../middleware/requirePermission'
 import { ApiError } from '../middleware/errors'
+import { toCsv } from '../lib/csv'
 
 // Audit Explorer API (CON-AUD-002/003; Ch5 §3.6.5).
 //
@@ -94,17 +95,8 @@ auditRouter.get('/', requirePermission('audit.view'), async (req: AuthedRequest,
   }
 })
 
-// RFC 4180 CSV escaping: quote fields containing , " \r or \n; double any quote.
-function csvCell(value: unknown): string {
-  const s = value === null || value === undefined ? '' : typeof value === 'object' ? JSON.stringify(value) : String(value)
-  return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
-}
-
-export function toCsv(rows: Array<Record<string, unknown>>, columns: string[]): string {
-  const header = columns.join(',')
-  const lines = rows.map((row) => columns.map((c) => csvCell(row[c])).join(','))
-  return [header, ...lines].join('\r\n') + '\r\n'
-}
+// CSV serialisation lives in lib/csv.ts (a pure module, unit-testable without a
+// database).
 
 // CSV download — Moderator and Super Admin only (BRIEF override of Ch5 §3.6.5;
 // tracked as CON-AUD-003). A Viewer is refused with 403 before any query runs.

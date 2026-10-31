@@ -1,17 +1,23 @@
 import request from 'supertest'
 import type { Express } from 'express'
-import { pool } from '../src/db/pool'
+import type { Pool } from 'pg'
+import { createPool, hasDb as envHasDb } from './helpers/db'
 
 // User Control Centre slice tests (CON-USR-001…005). Role denials are covered
 // per BRIEF: every role that must be refused gets its own assertion.
 // NOTE: mutations touch the seeded sample accounts; `npm run seed` restores them.
 
-const hasDb = Boolean(process.env.DATABASE_URL && process.env.JWT_SECRET)
+// A database is required for this suite. When one is not configured the suite
+// SKIPS with a readable reason instead of failing at import time.
+const hasDb = envHasDb
 const d = hasDb ? describe : describe.skip
+
+let pool: Pool
 
 let app: Express
 beforeAll(async () => {
   if (!hasDb) return
+  pool = createPool()
   const mod = await import('../src/app')
   app = mod.createApp()
   // Reset the sample accounts so the suite is idempotent across runs
@@ -22,7 +28,7 @@ beforeAll(async () => {
   )
 })
 afterAll(async () => {
-  await pool.end()
+  if (hasDb) await pool.end()
 })
 
 async function loginAs(email: string, password: string): Promise<string> {

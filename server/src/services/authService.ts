@@ -12,16 +12,10 @@ export type OperatorAccount = {
   status: string
 }
 
-// Lockout policy (OQ-12, SEC-AUTH-008). Deliberately module constants rather
-// than settings rows: these are security parameters, not operator-tunable
-// configuration, and keeping them here makes them directly assertable in tests.
-export const MAX_FAILED_ATTEMPTS = 5
-export const LOCKOUT_MINUTES = 15
-
-/** Exported so the demo reset script and tests share one definition. */
-export function lockoutIntervalMs(): number {
-  return LOCKOUT_MINUTES * 60 * 1000
-}
+// Lockout policy lives in config/lockout.ts so tests can import it without
+// pulling in the database pool. Re-exported here for existing callers.
+export { MAX_FAILED_ATTEMPTS, LOCKOUT_MINUTES, lockoutIntervalMs } from '../config/lockout'
+import { MAX_FAILED_ATTEMPTS, lockoutIntervalMs } from '../config/lockout'
 
 // CON-AUTH-001/003 + OQ-12: bcrypt-verified credentials; suspended/terminated or
 // soft-deleted operators never authenticate; consecutive failures lock the account.

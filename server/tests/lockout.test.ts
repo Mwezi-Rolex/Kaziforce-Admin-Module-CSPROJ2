@@ -1,7 +1,8 @@
 import request from 'supertest'
 import type { Express } from 'express'
-import { pool } from '../src/db/pool'
-import { LOCKOUT_MINUTES, MAX_FAILED_ATTEMPTS } from '../src/services/authService'
+import type { Pool } from 'pg'
+import { createPool, hasDb as envHasDb } from './helpers/db'
+import { LOCKOUT_MINUTES, MAX_FAILED_ATTEMPTS } from '../src/config/lockout'
 
 // Login lockout tests (OQ-12, SEC-AUTH-008). One test per stated rule:
 //   1. lock after 5 consecutive failures
@@ -15,8 +16,12 @@ import { LOCKOUT_MINUTES, MAX_FAILED_ATTEMPTS } from '../src/services/authServic
 // The suite drives real HTTP requests against the seeded database and restores
 // lock state in beforeAll/afterAll so it is order-independent and repeatable.
 
-const hasDb = Boolean(process.env.DATABASE_URL && process.env.JWT_SECRET)
+// A database is required for this suite. When one is not configured the suite
+// SKIPS with a readable reason instead of failing at import time.
+const hasDb = envHasDb
 const d = hasDb ? describe : describe.skip
+
+let pool: Pool
 
 let app: Express
 const VIEWER = { email: 'viewer@kaziforce.local', password: 'ViewerDemo!2026' }
@@ -41,6 +46,7 @@ async function failLogin(email: string, times: number) {
 
 beforeAll(async () => {
   if (!hasDb) return
+  pool = createPool()
   const mod = await import('../src/app')
   app = mod.createApp()
   await clearLock(VIEWER.email)
@@ -48,7 +54,7 @@ beforeAll(async () => {
 afterAll(async () => {
   if (!hasDb) return
   await clearLock(VIEWER.email)
-  await pool.end()
+  if (hasDb) await pool.end()
 })
 
 d('rule 1 — lock after the configured number of consecutive failures', () => {
