@@ -5,6 +5,7 @@ import { requireAuth, type AuthedRequest } from '../middleware/auth'
 import { requirePermission } from '../middleware/requirePermission'
 import { ApiError } from '../middleware/errors'
 import { writeEvent } from '../services/auditLogger'
+import { unlockAccount } from '../services/authService'
 
 // User Control Centre API (CON-USR-001…005; Ch5 §3.6.3).
 // Accounts are viewed/suspended/banned/role-assigned — never created or
@@ -15,7 +16,8 @@ usersRouter.use(requireAuth)
 
 const accountSelect = `
   SELECT u.id, u.email, u.full_name AS "fullName", u.status, u.is_operator AS "isOperator",
-         u.created_at AS "createdAt", COALESCE(r.name, 'viewer') AS role
+         u.created_at AS "createdAt", u.locked_until AS "lockedUntil",
+         u.failed_login_attempts AS "failedAttempts", COALESCE(r.name, 'viewer') AS role
   FROM users u
   LEFT JOIN user_roles ur ON ur.user_id = u.id
   LEFT JOIN roles r ON r.id = ur.role_id`
@@ -186,6 +188,19 @@ usersRouter.post('/:id/role', requirePermission('users.assign_role'), async (req
       data: { id, role: parsed.data.role },
       timestamp: new Date().toISOString(),
     })
+  } catch (err) {
+    next(err)
+  }
+})
+
+// Login-lockout release (OQ-12). Super Admin only, audited as 'Account Unlocked'.
+// Deliberately separate from suspend/ban: clearing a temporary lock is not a
+// sanctions decision, so it gets its own permission.
+usersRouter.post('/:id/unlock', requirePermission('users.unlock'), async (req: AuthedRequest, res, next) => {
+  try {
+    const id = uuidSchema.parse(req.params.id)
+    const result = await unlockAccount(req.user!.id, id)
+    res.json({ success: true, data: result, timestamp: new Date().toISOString() })
   } catch (err) {
     next(err)
   }

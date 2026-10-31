@@ -18,6 +18,9 @@ export type Account = {
   role: Role
   status: AccountStatus
   createdAt: string
+  /** ISO timestamp while a login lockout is active; null/absent when not locked. */
+  lockedUntil?: string | null
+  failedAttempts?: number
 }
 
 export type FlagStatus = 'Pending' | 'Approved' | 'Rejected' | 'Escalated'

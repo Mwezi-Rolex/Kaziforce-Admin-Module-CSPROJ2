@@ -73,6 +73,12 @@ Clear cookies before each browser pass (**F12 → Application → Cookies → de
 | 1.32 | Responsive — desktop | **1440×900** | Full layout; content capped at 1440px and centred. | |
 | 1.33 | Responsive — narrow | **375×812** (optional, beyond stated scope) | Usable if imperfect; record honestly. | |
 | 1.34 | No console errors | F12 → Console, walk all six screens | No red errors (a favicon or font warning is acceptable). | |
+| 1.35 | **Lockout: lock an account** | Sign out, then submit a wrong password for `viewer@kaziforce.local` **5 times** | All five attempts look identical ("Invalid credentials"). No hint that a lock exists. | |
+| 1.36 | **Lockout: locked out** | Now try the **correct** password for the Viewer | Still refused with the same generic error. This is intended (no account-state disclosure). | |
+| 1.37 | **Lockout: visible to Super Admin** | Sign in as Super Admin → User Control Centre | The Viewer row shows an extra "Locked" pill, and an "Unlock" button appears in its row. | |
+| 1.38 | **Lockout: unlock works** | Click "Unlock" (or open the record and use "Clear login lockout") | Success notice; the "Locked" pill disappears; the Viewer can sign in again. | |
+| 1.39 | **Lockout: audited** | Audit Explorer → filter action type | Exactly one `Account Locked` and one `Account Unlocked` event. **No** events for the five failed attempts. | |
+| 1.40 | Demo reset script | `cd server && npm run demo:reset` | Reports how many accounts it reset; locks cleared. Confirm it does not touch `audit_log`. | |
 
 ## 2. Firefox — secondary
 

@@ -91,3 +91,32 @@ permission inheritance, and no temporary privileged access. **Proposed default:*
 a flat three-tier model matches Chapter 5's three privilege tiers exactly;
 hierarchy and inheritance are enterprise features the SRS itself notes are
 disproportionate to a mid-scale marketplace (proposal §2.3.3).
+
+---
+
+## Closed after Phase 4 (user decisions, 2026-10-31)
+
+### OQ-11 — MFA / SSO / passwordless / passkeys — **CLOSED: won't do**
+
+Closed as out of scope by decision, not by omission. Chapter 5 §3.6.2 defines the
+authentication module as email + password with JWT role claims, and BRIEF confirms
+seeded demo operators. The affected SRS rows (`SEC-AUTH-003`…`007`, and passkeys
+via `SEC-AUTH-006` / `FR-IAM-029`) remain marked "out of scope" in
+`docs/TRACEABILITY_SCOPE.md`. **Passkeys are recorded under Future Work** in the
+Phase 5 draft (`docs/draft/chapter-6-conclusion.md`) so the omission is visible to
+the panel rather than hidden. No further action.
+
+### OQ-12 — Account lockout after failed logins — **CLOSED: implemented**
+
+Implemented exactly as specified: 5 consecutive failures locks the account for 15
+minutes; the counter resets on a successful login; unknown account, wrong password
+and locked account all return the same generic `401 Invalid credentials`; a Super
+Admin can unlock (`users.unlock`); and **only lock and unlock events are audited**,
+never the individual failed attempts. Migration `008_login_lockout.sql`,
+`npm run demo:reset` for demo cleanup, and 15 tests in
+`server/tests/lockout.test.ts` — one per rule. Logged as D-047/D-048.
+
+One consequence worth stating plainly: because a locked account returns the same
+error as a wrong password, **a locked user is not told they are locked.** That is
+the deliberate trade-off for not disclosing account state; the Super Admin unlock
+in the console is the recovery path.

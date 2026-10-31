@@ -58,6 +58,11 @@ export function UsersPage() {
   const canSuspend = can(user?.permissions, PERMISSIONS.usersSuspend)
   const canBan = can(user?.permissions, PERMISSIONS.usersBan)
   const canAssignRole = can(user?.permissions, PERMISSIONS.usersAssignRole)
+  const canUnlock = can(user?.permissions, PERMISSIONS.usersUnlock)
+
+  // OQ-12: a lock is active only while lockedUntil is in the future.
+  const isLocked = (a: { lockedUntil?: string | null }) =>
+    Boolean(a.lockedUntil && new Date(a.lockedUntil).getTime() > Date.now())
 
   const act = async (fn: () => Promise<void>, message: string) => {
     setActing(true)
@@ -84,6 +89,11 @@ export function UsersPage() {
       await api(`/api/v1/users/${account.id}/ban`, { method: 'POST', body: JSON.stringify({}) })
       setBanTarget(null)
     }, `Permanent ban applied to ${account.email}. Immutable audit event created.`)
+
+  const unlock = (account: Account) =>
+    act(async () => {
+      await api(`/api/v1/users/${account.id}/unlock`, { method: 'POST', body: JSON.stringify({}) })
+    }, `Lockout cleared for ${account.email}. Recorded in the audit log.`)
 
   const assignRole = (account: Account, role: string) =>
     act(async () => {
@@ -171,16 +181,26 @@ export function UsersPage() {
                         <Pill label="Status" tone={STATUS_TONE[u.status]}>
                           {u.status}
                         </Pill>
+                        {isLocked(u) && (
+                          <span className="ml-2 inline-block align-middle">
+                            <Pill tone="suspended">Locked</Pill>
+                          </span>
+                        )}
                       </td>
                       <td className="text-[#626c66]">{new Date(u.createdAt).toLocaleString()}</td>
                       <td>
                         <div className="flex justify-end gap-2">
+                          {canUnlock && isLocked(u) && (
+                            <Button variant="minor" disabled={acting} onClick={() => unlock(u)}>
+                              Unlock
+                            </Button>
+                          )}
                           {canSuspend && u.status === 'Active' && (
                             <Button variant="minor" disabled={acting} onClick={() => suspend(u)}>
                               Suspend
                             </Button>
                           )}
-                          {!canSuspend && <span className="mono text-[#666b66]">Read-only</span>}
+                          {!canSuspend && !canUnlock && <span className="mono text-[#8c938c]">Read-only</span>}
                         </div>
                       </td>
                     </tr>
@@ -226,6 +246,16 @@ export function UsersPage() {
                   <dt>Created</dt>
                   <dd>{new Date(selected.createdAt).toLocaleString()}</dd>
                 </div>
+                {isLocked(selected) && (
+                  <div>
+                    <dt>Login lock</dt>
+                    <dd>
+                      <Pill tone="suspended">
+                        until {new Date(selected.lockedUntil as string).toLocaleTimeString()}
+                      </Pill>
+                    </dd>
+                  </div>
+                )}
               </dl>
 
               {/* CON-USR-006 / CON-UI-001: lists scroll inside the panel */}
@@ -257,6 +287,11 @@ export function UsersPage() {
               </div>
 
               <div className="mt-6 border-t border-[#d3d5cb] pt-5">
+                {canUnlock && isLocked(selected) && (
+                  <Button variant="minor" className="w-full" disabled={acting} onClick={() => unlock(selected)}>
+                    Clear login lockout
+                  </Button>
+                )}
                 {canSuspend && selected.status === 'Active' && (
                   <Button variant="minor" className="w-full" disabled={acting} onClick={() => suspend(selected)}>
                     Suspend account
