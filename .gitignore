@@ -15,3 +15,6 @@ ml/.venv/
 ml/models/
 ml/__pycache__/
 ml/tests/__pycache__/
+server/.pgdata-stderr.log
+server/.pgdata-stdout.log
+server/.pgdata*
