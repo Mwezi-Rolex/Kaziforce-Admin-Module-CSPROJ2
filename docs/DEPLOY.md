@@ -318,7 +318,7 @@ deploy, which `git checkout` + rebuild handles.
 
 | Item | Result |
 |---|---|
-| `deploy/smoke-test.sh` against a running API + real PostgreSQL, with `psql` on PATH | **12 passed, 0 failed, 1 skipped** (the skip is the Nginx-only model-exposure check). Checks 1–4 all executed and passed. |
+| `deploy/smoke-test.sh` against a running API + real PostgreSQL, with `psql` on PATH | **12 passed, 0 failed, 1 skipped** against the API directly (the skip is the Nginx-only model-exposure check); **13 passed, 0 failed, 0 skipped** against an Nginx-style origin that proxies `/api` and serves the SPA fallback. Check 5 was also verified to FAIL against a deliberately leaky proxy, so it is not vacuous. |
 | `deploy/sql/02_grants.sql` against a real database | Ran clean; `can_select=t, can_insert=t, can_update=f, can_delete=f, can_truncate=f` |
 | `deploy/sql/01_roles_database.sql` against scratch role/database names | Ran clean; second run reported no errors (idempotent); app role `rolcreatedb=f, rolcreaterole=f` |
 | `bash -n deploy/smoke-test.sh` | syntax ok |

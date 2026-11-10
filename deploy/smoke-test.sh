@@ -171,20 +171,40 @@ fi
 # ---------------------------------------------------------------------------
 section "5. Model service is not exposed publicly  [deployment requirement]"
 # ---------------------------------------------------------------------------
-# Meaningful only when BASE_URL points at the Nginx-proxied origin. When run
-# against the API directly (e.g. http://127.0.0.1:3000) the API has no /predict
-# route, so a 404 proves nothing about exposure — report that honestly rather
-# than a misleading pass.
+# What counts as "exposed"? The model service answers with a JSON body containing
+# "model_version". Anything else — a 404, a 403, or the SPA's index.html — means
+# the service is not reachable from outside.
+#
+# This deliberately does NOT test for a 404. The Nginx config has an SPA
+# fallback (`try_files $uri $uri/ /index.html`), so /predict returns 200 with
+# index.html on a CORRECT deployment. Testing for 404 would therefore report a
+# false failure. We assert on the response body instead, which is what actually
+# indicates exposure.
 case "$BASE_URL" in
   *:3000*|*:8000*)
     skip "BASE_URL points at a service directly ($BASE_URL) — run this check against the Nginx origin"
     ;;
   *)
-    MODEL_CODE="$(curl -s -o "$TMP/model.json" -w '%{http_code}' --max-time 5 "$BASE_URL/predict" || echo "000")"
-    if [ "$MODEL_CODE" = "404" ] || [ "$MODEL_CODE" = "403" ] || [ "$MODEL_CODE" = "000" ]; then
-      pass "Model service is not reachable at $BASE_URL/predict (HTTP $MODEL_CODE)"
+    # POST, not GET: /predict is POST-only, so a GET returns 405 from an exposed
+    # service and would produce a false PASS. A valid minimal body is sent so a
+    # leak returns a real model response.
+    MODEL_CODE="$(curl -s -o "$TMP/model.json" -w '%{http_code}' --max-time 5 \
+      -X POST "$BASE_URL/predict" \
+      -H 'Content-Type: application/json' \
+      -d '{"reason_category":"other","content_type":"Review","report_text":"probe"}' || echo "000")"
+
+    # A leak shows up in two ways:
+    #   1. a successful model response  -> contains "model_version"
+    #   2. FastAPI's own error envelope -> contains "detail"  (nginx and the SPA
+    #      fallback never emit that shape; they return HTML or 403/404)
+    if grep -q 'model_version' "$TMP/model.json" 2>/dev/null; then
+      fail "Model service IS publicly reachable at $BASE_URL/predict (HTTP $MODEL_CODE) — check the Nginx config"
+    elif grep -q '"detail"' "$TMP/model.json" 2>/dev/null; then
+      fail "Model service answers at $BASE_URL/predict with a FastAPI error envelope (HTTP $MODEL_CODE) — it is exposed"
+    elif [ "$MODEL_CODE" = "000" ]; then
+      pass "Nothing reachable at $BASE_URL/predict (connection failed)"
     else
-      fail "Model service appears publicly reachable at $BASE_URL/predict (HTTP $MODEL_CODE) — check the Nginx config"
+      pass "Model service not exposed at $BASE_URL/predict (HTTP $MODEL_CODE, no model response)"
     fi
     ;;
 esac
