@@ -1,7 +1,9 @@
 node_modules/
 dist/
-.env
-.env.local
+.env*
+!.env.example
+!server/.env.example
+!deploy/.env.production.example
 ml/models/
 ml/__pycache__/
 __pycache__/
@@ -18,3 +20,12 @@ ml/tests/__pycache__/
 server/.pgdata-stderr.log
 server/.pgdata-stdout.log
 server/.pgdata*
+
+# Partner / supervisor material — local only, never committed (see AGENTS.md)
+src/imports/
+docs/digest/
+docs/TRACEABILITY.md
+reference/
+
+# Logs
+*.log

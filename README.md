@@ -11,6 +11,29 @@ wrapped in a minimal public site (landing, login, 404).
 > `docs/TRACEABILITY_SCOPE.md`; the full platform SRS (1,595 IDs) is archived in
 > `docs/TRACEABILITY.md`, of which 55 are in scope and 1,540 are out of scope.
 
+## 0. Clone
+
+```bash
+git clone https://github.com/Samuel-M-M/Test-repo-csprojii.git
+cd Test-repo-csprojii
+```
+
+**Local-only files.** The partner's source documents are confidential and are
+deliberately **not in this repository**. The following are gitignored and must
+be supplied locally by whoever has access to them:
+
+| Path | What it is | Who needs it |
+|---|---|---|
+| `src/imports/` | the partner's engineering documents (SRS, TDD, BED, DDD, FWED) and the project documentation | anyone editing requirements or docs |
+| `docs/digest/` | one-page digests of those documents | working from the digests instead of the originals |
+| `docs/TRACEABILITY.md` | full SRS requirement archive | requirement traceability work |
+| `reference/` | reference copies of the proposal and design diagrams | design reference |
+
+The application code, tests, deployment artifacts and project state files
+(`docs/PROGRESS.md`, `docs/DECISIONS.md`, `docs/PLAN.md`) are complete without
+them: nothing in `server/`, `src/`, `ml/` or `deploy/` reads from those folders
+at build or run time.
+
 ## Contents
 
 | Area | Path | Stack |

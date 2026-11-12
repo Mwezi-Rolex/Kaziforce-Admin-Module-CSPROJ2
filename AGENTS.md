@@ -90,3 +90,11 @@ Work in phases. Do not start a phase until the previous one is reported.
 
 - You cannot provision cloud resources and must never ask for or store credentials. Produce deployment artifacts and a runbook; the user runs them and pastes back the output.
 - You cannot test in browsers you did not run. Write a manual checklist for the user. Only browsers the user reports on appear in the documentation.
+## Git and GitHub
+- Remote: origin = https://github.com/Samuel-M-M/Test-repo-csprojii.git (private). Default branch: main.
+- Never change git config (user.name, user.email) or the remote.
+- Work on branches named feat/<slice>, fix/<topic>, or docs/<topic>. Merge into main only after the tests pass. Commit after each slice with the prefixes feat:, fix:, test:, docs:, chore: and requirement IDs.
+- You may commit and create branches. You may NOT push, force-push, rewrite history, or run credential commands. I push myself.
+- Never commit src/imports/, docs/digest/, docs/TRACEABILITY.md, .env files, .pgdata, .venv, ml/models, logs, or any file over 5 MB.
+- Before you say work is ready to push, run the pre-push check and report its real output: clean git status; no tracked or historical path matching the list above; no password or secret patterns outside .env.example and test fixtures; tests passing.
+- Document only what the commit history shows. Do not describe a branching workflow in the report that the log does not contain.
