@@ -131,3 +131,29 @@ Not started (only if the user asks).
 **Next:** operator runs `cd server && PGPASSWORD='<postgres password>' npm run bootstrap && npm run migrate && npm run seed` (Path A), then the browser checklist and `docs/DEPLOY.md`.
 
 **Blockers:** none. The repository is in a clean initial state with no credentials and no local database.
+
+---
+
+## Git pre-push preparation (2026-11-12)
+
+**Done:** Added the user's "Git and GitHub" rules to `AGENTS.md` (no push/force-push/
+history-rewrite/credential commands by the agent). `.gitignore` now excludes
+`src/imports/`, `docs/digest/`, `docs/TRACEABILITY.md`, `reference/`, `*.log` and all
+`.env*` files (templates excepted). Partner material **untracked at the branch tip**
+(working-tree copies untouched); the branch tip is clean of every confidential path,
+of files over 5 MB, and of secrets. README gained a clone step and a local-only
+files table. Full audit of tracked files **and history** completed: the partner
+material was introduced by the baseline commit `929686f` (imports, digests, both
+TRACEABILITY files, `src/assets/attachments`), `4924d4d` (reference/attachments
+after the move) and `ffd1894` (two `.pgdata` log files, later untracked by
+`cb4da48`). `server/.env` was never committed; the two files over 5 MB are both in
+`src/imports/` and leave with it. History rewrite is the user's to run: the exact
+`git filter-repo` command and backup list are in the 2026-11-12 report.
+
+**Next:** user runs filter-repo (before any push), re-adds the remote, restores the
+backed-up local folders, decides with the supervisor whether
+`docs/TRACEABILITY_SCOPE.md` may be pushed (it quotes SRS requirement text), then
+pushes `docs/git-prep` or merges it into main.
+
+**Blockers:** none from the agent. The repo is not push-safe until the history
+rewrite is run, because the pre-tip commits still contain the partner material.
