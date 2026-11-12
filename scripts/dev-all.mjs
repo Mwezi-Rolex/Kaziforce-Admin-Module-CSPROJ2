@@ -41,7 +41,7 @@ const services = [
     // npm/npx are .cmd shims on Windows, so they need a shell.
     shell: true,
     // Explicit, and guaranteed to match the uvicorn port below.
-    env: { MODEL_SERVICE_URL, MODEL_TIMEOUT_MS: '800', PORT: String(API_PORT) },
+    env: { MODEL_SERVICE_URL, MODEL_TIMEOUT_MS: '3000', PORT: String(API_PORT) },
     note: `http://localhost:${API_PORT}`,
   },
   {

@@ -20,7 +20,11 @@ export type SuggestionUnavailable = { available: false; reason: string }
 export type SuggestionResult = Suggestion | SuggestionUnavailable
 
 const DEFAULT_BASE_URL = 'http://127.0.0.1:8000'
-const DEFAULT_TIMEOUT_MS = 800 // short timeout: the queue must never wait on the model
+// 3 s, not 800 ms: on the development machine the first node->model connection
+// takes ~2.4 s (measured), and warm scikit-learn calls take ~220 ms on the
+// VirtualBox VM. 3 s still fails fast: a down service fails instantly on
+// connect, a stuck one within 3 s, and the queue renders regardless.
+const DEFAULT_TIMEOUT_MS = 3000
 
 export type PredictInput = {
   reason_category: string
