@@ -114,7 +114,7 @@ Copy `server/.env.example` to `server/.env` (or let `npm run bootstrap` write it
 | `TRUST_PROXY` | behind Nginx | set to `1` so the rate limiter sees real client IPs |
 | `RATE_LIMIT_MAX` / `RATE_LIMIT_WINDOW_MS` | no | defaults 600 / 300000 |
 | `MODEL_SERVICE_URL` | no | default `http://127.0.0.1:8000`. `npm run dev:all` overrides it to match the port it starts the service on. |
-| `MODEL_TIMEOUT_MS` | no | default 800 — the queue never waits longer than this |
+| `MODEL_TIMEOUT_MS` | no | default 3000 ms. The first node→model call measured ~2.4 s on the development machine, so 800 ms aborted healthy predictions; 3 s still fails fast (a down service fails instantly on connect) |
 | `SEED_VIEWER_PASSWORD`, `SEED_MODERATOR_PASSWORD`, `SEED_SUPERADMIN_PASSWORD` | production seeding only | required when `NODE_ENV=production`; the seed refuses the demo passwords and never prints these |
 
 No secrets are committed. `server/.env` is gitignored; `deploy/.env.production.example`
