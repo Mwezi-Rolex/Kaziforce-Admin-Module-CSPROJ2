@@ -1,7 +1,7 @@
 import type { NextFunction, Response } from 'express'
 import { ApiError } from './errors'
 import type { AuthedRequest } from './auth'
-import { writeEvent } from '../services/auditLogger'
+import { writeEvent, auditContext } from '../services/auditLogger'
 
 // RBAC enforcement point (SEC-AUTZ-001…003): authorization happens before the
 // handler, from permissions loaded fresh with the session. 403 never 404 for
@@ -20,6 +20,8 @@ export function requirePermission(key: string) {
         actionType: 'Authorization Denied',
         targetEntityType: 'permission',
         targetEntityId: null,
+        outcome: 'Blocked',
+        ...auditContext(req),
         metadata: { requiredPermission: key, role: req.user.role, method: req.method, path: req.path },
       }).catch((err) => console.error('[audit] failed to record denial', err))
       return next(denied)

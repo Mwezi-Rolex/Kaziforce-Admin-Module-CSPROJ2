@@ -1,7 +1,7 @@
 import bcrypt from 'bcryptjs'
 import { pool } from '../db/pool'
 import { ApiError } from '../middleware/errors'
-import { writeEvent } from './auditLogger'
+import { writeEvent, type AuditContext } from './auditLogger'
 
 export type OperatorAccount = {
   id: string
@@ -23,7 +23,11 @@ import { MAX_FAILED_ATTEMPTS, lockoutIntervalMs } from '../config/lockout'
 // Enumeration safety: unknown account, wrong password and locked account all
 // return the SAME generic 401 AUTH-001. A caller cannot learn from the response
 // whether an address is registered, or whether it is currently locked.
-export async function authenticate(email: string, password: string): Promise<OperatorAccount> {
+export async function authenticate(
+  email: string,
+  password: string,
+  context: AuditContext = { actorIp: null, correlationId: null },
+): Promise<OperatorAccount> {
   const { rows } = await pool.query(
     `SELECT u.id, u.email, u.password_hash, u.full_name, u.status,
             u.failed_login_attempts AS "failedAttempts",
@@ -61,6 +65,8 @@ export async function authenticate(email: string, password: string): Promise<Ope
         actionType: 'Account Locked',
         targetEntityType: 'user',
         targetEntityId: row.id,
+        outcome: 'Blocked',
+        ...context,
         metadata: { reason: 'consecutive_failed_logins', attempts, lockedUntil: until.toISOString() },
       })
     } else {
@@ -100,7 +106,11 @@ export async function authenticate(email: string, password: string): Promise<Ope
 }
 
 /** Super Admin unlock (OQ-12): clears the lock and the failure counter, audited. */
-export async function unlockAccount(actorId: string, targetId: string): Promise<{ id: string; wasLocked: boolean }> {
+export async function unlockAccount(
+  actorId: string,
+  targetId: string,
+  context: AuditContext = { actorIp: null, correlationId: null },
+): Promise<{ id: string; wasLocked: boolean }> {
   const { rows } = await pool.query(
     `SELECT locked_until AS "lockedUntil", failed_login_attempts AS "failedAttempts"
      FROM users WHERE id = $1 AND is_deleted = false`,
@@ -116,6 +126,8 @@ export async function unlockAccount(actorId: string, targetId: string): Promise<
     actionType: 'Account Unlocked',
     targetEntityType: 'user',
     targetEntityId: targetId,
+    outcome: 'Success',
+    ...context,
     metadata: { wasLocked, clearedFailedAttempts: Number(rows[0].failedAttempts) },
   })
   return { id: targetId, wasLocked }

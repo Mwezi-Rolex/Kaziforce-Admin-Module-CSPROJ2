@@ -135,10 +135,11 @@ d('rule 4 — the response does not reveal whether the account exists', () => {
       .post('/api/v1/auth/login')
       .send({ email: VIEWER.email, password: 'wrong-password' })
       .expect(401)
-    // Compare the error payload, not the whole body: the envelope's timestamp
-    // legitimately differs between two requests and is not part of the
-    // information-disclosure surface.
-    expect(unknown.body.error).toEqual(known.body.error)
+    // Compare the disclosure surface, not the whole envelope: the timestamp
+    // and the per-request correlation id legitimately differ between two
+    // requests and reveal nothing about the account (BED §6.7 traceId).
+    expect(unknown.body.error.code).toBe(known.body.error.code)
+    expect(unknown.body.error.message).toBe(known.body.error.message)
     expect(unknown.body.success).toBe(known.body.success)
     expect(unknown.body.error.code).toBe('AUTH-001')
     expect(unknown.body.error.message).toBe('Invalid credentials')
@@ -153,7 +154,10 @@ d('rule 4 — the response does not reveal whether the account exists', () => {
       .post('/api/v1/auth/login')
       .send({ email: 'nobody-at-all@kaziforce.local', password: 'whatever' })
       .expect(401)
-    expect(locked.body.error).toEqual(unknown.body.error)
+    expect(locked.body.error.code).toBe(unknown.body.error.code)
+    expect(locked.body.error.message).toBe(unknown.body.error.message)
+    expect(locked.body.error.code).toBe('AUTH-001')
+    expect(locked.body.error.message).toBe('Invalid credentials')
   })
 })
 

@@ -4,10 +4,13 @@ import path from 'node:path'
 
 // Frontend unit tests (Vitest + RTL) per BRIEF stack. Coverage is only ever
 // reported from `pnpm test -- --coverage` output, never estimated.
+//
+// `import.meta.dirname` rather than `__dirname`: Vite's native config loader
+// (the future default) does not provide `__dirname` and warns about it.
 export default defineConfig({
   plugins: [react()],
   resolve: {
-    alias: { '@': path.resolve(__dirname, './src') },
+    alias: { '@': path.resolve(import.meta.dirname, './src') },
   },
   test: {
     environment: 'jsdom',

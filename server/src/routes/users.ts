@@ -4,7 +4,7 @@ import { pool } from '../db/pool'
 import { requireAuth, type AuthedRequest } from '../middleware/auth'
 import { requirePermission } from '../middleware/requirePermission'
 import { ApiError } from '../middleware/errors'
-import { writeEvent } from '../services/auditLogger'
+import { writeEvent, auditContext } from '../services/auditLogger'
 import { unlockAccount } from '../services/authService'
 
 // User Control Centre API (CON-USR-001…005; Ch5 §3.6.3).
@@ -125,6 +125,8 @@ async function mutateStatus(
     actionType: action === 'suspend' ? 'User Suspended' : 'Account Terminated',
     targetEntityType: 'user',
     targetEntityId: id,
+    outcome: 'Success',
+    ...auditContext(req),
     metadata: { from: target.status, to: nextStatus, email: target.email },
   })
   res.json({ success: true, data: rows[0], timestamp: new Date().toISOString() })
@@ -181,6 +183,8 @@ usersRouter.post('/:id/role', requirePermission('users.assign_role'), async (req
       actionType: 'Role Assigned',
       targetEntityType: 'user',
       targetEntityId: id,
+      outcome: 'Success',
+      ...auditContext(req),
       metadata: { from: target.role, to: parsed.data.role, email: target.email },
     })
     res.json({
@@ -199,7 +203,7 @@ usersRouter.post('/:id/role', requirePermission('users.assign_role'), async (req
 usersRouter.post('/:id/unlock', requirePermission('users.unlock'), async (req: AuthedRequest, res, next) => {
   try {
     const id = uuidSchema.parse(req.params.id)
-    const result = await unlockAccount(req.user!.id, id)
+    const result = await unlockAccount(req.user!.id, id, auditContext(req))
     res.json({ success: true, data: result, timestamp: new Date().toISOString() })
   } catch (err) {
     next(err)

@@ -9,6 +9,7 @@ import { auditRouter } from './routes/audit'
 import { settingsRouter } from './routes/settings'
 import { errorHandler, notFound } from './middleware/errors'
 import { rateLimit } from './middleware/rateLimit'
+import { correlation } from './middleware/correlation'
 
 // Middleware pipeline order per Ch5 §3.4.5: authentication verification ->
 // rate limiting -> RBAC -> controller. Authentication itself is per-route
@@ -22,6 +23,9 @@ export function createApp() {
   if (process.env.TRUST_PROXY) app.set('trust proxy', Number(process.env.TRUST_PROXY) || 1)
   app.use(express.json({ limit: '256kb' }))
   app.use(cookieParser())
+  // Correlation id first: every later layer (audit ledger, error envelope)
+  // refers to the request by this id.
+  app.use(correlation)
   app.use('/api/v1', rateLimit)
 
   app.use('/api/v1/auth', authRouter)

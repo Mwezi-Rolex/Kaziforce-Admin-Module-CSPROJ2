@@ -41,6 +41,8 @@ export type Flag = {
   decidedAt?: string | null
 }
 
+export type AuditOutcome = 'Success' | 'Failure' | 'Blocked'
+
 export type AuditEvent = {
   id: string
   operatorId: string | null
@@ -48,6 +50,12 @@ export type AuditEvent = {
   actionType: string
   targetEntityType: string
   targetEntityId: string | null
+  /** How the action ended (BED §6.15 "Result"). */
+  outcome: AuditOutcome
+  /** Source address of the request, when recorded. */
+  actorIp?: string | null
+  /** Correlation id tying the row to the API response that produced it. */
+  correlationId?: string | null
   metadata?: Record<string, unknown>
   createdAt: string
 }

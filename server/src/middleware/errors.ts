@@ -20,11 +20,14 @@ export const notFound = (req: Request, res: Response) => {
   })
 }
 
-export function errorHandler(err: unknown, _req: Request, res: Response, _next: NextFunction) {
+export function errorHandler(err: unknown, req: Request, res: Response, _next: NextFunction) {
+  // The correlation id ties the failure to the audit ledger and is echoed in
+  // the x-correlation-id header (BED §6.7 error envelope).
+  const traceId = (req as Request & { correlationId?: string }).correlationId ?? null
   if (err instanceof ApiError) {
     res.status(err.status).json({
       success: false,
-      error: { code: err.code, message: err.message },
+      error: { code: err.code, message: err.message, traceId },
       timestamp: new Date().toISOString(),
     })
     return
@@ -35,7 +38,7 @@ export function errorHandler(err: unknown, _req: Request, res: Response, _next: 
   if (err instanceof ZodError) {
     res.status(422).json({
       success: false,
-      error: { code: 'VALIDATION', message: err.issues[0]?.message ?? 'Invalid input' },
+      error: { code: 'VALIDATION', message: err.issues[0]?.message ?? 'Invalid input', traceId },
       timestamp: new Date().toISOString(),
     })
     return
@@ -43,7 +46,7 @@ export function errorHandler(err: unknown, _req: Request, res: Response, _next: 
   console.error('[unhandled]', err) // full context server-side only (FR-ERR-003)
   res.status(500).json({
     success: false,
-    error: { code: 'SYSTEM-001', message: 'Internal server error' },
+    error: { code: 'SYSTEM-001', message: 'Internal server error', traceId },
     timestamp: new Date().toISOString(),
   })
 }

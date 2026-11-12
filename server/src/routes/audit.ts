@@ -23,6 +23,7 @@ const filterSchema = z.object({
   to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'to must be YYYY-MM-DD').optional(),
   actor: z.string().trim().max(120).optional().default(''),
   action: z.string().trim().max(120).optional().default(''),
+  outcome: z.enum(['Success', 'Failure', 'Blocked']).optional(),
   page: z.coerce.number().int().min(1).optional().default(1),
   size: z.coerce.number().int().min(1).max(200).optional().default(25),
 })
@@ -49,13 +50,18 @@ function buildWhere(f: Filters) {
     params.push(f.action)
     filters.push(`a.action_type = $${params.length}`)
   }
+  if (f.outcome) {
+    params.push(f.outcome)
+    filters.push(`a.outcome = $${params.length}`)
+  }
   return { where: filters.length ? `WHERE ${filters.join(' AND ')}` : '', params }
 }
 
 const SELECT_EVENTS = `
   SELECT a.id, a.operator_id AS "operatorId", op.email AS "operatorEmail",
          a.action_type AS "actionType", a.target_entity_type AS "targetEntityType",
-         a.target_entity_id AS "targetEntityId", a.metadata, a.created_at AS "createdAt"
+         a.target_entity_id AS "targetEntityId", a.outcome, a.actor_ip AS "actorIp",
+         a.correlation_id AS "correlationId", a.metadata, a.created_at AS "createdAt"
   FROM audit_log a
   LEFT JOIN users op ON op.id = a.operator_id`
 
@@ -116,6 +122,9 @@ auditRouter.get('/export.csv', requirePermission('audit.export'), async (req: Au
       'actionType',
       'targetEntityType',
       'targetEntityId',
+      'outcome',
+      'actorIp',
+      'correlationId',
       'metadata',
     ])
     const stamp = new Date().toISOString().slice(0, 10)

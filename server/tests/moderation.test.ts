@@ -52,6 +52,18 @@ async function ensurePendingFlag(severity = 'Medium'): Promise<{ id: string; own
   return rows[0]
 }
 
+// Reset the seeded escalation flag to Escalated and return it. A Super Admin
+// overrule approves that flag, so without this restore the second escalation
+// test finds an empty escalation lane and the suite fails on a re-run.
+async function ensureEscalatedFlag(): Promise<{ id: string; ownerId: string }> {
+  const { rows } = await pool.query(
+    `UPDATE flags SET flag_status = 'Escalated', severity = 'High', decided_by = NULL, decided_at = NULL
+     WHERE id = (SELECT id FROM flags WHERE reason LIKE 'Repeated policy%' LIMIT 1)
+     RETURNING id, (SELECT owner_id FROM content_items WHERE content_items.id = flags.content_item_id) AS "ownerId"`,
+  )
+  return rows[0]
+}
+
 d('GET /api/v1/moderation/queue', () => {
   it('is readable by every operator role, rule-ordered by severity', async () => {
     const cookie = await loginAs('viewer@kaziforce.local', 'ViewerDemo!2026')
@@ -192,12 +204,9 @@ d('bulk decisions (moderation.decide)', () => {
 d('escalation lane (moderation.escalation, Super Admin only)', () => {
   it('denies a Moderator with 403', async () => {
     const cookie = await loginAs('moderator@kaziforce.local', 'ModeratorDemo!2026')
-    const queue = await request(app)
-      .get('/api/v1/moderation/queue?status=Escalated')
-      .set('Cookie', cookie)
-      .expect(200)
+    const flag = await ensureEscalatedFlag()
     const res = await request(app)
-      .post(`/api/v1/moderation/flags/${queue.body.data[0].id}/escalation`)
+      .post(`/api/v1/moderation/flags/${flag.id}/escalation`)
       .set('Cookie', cookie)
       .send({ resolution: 'overrule' })
       .expect(403)
@@ -206,11 +215,7 @@ d('escalation lane (moderation.escalation, Super Admin only)', () => {
 
   it('lets a Super Admin overrule an escalated flag (flag becomes Approved)', async () => {
     const cookie = await loginAs('superadmin@kaziforce.local', 'SuperDemo!2026')
-    const queue = await request(app)
-      .get('/api/v1/moderation/queue?status=Escalated')
-      .set('Cookie', cookie)
-      .expect(200)
-    const flag = queue.body.data[0]
+    const flag = await ensureEscalatedFlag()
     const res = await request(app)
       .post(`/api/v1/moderation/flags/${flag.id}/escalation`)
       .set('Cookie', cookie)

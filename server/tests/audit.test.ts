@@ -99,7 +99,7 @@ d('GET /api/v1/audit/export.csv (audit.export — Moderator+ only, CON-AUD-003)'
     expect(res.headers['content-type']).toContain('text/csv')
     expect(res.headers['content-disposition']).toContain('attachment')
     expect(res.text.split('\r\n')[0]).toBe(
-      'id,createdAt,operatorId,operatorEmail,actionType,targetEntityType,targetEntityId,metadata',
+      'id,createdAt,operatorId,operatorEmail,actionType,targetEntityType,targetEntityId,outcome,actorIp,correlationId,metadata',
     )
     expect(res.text.split('\r\n').length).toBeGreaterThan(1)
   })
@@ -125,5 +125,68 @@ d('authorization denials are audited (SEC-AUD-002)', () => {
     )
     expect(rows[0].n).toBeGreaterThan(before.rows[0].n)
     expect(after.rows[0].metadata).toMatchObject({ requiredPermission: 'audit.export', role: 'viewer' })
+  })
+})
+
+// Audit provenance (BED §6.15 / DDD §28.2; migration 009): the ledger records
+// where an action came from, how it ended, and the correlation id that ties the
+// row to the API response.
+d('audit provenance: outcome, source address and correlation id', () => {
+  it('records outcome Success, the source address and a correlation id on login', async () => {
+    const res = await request(app)
+      .post('/api/v1/auth/login')
+      .send({ email: 'viewer@kaziforce.local', password: 'ViewerDemo!2026' })
+      .expect(200)
+    const correlationId = res.headers['x-correlation-id']
+    expect(typeof correlationId).toBe('string')
+    expect(String(correlationId).length).toBeGreaterThan(7)
+
+    const { rows } = await pool.query(
+      `SELECT outcome, actor_ip AS "actorIp", correlation_id AS "correlationId"
+       FROM audit_log WHERE action_type = 'Operator Login' ORDER BY created_at DESC LIMIT 1`,
+    )
+    expect(rows[0].outcome).toBe('Success')
+    expect(rows[0].actorIp).not.toBeNull()
+    expect(rows[0].correlationId).toBe(correlationId)
+  })
+
+  it('honours a client-supplied correlation id so a trace can span systems', async () => {
+    const supplied = 'trace-abc-123456'
+    const res = await request(app)
+      .post('/api/v1/auth/login')
+      .set('x-correlation-id', supplied)
+      .send({ email: 'viewer@kaziforce.local', password: 'ViewerDemo!2026' })
+      .expect(200)
+    expect(res.headers['x-correlation-id']).toBe(supplied)
+    const { rows } = await pool.query(
+      `SELECT correlation_id AS "correlationId" FROM audit_log WHERE action_type = 'Operator Login'
+       ORDER BY created_at DESC LIMIT 1`,
+    )
+    expect(rows[0].correlationId).toBe(supplied)
+  })
+
+  it('records outcome Blocked on an authorization denial', async () => {
+    const cookie = await loginAs('viewer@kaziforce.local', 'ViewerDemo!2026')
+    await request(app).get('/api/v1/audit/export.csv').set('Cookie', cookie).expect(403)
+    const { rows } = await pool.query(
+      `SELECT outcome FROM audit_log WHERE action_type = 'Authorization Denied' ORDER BY created_at DESC LIMIT 1`,
+    )
+    expect(rows[0].outcome).toBe('Blocked')
+  })
+
+  it('filters the log by outcome', async () => {
+    const cookie = await loginAs('moderator@kaziforce.local', 'ModeratorDemo!2026')
+    const res = await request(app)
+      .get('/api/v1/audit?outcome=Blocked')
+      .set('Cookie', cookie)
+      .expect(200)
+    for (const row of res.body.data) {
+      expect(row.outcome).toBe('Blocked')
+    }
+  })
+
+  it('rejects an unknown outcome filter with 422', async () => {
+    const cookie = await loginAs('viewer@kaziforce.local', 'ViewerDemo!2026')
+    await request(app).get('/api/v1/audit?outcome=Maybe').set('Cookie', cookie).expect(422)
   })
 })

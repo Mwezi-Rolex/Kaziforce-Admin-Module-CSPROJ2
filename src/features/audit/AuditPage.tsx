@@ -3,10 +3,20 @@ import { useSession } from '../../app/SessionContext'
 import { Button, EmptyState, ErrorState, Loading, PageTitle, Pill } from '../../components/ui/primitives'
 import { Toolbar } from '../../components/ui/Toolbar'
 import { PERMISSIONS, can } from '../../lib/permissions'
-import type { AuditEvent } from '../../lib/types'
+import type { AuditEvent, AuditOutcome } from '../../lib/types'
 import { useApi } from '../../lib/useApi'
 
 type AuditMeta = { page: number; size: number; total: number; actionTypes: string[] }
+
+// The outcome is shown next to the action type in the same cell, so the table
+// keeps the five columns of the Figma export while the ledger's result field
+// (BED §6.15) stays visible. Colour is never the only signal: the word is
+// always written out (NFR-ACC-006).
+const OUTCOME_TONE: Record<AuditOutcome, 'active' | 'high' | 'medium'> = {
+  Success: 'active',
+  Blocked: 'high',
+  Failure: 'medium',
+}
 
 // Audit Explorer (CON-AUD-002/003; Ch5 §3.6.5).
 // The ledger is append-only and read-only in this interface. CSV export is
@@ -18,6 +28,7 @@ export function AuditPage() {
   const [to, setTo] = useState('')
   const [actor, setActor] = useState('')
   const [action, setAction] = useState('')
+  const [outcome, setOutcome] = useState<'' | AuditOutcome>('')
 
   const canExport = can(user?.permissions, PERMISSIONS.auditExport)
 
@@ -27,8 +38,9 @@ export function AuditPage() {
     if (to) params.set('to', to)
     if (actor.trim()) params.set('actor', actor.trim())
     if (action) params.set('action', action)
+    if (outcome) params.set('outcome', outcome)
     return `/api/v1/audit?${params.toString()}`
-  }, [from, to, actor, action])
+  }, [from, to, actor, action, outcome])
 
   const list = useApi<AuditEvent[]>(listPath)
   const events = list.data ?? []
@@ -71,6 +83,16 @@ export function AuditPage() {
             </option>
           ))}
         </select>
+        <select
+          value={outcome}
+          onChange={(e) => setOutcome(e.target.value as '' | AuditOutcome)}
+          aria-label="Filter by outcome"
+        >
+          <option value="">All outcomes</option>
+          <option value="Success">Success</option>
+          <option value="Failure">Failure</option>
+          <option value="Blocked">Blocked</option>
+        </select>
         <span className="ml-auto font-mono text-[10px] uppercase tracking-wider text-[#616e67]">
           {list.loading ? 'Loading…' : `${meta?.total ?? 0} events`}
         </span>
@@ -109,7 +131,10 @@ export function AuditPage() {
                     <td className="mono">{e.id.slice(0, 8)}…</td>
                     <td className="mono">{e.operatorEmail ?? e.operatorId?.slice(0, 8) ?? 'system'}</td>
                     <td>
-                      <Pill>{e.actionType}</Pill>
+                      <Pill>{e.actionType}</Pill>{' '}
+                      <Pill tone={OUTCOME_TONE[e.outcome] ?? 'neutral'} label="Outcome">
+                        {e.outcome}
+                      </Pill>
                     </td>
                     <td className="mono">
                       {e.targetEntityType}

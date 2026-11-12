@@ -4,7 +4,7 @@ import { pool } from '../db/pool'
 import { requireAuth, type AuthedRequest } from '../middleware/auth'
 import { requirePermission } from '../middleware/requirePermission'
 import { ApiError } from '../middleware/errors'
-import { writeEvent } from '../services/auditLogger'
+import { writeEvent, auditContext, type AuditContext } from '../services/auditLogger'
 import { createModelClient, type PredictInput, type SuggestionResult } from '../services/modelClient'
 
 const modelClient = createModelClient()
@@ -154,7 +154,12 @@ moderationRouter.post('/suggestions', async (req: AuthedRequest, res, next) => {
   }
 })
 
-async function decideFlag(actorId: string, flagId: string, decision: keyof typeof DECISION_TO_STATUS) {
+async function decideFlag(
+  actorId: string,
+  flagId: string,
+  decision: keyof typeof DECISION_TO_STATUS,
+  context: AuditContext = { actorIp: null, correlationId: null },
+) {
   const { rows } = await pool.query(
     `SELECT f.id, f.flag_status AS "flagStatus", f.content_item_id AS "contentItemId", c.owner_id AS "ownerId"
      FROM flags f JOIN content_items c ON c.id = f.content_item_id WHERE f.id = $1`,
@@ -190,6 +195,8 @@ async function decideFlag(actorId: string, flagId: string, decision: keyof typeo
     actionType: DECISION_TO_AUDIT[decision],
     targetEntityType: 'flag',
     targetEntityId: flagId,
+    outcome: 'Success',
+    ...context,
     metadata: { decision, contentItemId: flag.contentItemId, ownerId: flag.ownerId, suggestion: suggestionMeta },
   })
 }
@@ -204,7 +211,7 @@ moderationRouter.post(
       const flagId = z.string().uuid('Flag ID must be a UUID').parse(req.params.id)
       const parsed = decisionSchema.safeParse(req.body)
       if (!parsed.success) throw new ApiError(422, 'VALIDATION', 'Decision must be approve, reject, or escalate')
-      await decideFlag(req.user!.id, flagId, parsed.data.decision)
+      await decideFlag(req.user!.id, flagId, parsed.data.decision, auditContext(req))
       res.json({ success: true, data: { id: flagId, status: DECISION_TO_STATUS[parsed.data.decision] }, timestamp: new Date().toISOString() })
     } catch (err) {
       next(err)
@@ -230,7 +237,7 @@ moderationRouter.post('/bulk', requirePermission('moderation.decide'), async (re
     try {
       for (const id of flagIds) {
         try {
-          await decideFlag(req.user!.id, id, decision)
+          await decideFlag(req.user!.id, id, decision, auditContext(req))
           applied.push(id)
         } catch (e) {
           failed.push({ id, reason: e instanceof ApiError ? e.message : 'Failed' })
@@ -282,6 +289,8 @@ moderationRouter.post(
           actionType: 'Flag Overruled',
           targetEntityType: 'flag',
           targetEntityId: flagId,
+          outcome: 'Success',
+          ...auditContext(req),
           metadata: { resolution: 'overrule', contentItemId: flag.contentItemId },
         })
         return res.json({ success: true, data: { id: flagId, status: 'Approved' }, timestamp: new Date().toISOString() })
@@ -298,6 +307,8 @@ moderationRouter.post(
         actionType: 'Account Terminated',
         targetEntityType: 'user',
         targetEntityId: flag.ownerId,
+        outcome: 'Success',
+        ...auditContext(req),
         metadata: { resolution: 'uphold', flagId, contentItemId: flag.contentItemId },
       })
       await writeEvent({
@@ -305,6 +316,8 @@ moderationRouter.post(
         actionType: 'Escalation Upheld',
         targetEntityType: 'flag',
         targetEntityId: flagId,
+        outcome: 'Success',
+        ...auditContext(req),
         metadata: { bannedUserId: flag.ownerId },
       })
       res.json({ success: true, data: { id: flagId, status: 'Escalated', ownerBanned: true }, timestamp: new Date().toISOString() })

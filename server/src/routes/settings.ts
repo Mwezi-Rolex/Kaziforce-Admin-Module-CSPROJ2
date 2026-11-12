@@ -4,7 +4,7 @@ import { pool } from '../db/pool'
 import { requireAuth, type AuthedRequest } from '../middleware/auth'
 import { requirePermission } from '../middleware/requirePermission'
 import { ApiError } from '../middleware/errors'
-import { writeEvent } from '../services/auditLogger'
+import { writeEvent, auditContext } from '../services/auditLogger'
 
 // System settings API (CON-SET-001/002; Ch5 §3.6.6).
 //
@@ -71,6 +71,8 @@ settingsRouter.put(
         actionType: 'Configuration Updated',
         targetEntityType: 'system_setting',
         targetEntityId: null,
+        outcome: 'Success',
+        ...auditContext(req),
         metadata: { key, from: existing.rows[0].value, to: parsed.data.value },
       })
       res.json({ success: true, data: rows[0], timestamp: new Date().toISOString() })
@@ -114,6 +116,8 @@ settingsRouter.post(
         actionType: 'Feature Toggle Changed',
         targetEntityType: 'system_setting',
         targetEntityId: null,
+        outcome: 'Success',
+        ...auditContext(req),
         metadata: { key, from: existing.rows[0].value, to: nextValue },
       })
       res.json({ success: true, data: rows[0], timestamp: new Date().toISOString() })
