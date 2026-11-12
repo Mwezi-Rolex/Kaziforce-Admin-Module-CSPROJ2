@@ -310,6 +310,7 @@ const CON_ROWS = [
   ['CON-AUD-002', 'Audit explorer: date-range + actor filters, read-only table', 'Ch5 §3.6.5', AUDIT, 'frontend + backend'],
   ['CON-AUD-003', 'CSV export restricted to Moderator and Super Admin; server 403 for Viewer; control hidden for Viewer', 'BRIEF 2026-10-29 overriding Ch5 §3.6.5 all-operator export (cf. FR-ADM-037, SEC-AUD-007)', AUDIT, 'frontend + backend'],
   ['CON-AUD-004', 'Adversarial immutability test: application DB role cannot UPDATE/DELETE audit_log', 'Ch5 §3.3 testing; BRIEF never-cut list', 'tests', 'database + tests'],
+  ['CON-AUD-005', 'Audit records carry provenance: source address, outcome (Success/Failure/Blocked) and a correlation id that ties the row to the API response; refusals recorded as Blocked', 'BED §6.15; DDD §28.2 (Phase 0 digest hard constraint 7)', AUDIT, 'frontend + backend + database'],
   ['CON-SET-001', 'Settings panel Super Admin only; key/value config + feature toggle; changes audited', 'Ch5 §3.6.6 (cf. FR-ADM-004/019/026)', SETTINGS, 'frontend + backend + database'],
   ['CON-SET-002', 'Settings keys and toggles stay named placeholders until the user supplies them', 'OQ-2 default confirmed in BRIEF', SETTINGS, 'frontend'],
   ['CON-DASH-001', 'Dashboard shell present; analytics deliberately unpopulated ("Metric definitions pending")', 'BRIEF/OQ-2 (cf. FR-ADM-008/046)', DASH, 'frontend'],
@@ -351,6 +352,7 @@ const CON_STATUS = {
   'CON-DASH-001': 'done (Phase 4) — shell + real role-scope panel; analytics deliberately unpopulated (OQ-2)',
   'CON-UI-001': 'done (Phase 4) — .table-scroll on all four tables, .panel-scroll on the account record, .console-sidebar on the rail',
   'CON-AUD-004': 'done (Phase 4) — UPDATE/DELETE/TRUNCATE all refused 42501 in Jest and in deploy/smoke-test.sh',
+  'CON-AUD-005': 'done (2026-11-12) — migration 009 adds actor_ip, outcome and correlation_id; per-request x-correlation-id echoed in the error envelope; outcome filter in the explorer; 5 Jest tests',
 }
 
 // Phase 4 row-by-row walk of the in-scope SRS IDs. Every row is either

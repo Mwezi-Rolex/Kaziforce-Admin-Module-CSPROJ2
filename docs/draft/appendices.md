@@ -31,7 +31,7 @@ recorded is the observed output.
 
 | # | Command | Observed result |
 |---|---|---|
-| 1 | `cd server && npm test` | 8 suites passed, 81 tests passed, 0 failed |
+| 1 | `cd server && npm test` | 8 suites passed, 86 tests passed, 0 failed |
 | 2 | `npx pnpm test` | 2 files passed, 7 tests passed, 0 failed |
 | 3 | `ml/.venv/Scripts/python -m pytest ml/tests -q` | 7 passed |
 | 4 | `npx pnpm typecheck` | exit 0, no errors |
@@ -47,6 +47,11 @@ recorded is the observed output.
 | 14 | `npm run bootstrap` with `server/.env` present | correctly refused to overwrite |
 | 15 | `API_PORT=3100 MODEL_PORT=8100 PORT=8543 npm run dev:all` | API, frontend and model service all started; API reached the model service on the same port |
 | 16 | Contrast audit script over `src/**/*.{tsx,css}` | 31 tokens below 4.5:1 before, 0 after |
+| 17 | `cd server && npm run migrate` (2026-11-12) | 9 migrations applied, including `009_audit_provenance.sql` |
+| 18 | `cd server && npm test` (2026-11-12, three consecutive runs, no re-seed) | 8 suites passed, 86 tests passed, 0 failed |
+| 19 | Live API check on port 3100: login with header `x-correlation-id: report-smoke-001` | response header echoed `report-smoke-001` |
+| 20 | Live API check: `GET /api/v1/audit/export.csv` | header row `id,createdAt,operatorId,operatorEmail,actionType,targetEntityType,targetEntityId,outcome,actorIp,correlationId,metadata`; newest row carried `Success`, `127.0.0.1`, the correlation id |
+| 21 | Live API check: `GET /api/v1/audit?outcome=Blocked` | 25 rows returned, all with `outcome = 'Blocked'` |
 
 **Not measured.** Test coverage percentage: no coverage run was performed.
 Performance and load: not measured. Memory or CPU profiling: not measured.

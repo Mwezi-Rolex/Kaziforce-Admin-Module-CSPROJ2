@@ -120,3 +120,40 @@ One consequence worth stating plainly: because a locked account returns the same
 error as a wrong password, **a locked user is not told they are locked.** That is
 the deliberate trade-off for not disclosing account state; the Super Admin unlock
 in the console is the recovery path.
+
+## Raised by the 2026-11-12 Phase 0 re-ingest
+
+### OQ-14 - Audit table name: keep udit_log or rename to the DDD's udit_events?
+
+The DDD specifies udit_events as the only fully described audit table, and
+lists 18 columns. The implementation uses udit_log with 7 columns, plus the 3
+provenance fields added on 2026-11-12 (actor IP, outcome, correlation id), and
+one migration comment previously cited "DDD audit_log" inaccurately. The comment
+has been corrected and the divergence is now recorded (D-062,
+docs/draft/DISCREPANCIES.md row 11).
+
+**Proposed default: keep udit_log.** The behaviour the documents actually
+require - an append-only ledger holding the Chapter 5 fields, provably
+immutable at the database level - is satisfied, and renaming touches 16 files
+including the immutability test and the deployment grant script for no
+functional gain, with the submission deadline on 20 November. If the supervisor
+prefers DDD naming, the rename is a contained follow-up: one migration, the
+logger, two routes, the tests, deploy/sql/02_grants.sql and the smoke test.
+
+### OQ-15 - Operator action required to reproduce the verified environment
+
+The verification recorded on 2026-11-12 (86/86 server tests, 7/7 frontend tests,
+7/7 model tests, both type checks, production build) ran against a local
+PostgreSQL 18 cluster on port 5433 with Node 22.23.5. That cluster was outside
+the repository and is not part of the delivery, so the operator still has to run
+Path A (cd server && PGPASSWORD='<superuser password>' npm run bootstrap && npm
+run migrate && npm run seed) against their own PostgreSQL before the same
+numbers can be reproduced. Nothing about the deployment is affected; only the
+local reproduction is.
+
+### OQ-16 - Screenshot, browser-check and deployment evidence still outstanding
+
+The browser checklist (docs/BROWSER_CHECKLIST.md), the VPS run
+(docs/DEPLOY.md) and the report screenshots can only be produced by the
+operator. The drafts mark all three as not yet verified, and only browsers the
+operator reports on may appear in the documentation.

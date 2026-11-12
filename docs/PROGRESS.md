@@ -131,3 +131,19 @@ Not started (only if the user asks).
 **Next:** operator runs `cd server && PGPASSWORD='<postgres password>' npm run bootstrap && npm run migrate && npm run seed` (Path A), then the browser checklist and `docs/DEPLOY.md`.
 
 **Blockers:** none. The repository is in a clean initial state with no credentials and no local database.
+
+---
+
+## Phase 0 re-ingest, relocation and audit-provenance pass (2026-11-12)
+
+**Done:** the development from the previous working copy was brought into this workspace with its Git history (21 commits, branch `master`), the read-only supervisor documents preserved in `src/imports/`, and the two PDF documentation templates added, converted to markdown and digested (D-060) — closing the last Phase 0 gap. The Phase 0 briefings were then applied to the code itself: the audit ledger gained the provenance fields the BED §6.15 and DDD §28.2 require (D-061), the DDD table-name divergence is now recorded rather than mis-cited (D-062), the error envelope carries the BED's `traceId` with the lockout test still proving no account enumeration (D-063), and the order-dependent moderation suite was made idempotent (D-064). Environment corrected for the build: Node 22.23.5 and a fresh `pnpm install` (D-065).
+
+**Commands run (2026-11-12):** frontend `tsc --noEmit` exit 0; `vitest run` → **7 passed / 7**; `vite build` ok (JS 386.76 kB / 116.83 kB gzip, CSS 32.47 kB / 7.64 kB gzip); server `tsc --noEmit` exit 0; `jest --runInBand` → **86 passed / 86, 8 suites**, three consecutive runs with no re-seed; `pytest ml/tests` → **7 passed**; `migrate` applied `009_audit_provenance.sql`; `seed` and `bootstrap` green against a local PostgreSQL 18 cluster on port 5433.
+
+**Next:** update the Phase 5 drafts and appendices for the new audit fields and test counts (in progress), refresh the traceability scope file, and hand the browser checklist and the deployment runbook to the operator.
+
+**Blockers:** none from the agent. The operator still has to run `docs/BROWSER_CHECKLIST.md` in Firefox and Edge, provision the VPS, and supply screenshots and the missing reference entries.
+
+**Live check (2026-11-12):** the API was started on port 3100 against the local PostgreSQL cluster and exercised over HTTP: a login with `x-correlation-id: report-smoke-001` echoed that id in the response header and stored it on the ledger row; the CSV export header row was `id,createdAt,operatorId,operatorEmail,actionType,targetEntityType,targetEntityId,outcome,actorIp,correlationId,metadata`; the newest row carried `Success`, `127.0.0.1` and the correlation id; `GET /api/v1/audit?outcome=Blocked` returned 25 blocked rows. Recorded as appendix rows 17-21.
+
+**Note for the operator:** a `tsx watch src/index.ts` dev server from the previous working copy is still listening on port 3000. It serves the old copy of the code, so it should be stopped and restarted from this workspace before the demo.

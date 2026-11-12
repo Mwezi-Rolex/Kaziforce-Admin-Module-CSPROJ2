@@ -121,6 +121,18 @@ Evidence: `psql "$DATABASE_URL" -c "SELECT has_table_privilege('kaziforce_app','
 `sel = t, upd = f, del = f`. The same guarantee is asserted by an automated test
 and by the deployment smoke test (§5.4).
 
+Each ledger row also carries the provenance fields the Backend Engineering
+Document requires for a security-relevant record: the source address
+(`actor_ip`), how the action ended (`outcome`, one of `Success`, `Failure` or
+`Blocked`) and the correlation identifier (`correlation_id`) that ties the row
+to the API response that produced it. The correlation identifier is generated
+per request, returned in the `x-correlation-id` response header and echoed in
+the error envelope, so one operator action can be followed from the response
+to the ledger. A refused authorisation is recorded with `outcome = 'Blocked'`
+rather than being omitted, because a denial is itself a security event. The
+fields were added by migration `009_audit_provenance.sql`, which is additive:
+no existing column changed and no existing row was rewritten.
+
 ### 5.3.2 Identity and access module
 
 Authentication uses an email and password verified with bcrypt, and issues a
@@ -288,7 +300,7 @@ cannot be modified by the application.
 
 | Suite | Command | Result |
 |---|---|---|
-| API and service tests (Jest + Supertest) | `cd server && npm test` | 8 suites passed, **81 tests passed**, 0 failed |
+| API and service tests (Jest + Supertest) | `cd server && npm test` | 8 suites passed, **86 tests passed**, 0 failed |
 | Frontend tests (Vitest + RTL) | `npx pnpm test` | 2 files passed, **7 tests passed**, 0 failed |
 | Model service tests (pytest) | `ml/.venv/Scripts/python -m pytest ml/tests -q` | **7 passed**, 0 failed |
 | Frontend type check | `npx pnpm typecheck` | exit 0, no errors |
@@ -335,6 +347,11 @@ coverage figure is claimed anywhere in this report.
 | TC-28 | ML rules (determinism) | Generate the synthetic dataset twice with the same seed | Identical data | Frames byte-identical; `ml/tests/test_ml.py` | Pass |
 | TC-29 | ML rules (schema) | Call `POST /predict` | Response carries version, severity, action, confidence, probabilities | Schema asserted, probabilities sum to 1; `ml/tests/test_ml.py` | Pass |
 | TC-30 | CON-AUD-001 | Perform any state-changing action | An audit row exists for it | Asserted per action across suites | Pass |
+| TC-31 | BED §6.15, DDD §28.2 | Sign in as an operator and read the ledger row for that login | The row records the outcome, the source address and the correlation id | `outcome = 'Success'`, `actor_ip` not null, `correlation_id` equals the `x-correlation-id` response header; `tests/audit.test.ts` | Pass |
+| TC-32 | BED §6.15 | Send a request with a client-supplied `x-correlation-id` | The same id is stored on the ledger row | Ledger `correlation_id` equals the supplied value; `tests/audit.test.ts` | Pass |
+| TC-33 | SEC-AUD-002 | Trigger an authorisation refusal | The denial row records `outcome = 'Blocked'` | `outcome = 'Blocked'`; `tests/audit.test.ts` | Pass |
+| TC-34 | FR-ADM-036 | Filter the ledger by outcome | Only rows with that outcome are returned | `GET /api/v1/audit?outcome=Blocked`; `tests/audit.test.ts` | Pass |
+| TC-35 | FR-ERR-002 | Request the ledger with an unknown outcome value | HTTP 422, no rows returned | 422 `VALIDATION`; `tests/audit.test.ts` | Pass |
 
 Every row above was produced by the command named in the "Actual result" column.
 No test result in this table is estimated.
@@ -446,7 +463,7 @@ automatically tested. The measured results are:
   every role that must be denied: a Viewer is refused suspension, banning,
   moderation decisions and the log download; a Moderator is refused banning, role
   assignment, the escalation lane, settings changes and unlocking. Each refusal
-  was asserted with its status code (`npm test`, 81 tests passed).
+  was asserted with its status code (`npm test`, 86 tests passed).
 - **Audit immutability** is verified at the database level: `UPDATE`, `DELETE` and
   `TRUNCATE` against the ledger are all refused for the application role with
   SQLSTATE 42501, both in the automated suite and in the deployment smoke test.
