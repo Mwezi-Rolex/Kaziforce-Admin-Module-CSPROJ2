@@ -91,7 +91,7 @@ Work in phases. Do not start a phase until the previous one is reported.
 - You cannot provision cloud resources and must never ask for or store credentials. Produce deployment artifacts and a runbook; the user runs them and pastes back the output.
 - You cannot test in browsers you did not run. Write a manual checklist for the user. Only browsers the user reports on appear in the documentation.
 ## Git and GitHub
-- Remote: origin = https://github.com/Samuel-M-M/Test-repo-csprojii.git (private). Default branch: main.
+- Remote: origin = https://github.com/Mwezi-Rolex/Kaziforce-Admin-Module-CSPROJ2.git. Default branch: main.
 - Never change git config (user.name, user.email) or the remote.
 - Work on branches named feat/<slice>, fix/<topic>, or docs/<topic>. Merge into main only after the tests pass. Commit after each slice with the prefixes feat:, fix:, test:, docs:, chore: and requirement IDs.
 - You may commit and create branches. You may NOT push, force-push, rewrite history, or run credential commands. I push myself.
