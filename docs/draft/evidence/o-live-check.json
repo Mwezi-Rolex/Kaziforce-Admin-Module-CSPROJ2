@@ -1,0 +1,78 @@
+{
+  "observedAt": "2026-11-20T14:12:26.693Z",
+  "api": "http://localhost:3100",
+  "web": "http://localhost:8543",
+  "healthDirect": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "data": {
+        "status": "ok",
+        "database": "reachable"
+      },
+      "timestamp": "2026-11-20T14:12:26.984Z"
+    }
+  },
+  "healthViaVite": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "data": {
+        "status": "ok",
+        "database": "reachable"
+      },
+      "timestamp": "2026-11-20T14:12:27.059Z"
+    }
+  },
+  "moderatorLogin": {
+    "status": 200,
+    "correlationHeader": "final-recon-20261120"
+  },
+  "moderatorCsv": {
+    "status": 200,
+    "contentType": "text/csv; charset=utf-8",
+    "header": "id,createdAt,operatorId,operatorEmail,actionType,targetEntityType,targetEntityId,outcome,actorIp,correlationId,metadata",
+    "columnCount": 11,
+    "dataRows": 298,
+    "rowWithCorrelationId": "8e26ac33-e38c-4a28-b10b-e36ab574d2e3,\"\"\"2026-11-20T14:12:27.839Z\"\"\",a7cec5fd-3f5d-4985-9402-e6951caf2824,<email>,Operator Login,operator,a7cec5fd-3f5d-4985-9402-e6951caf2824,Success,::1,final-recon-20261120,\"{\"\"role\"\":\"\"moderator\"\"}\""
+  },
+  "blockedFilter": {
+    "status": 200,
+    "returned": 25,
+    "total": null,
+    "allBlocked": true,
+    "keys": [
+      "success",
+      "data",
+      "meta",
+      "timestamp"
+    ]
+  },
+  "unknownOutcome": {
+    "status": 422
+  },
+  "viewerCsv": {
+    "status": 403,
+    "body": {
+      "success": false,
+      "error": {
+        "code": "AUTHZ-001",
+        "message": "Permission required: audit.export",
+        "traceId": "6a59e671-28b1-4f03-a4e8-68ad88f68d81"
+      },
+      "timestamp": "2026-11-20T14:12:28.551Z"
+    }
+  },
+  "anonymousUsers": {
+    "status": 401
+  },
+  "blockedTotals": {
+    "observedAt": "2026-11-20T14:13:16.477Z",
+    "blockedDefaultPageSize": 25,
+    "blockedTotal": 58,
+    "blockedReturnedWithSize200": 58,
+    "allBlocked": true,
+    "ledgerTotal": 301,
+    "createdAtJsType": "string"
+  }
+}

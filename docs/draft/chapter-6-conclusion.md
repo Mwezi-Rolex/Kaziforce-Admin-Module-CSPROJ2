@@ -47,7 +47,10 @@ actions it must not perform.
 
 Second, **audit immutability is enforced below the application.** Two database
 roles separate schema ownership from runtime access, and the runtime role is
-granted only `SELECT` and `INSERT` on the audit ledger. Immutability therefore
+granted only `SELECT` and `INSERT` on the audit ledger. Each ledger row also
+records how the action ended, the source address and a correlation identifier
+that ties it to the response the operator received, so a refused action is kept
+as evidence rather than omitted. Immutability therefore
 does not depend on application code being correct: even a defect in the software
 cannot alter a recorded event. Adversarial tests issuing `UPDATE`, `DELETE` and
 `TRUNCATE` as the application role confirm each is refused, and the same check is
@@ -75,13 +78,16 @@ tested.
 
 **The audit ledger is immutable in practice, not only in intent.** All three
 destructive operations against it fail for the application role with a
-database-level permission error, verified both in the automated suite and against
-a live deployment.
+database-level permission error, verified in the automated suite and in a local
+smoke test against a running API and database. A live check also confirmed that
+the correlation identifier sent with a request is returned to the caller and
+stored on the ledger row.
 
 **The moderation workflow is complete and auditable.** Flag review with approve,
 reject and escalate transitions, bulk decisions with per-item outcomes, and the
 two escalation outcomes including the ban path all operate and all write audit
-events.
+events. The moderation tests were made independent of their run order, and the
+full suite passed three times in a row without re-seeding the database.
 
 **The audit trail supports the future classifier.** Because every decision records
 the model version and whether the suggestion was followed, the system accumulates
@@ -119,6 +125,10 @@ load-bearing rather than incidental. Any migration that adds a table must re-ass
 the audit-ledger restriction, because a broad default grant would silently weaken
 the immutability guarantee that the tests currently prove. The provided grants
 script re-applies the restriction and can be re-run to correct drift.
+
+**To future maintainers, regarding the two open defects.** The CSV timestamp
+quoting and the account-record layout recorded in Chapter 5 should be corrected
+first, each with a test that would have caught it.
 
 **To the project supervisor, regarding evidence.** The deployment runbook and the
 browser checklist were prepared but not executed by the developer. Their results

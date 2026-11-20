@@ -26,6 +26,34 @@ together with twenty-nine console requirements that the SRS does not enumerate;
 the remaining 1,540 SRS identifiers fall outside this build. The complete
 in-scope list with per-row status is maintained in `docs/TRACEABILITY_SCOPE.md`.
 
+**Evidence labels.** Every figure in this chapter carries the track it comes
+from. **O** marks a command rerun in the delivered workspace on 20 November 2026
+(Appendix 2, rows O-01 to O-21). **R** marks a result recorded earlier in the
+reference repository from which the workspace was copied and not rerun.
+**F** marks an observation from a separate hosted adaptation of the console,
+which is a different implementation and is cited only for comparison. **A**
+marks a figure supplied by the author without a raw transcript, and **U**
+marks anything unverified or not measured. A figure keeps its label; the
+reconciliation of the three copies is in `docs/FINAL_RECONCILIATION.md`.
+
+### List of figures
+
+| Figure | Description | File |
+|---|---|---|
+| 5.1 | Operator sign-in screen | `screenshots/02-login.png` |
+| 5.2 | User Control Centre with an account record open (Moderator) | `screenshots/04-users-moderator.png` |
+| 5.3 | Moderation queue with the bulk bar and model suggestions (Moderator) | `screenshots/05-queue-moderator.png` |
+| 5.4 | Escalation review lane (Super Admin) | `screenshots/09-escalation-superadmin.png` |
+| 5.5 | Audit explorer with filters, outcome pills and export (Moderator) | `screenshots/06-audit-moderator.png` |
+| 5.6 | Audit explorer as a Viewer, with no export control | `screenshots/07-audit-viewer-no-export.png` |
+| 5.7 | System settings (Super Admin) | `screenshots/08-settings-superadmin.png` |
+| 5.8 | Public landing page | `screenshots/01-landing.png` |
+| 5.9 | Dashboard as a Viewer | `screenshots/03-dashboard-viewer.png` |
+| 5.10 | Not-found page | `screenshots/10-not-found.png` |
+
+All ten images were captured from the running application on 20 November 2026
+(Appendix 3). None is taken from the design export or the hosted adaptation.
+
 ## 5.2 Implementation Environment
 
 ### 5.2.1 Hardware
@@ -44,7 +72,9 @@ bundle is 386 kB before compression.
 | Storage | Local SSD (project volume) |
 | Network | Local host only; no external service is required to run the system |
 
-Evidence: `powershell -NoProfile -Command "(Get-CimInstance Win32_Processor).Name; (Get-CimInstance Win32_OperatingSystem).Caption"`.
+Evidence: `powershell -NoProfile -Command "(Get-CimInstance Win32_Processor).Name; (Get-CimInstance Win32_OperatingSystem).Caption"`
+(recorded during development, R; the 20 November run used the same machine and
+did not re-query it).
 
 ### 5.2.2 Software and services
 
@@ -52,10 +82,10 @@ Evidence: `powershell -NoProfile -Command "(Get-CimInstance Win32_Processor).Nam
 
 | Software / service | Version | Role in the system | Evidence command |
 |---|---|---|---|
-| Node.js | v20.15.1 | Runtime for the API and the frontend build | `node --version` |
-| npm | 10.7.0 | Dependency installation and script execution | `npm --version` |
-| pnpm | 10.x (invoked as `npx pnpm@10`) | Lockfile-based dependency resolution for the frontend | `npx pnpm --version` |
-| PostgreSQL | 18.6 | Relational store, including the append-only audit ledger | `psql --version` |
+| Node.js | v22.23.5 for every command in Appendix 2 rows O-01 to O-21 (O); the system installation is v20.15.1 | Runtime for the API and the frontend build | `npx -y node@22 --version`; `node --version` |
+| npm | 10.7.0 (R) | Dependency installation and script execution | `npm --version` |
+| pnpm | 10.34.3, the version pinned in `.mise.toml` (O) | Lockfile-based dependency resolution for the frontend | `npx --yes pnpm@10.34.3 --version` |
+| PostgreSQL | 18 (O, binaries in `PostgreSQL\18\bin`); 18.6 recorded earlier (R) | Relational store, including the append-only audit ledger | `psql --version` |
 | Python | 3.12.4 | Runtime for the model service | `python --version` |
 | React | 19.x | Frontend user interface | `package.json` |
 | Vite | 8.3.5 | Frontend dev server and production bundler | build output banner |
@@ -76,8 +106,26 @@ hand.
 The system is reproducible from the repository. `README.md` documents the
 prerequisites, the two database roles, the environment variables and the run and
 test commands. Database schema changes are applied by ordered, tracked migrations
-(`server/migrations/001`–`008`), so a fresh database is built with
-`npm run migrate`.
+(`server/migrations/001`–`009`), so a fresh database is built with
+`npm run migrate`. On 20 November 2026 a new, empty database was built this way:
+all nine migrations applied and the seed completed (O-01, O-02).
+
+The clone-to-running sequence in `README.md` is:
+
+1. Install Node.js 22 (pinned in `.mise.toml`; `README.md` §1 still names
+   20.15 as the earlier tested version), pnpm 10, PostgreSQL 16 or later and
+   Python 3.12.
+2. Install dependencies: `pnpm install` in the root and `npm install` in `server/`.
+3. Create the two database roles and `server/.env` once with
+   `npm run bootstrap` in `server/`, supplying the PostgreSQL superuser
+   password through the `PGPASSWORD` environment variable.
+4. Build and seed the schema: `npm run migrate && npm run seed` in `server/`.
+5. Create the model environment in `ml/` (`python -m venv .venv`, install
+   `requirements.txt`) and train with `.venv/Scripts/python train.py`.
+6. Start all three services with `npm run dev:all`. If another process holds
+   port 3000, set `API_PORT`, and set `API_ORIGIN` to the same address so the
+   frontend proxy reaches this API; this was done for the 20 November run
+   (O-11, O-13).
 
 Deployment is described honestly: **the system runs as a local prototype.** It
 has not been deployed to a public host. Deployment artifacts and a runbook for an
@@ -95,7 +143,7 @@ in each slice are recorded in `docs/PLAN.md` and `docs/TRACEABILITY_SCOPE.md`.
 
 ### 5.3.1 Database layer
 
-Eight migrations define the schema. The `users` table carries the account record
+Nine migrations define the schema (O-01). The `users` table carries the account record
 with a soft-delete flag, so accounts are never physically removed. The `flags`
 table carries the moderation workflow with a constrained status domain
 (`Pending`, `Approved`, `Rejected`, `Escalated`), and `content_items` holds the
@@ -131,7 +179,11 @@ the error envelope, so one operator action can be followed from the response
 to the ledger. A refused authorisation is recorded with `outcome = 'Blocked'`
 rather than being omitted, because a denial is itself a security event. The
 fields were added by migration `009_audit_provenance.sql`, which is additive:
-no existing column changed and no existing row was rewritten.
+no existing column changed and no existing row was rewritten. In a live check
+on 20 November a sign-in sent with `x-correlation-id: final-recon-20261120`
+returned that value in the response header, and the ledger row for the sign-in
+carried `outcome = 'Success'`, the loopback address `::1` and the same
+correlation id (O-14, O-15).
 
 ### 5.3.2 Identity and access module
 
@@ -168,6 +220,8 @@ wrong password, a locked operator is not told that the account is locked. This i
 the deliberate cost of not disclosing account state; the Super Admin unlock
 control is the recovery path.
 
+![Figure 5.1: Operator sign-in screen](screenshots/02-login.png)
+
 ### 5.3.3 User management module
 
 The User Control Centre lists platform accounts with search and filtering by
@@ -182,6 +236,16 @@ Chapter 1, and is recorded as a documentation discrepancy in
 `docs/draft/DISCREPANCIES.md`. Suspension is available to Moderators for platform
 accounts; role assignment, permanent bans and clearing login locks require Super
 Admin authority. Every one of these actions writes an audit event.
+
+Figure 5.2 shows the screen as a Moderator with a sample account's record open:
+the Moderator sees the suspension control and a note that role assignment and
+bans require Super Admin authority. The record's report and content lists are
+scroll containers; with the sample data neither list is long enough to scroll,
+so no scrolled image was captured. The capture also shows a layout defect at a
+1440-pixel viewport: the table and the record panel stack in one narrow column
+and the Role column is clipped (§5.4.5).
+
+![Figure 5.2: User Control Centre as a Moderator, with an account record open](screenshots/04-users-moderator.png)
 
 ### 5.3.4 Content moderation queue module
 
@@ -205,15 +269,27 @@ If the model service is unavailable or slow, the interface shows "Suggestion
 unavailable" and every moderation action continues to work unchanged. When a
 moderator decides, the audit event records the model version, the suggested
 severity, action and confidence, and a boolean indicating whether the moderator
-**followed or overrode** the suggestion — so that live decisions can later become
+**followed or overrode** the suggestion, so that live decisions can later become
 labelled training data.
+
+Single and bulk decisions apply as soon as the button is pressed; the two-step
+confirmation dialog is reserved for the permanent ban. Figure 5.3 shows two
+selected flags with the bulk bar and the "Suggestion only" column, captured with
+the model service running. Figure 5.4 shows the Super Admin lane with the
+overrule and uphold-and-ban controls. No decision was submitted for either
+capture.
+
+![Figure 5.3: Moderation queue as a Moderator, with the bulk bar and model suggestions](screenshots/05-queue-moderator.png)
+
+![Figure 5.4: Escalation review lane as a Super Admin](screenshots/09-escalation-superadmin.png)
 
 ### 5.3.5 Audit logging module
 
 Every state-changing endpoint calls a single auditing service. Each event records
 the operator, the action type, the target entity, a JSON metadata payload and a
-server-generated UTC timestamp. The Audit Explorer provides date-range, actor and
-action-type filters over the log and presents it read-only; no control to modify
+server-generated UTC timestamp. The Audit Explorer provides date-range, actor, action-type and
+outcome filters over the log, shows each row's outcome as a pill beside its
+action type (Figure 5.5), and presents the log read-only; no control to modify
 or delete an event exists anywhere in the interface, and none could succeed if it
 did.
 
@@ -221,7 +297,19 @@ CSV export is restricted to Moderators and Super Admins. The control is hidden
 from a Viewer, **and** the server returns HTTP 403 if a Viewer requests the
 export URL directly. This restriction is an explicit instruction that overrides
 the earlier requirement that every operator could export (recorded as
-discrepancy 5).
+discrepancy 5). Figure 5.6 shows the Viewer's screen without the control, and a
+direct request for the export as a Viewer returned HTTP 403 `AUTHZ-001` on 20
+November (O-19).
+
+The export has eleven columns:
+`id,createdAt,operatorId,operatorEmail,actionType,targetEntityType,targetEntityId,outcome,actorIp,correlationId,metadata`
+(O-15). One defect was found in it on 20 November: the `createdAt` value is
+written with literal quote marks around the timestamp. It is listed in
+§5.4.5 and was not corrected, because the application was feature-frozen.
+
+![Figure 5.5: Audit explorer as a Moderator, with filters, outcome pills and the export control](screenshots/06-audit-moderator.png)
+
+![Figure 5.6: Audit explorer as a Viewer; the export control is absent](screenshots/07-audit-viewer-no-export.png)
 
 ### 5.3.6 System settings module
 
@@ -234,7 +322,10 @@ The keys are named `sample.*`. The source documentation defines the settings
 interface but names no concrete keys or toggles, so the interface is demonstrated
 with clearly-labelled sample configuration rather than invented platform
 settings. The same restraint applies to the dashboard, whose analytical area is
-left unpopulated because no KPI set is defined in any source document.
+left unpopulated because no KPI set is defined in any source document
+(Figure 5.9).
+
+![Figure 5.7: System settings as a Super Admin, with the sample keys and the feature toggle](screenshots/08-settings-superadmin.png)
 
 ### 5.3.7 Model service
 
@@ -272,9 +363,27 @@ design export, and the wireframe role-switching control present in that export
 was removed entirely, because the operator's role is derived from the signed
 session and must not be self-selectable.
 
-## 5.4 Testing
+Inside the console, a persistent rail lists the screens the session may open:
+five entries for a Super Admin, with System Settings hidden from the other
+roles (compare Figures 5.9 and 5.7).
 
-### 5.4.1 Strategy
+![Figure 5.8: Public landing page](screenshots/01-landing.png)
+
+![Figure 5.9: Dashboard as a Viewer; the analytics area is deliberately unpopulated](screenshots/03-dashboard-viewer.png)
+
+![Figure 5.10: Not-found page for an unknown route](screenshots/10-not-found.png)
+
+**Visual direction.** A separately hosted adaptation of the console uses a
+different palette (forest and lime), a four-item rail, a horizontal account
+record, two-step confirmation and a secondary route to settings. The delivered
+application keeps the original design export's green and gold values. The
+difference is recorded in `docs/draft/DISCREPANCIES.md` row 16; the application
+was not restyled after the feature freeze, and every figure in this chapter
+shows the delivered application.
+
+## 5.4 Testing and Evaluation
+
+### 5.4.1 Strategy and acceptance criteria
 
 Testing followed the guidance that every test should map to a requirement, and
 that failures should be recorded rather than hidden. Four layers were used:
@@ -294,24 +403,29 @@ Acceptance criteria were that all tests pass, that every role that must be
 refused is refused with the correct status code, and that the audit ledger
 cannot be modified by the application.
 
-### 5.4.2 Test results summary
+### 5.4.2 Results summary
 
 **Table 5.4: Test suite results**
 
-| Suite | Command | Result |
-|---|---|---|
-| API and service tests (Jest + Supertest) | `cd server && npm test` | 8 suites passed, **86 tests passed**, 0 failed |
-| Frontend tests (Vitest + RTL) | `npx pnpm test` | 2 files passed, **7 tests passed**, 0 failed |
-| Model service tests (pytest) | `ml/.venv/Scripts/python -m pytest ml/tests -q` | **7 passed**, 0 failed |
-| Frontend type check | `npx pnpm typecheck` | exit 0, no errors |
-| API type check | `cd server && npm run typecheck` | exit 0, no errors |
-| Production build | `npx pnpm build` | success — JS 386.23 kB (116.71 kB gzipped), CSS 32.47 kB (7.64 kB gzipped) |
-| Deployment smoke test (local) | `deploy/smoke-test.sh` | **12 passed, 0 failed, 1 skipped** |
+| Suite | Command | Result | Track |
+|---|---|---|---|
+| API and service tests (Jest + Supertest) | `cd server && npm test` | 8 suites passed, **86 tests passed / 86**, 0 failed, in three consecutive runs without re-seeding (O-03 to O-05, 20 Nov; also 12 Nov, row 18) | O |
+| Frontend tests (Vitest + RTL) | `npx pnpm@10.34.3 test` | 2 files passed, **7 tests passed**, 0 failed (O-07) | O |
+| Model service tests (pytest) | `ml\.venv\Scripts\python -m pytest ml\tests -q` | **7 passed**, 0 failed (O-10) | O |
+| Frontend type check | `npx pnpm@10.34.3 typecheck` | exit 0, no errors (O-08) | O |
+| API type check | `cd server && npm run typecheck` | exit 0, no errors (O-06) | O |
+| Production build | `npx pnpm@10.34.3 build` | success: JS 386.76 kB (116.83 kB gzipped), CSS 32.47 kB (7.64 kB gzipped) (O-09) | O |
+| Live provenance check | HTTP requests to the API on port 3100 | correlation id echoed; 11-column CSV; Viewer export 403; unknown outcome 422 (O-12 to O-20) | O |
+| Deployment smoke test (local) | `deploy/smoke-test.sh` | **12 passed, 0 failed, 1 skipped** on 31 October; not rerun on 20 November | R |
+
+For comparison only, the hosted adaptation's own suite of 11 Node tests passed
+in that environment (F). Those tests exercise a different implementation and
+are not counted in Table 5.4.
 
 Test coverage percentage is **not measured**. No coverage run was performed, so no
 coverage figure is claimed anywhere in this report.
 
-### 5.4.3 Test cases
+### 5.4.3 Test cases and observed results
 
 **Table 5.5: Representative functional test cases**
 
@@ -350,11 +464,12 @@ coverage figure is claimed anywhere in this report.
 | TC-31 | BED §6.15, DDD §28.2 | Sign in as an operator and read the ledger row for that login | The row records the outcome, the source address and the correlation id | `outcome = 'Success'`, `actor_ip` not null, `correlation_id` equals the `x-correlation-id` response header; `tests/audit.test.ts` | Pass |
 | TC-32 | BED §6.15 | Send a request with a client-supplied `x-correlation-id` | The same id is stored on the ledger row | Ledger `correlation_id` equals the supplied value; `tests/audit.test.ts` | Pass |
 | TC-33 | SEC-AUD-002 | Trigger an authorisation refusal | The denial row records `outcome = 'Blocked'` | `outcome = 'Blocked'`; `tests/audit.test.ts` | Pass |
-| TC-34 | FR-ADM-036 | Filter the ledger by outcome | Only rows with that outcome are returned | `GET /api/v1/audit?outcome=Blocked`; `tests/audit.test.ts` | Pass |
+| TC-34 | FR-ADM-036 | Filter the ledger by outcome | Only rows with that outcome are returned | `GET /api/v1/audit?outcome=Blocked`; `tests/audit.test.ts`; live: first page of 25 rows all `Blocked`, `meta.total` 58 (O-16, O-17) | Pass |
 | TC-35 | FR-ERR-002 | Request the ledger with an unknown outcome value | HTTP 422, no rows returned | 422 `VALIDATION`; `tests/audit.test.ts` | Pass |
 
-Every row above was produced by the command named in the "Actual result" column.
-No test result in this table is estimated.
+Every row above was produced by the command named in the "Actual result" column,
+and every automated row is part of the 86 Jest, 7 Vitest or 7 pytest cases that
+passed on 20 November (O). No test result in this table is estimated.
 
 ### 5.4.4 Deployment smoke test
 
@@ -362,15 +477,17 @@ A single script verifies the four behaviours the panel is expected to probe
 against a running deployment: that login works, that a Viewer is refused on the
 log download, that a Moderator action succeeds and is audited, and that `UPDATE`,
 `DELETE` and `TRUNCATE` on the audit ledger are refused for the application role.
-Run locally against the live API and database, it reported **12 passed, 0 failed,
-1 skipped**. The single skip is the check that the model service is not publicly
+Run locally against the live API and database on 31 October, before migration
+009, it reported **12 passed, 0 failed, 1 skipped** (R). It was not rerun on 20
+November; the audit-immutability checks it contains are also covered by the
+Jest suite that passed that day (O). The single skip is the check that the model service is not publicly
 reachable, which requires the Nginx origin and therefore could not execute in a
 direct-to-API run; the script reports it as skipped rather than passed.
 
 ### 5.4.5 Defects found and corrected during testing
 
-Recording defects is required, so the following were found by the tests and
-fixed. None remain open.
+Recording defects is required. The following were found by the tests and
+fixed before the feature freeze.
 
 | Defect | How it was found | Resolution |
 |---|---|---|
@@ -380,11 +497,26 @@ fixed. None remain open.
 | A sorting rule in the model test compared whole response bodies including the timestamp, producing a false failure | Lockout disclosure test | Assertion narrowed to the error payload |
 | The development runner failed to start the model service because the workspace path contains a space and was passed to the shell unquoted | Running the runner | Spawned without a shell for the real executable |
 | The queue's sidebar badge count was hard-coded to a value that did not match the data | Design audit | Corrected when the queue became data-driven |
+| The moderation suite depended on run order: the escalation-lane tests read the first escalated row, which an earlier run had already resolved, so a second run failed | Re-running the suite without re-seeding (12 Nov) | Suite made idempotent (D-064); three consecutive runs pass (O-03 to O-05) |
 
 One flaky failure was observed once when the API suite was invoked directly
 without `--runInBand`, letting suites share a database and interfere. It did not
 reproduce across six sequential runs of the configured command. The configured
 `npm test` script uses `--runInBand` and is stable.
+
+**Open defects found on 20 November.** Two defects were found during the final
+verification run. Both are recorded in `docs/draft/DISCREPANCIES.md` and were
+not corrected, because the application was feature-frozen and a change on the
+submission day would invalidate the test evidence above.
+
+| Defect | How it was found | Status |
+|---|---|---|
+| The CSV export writes `createdAt` with literal quote marks around the timestamp, because a date object is serialised as JSON before CSV escaping | Reading the exported CSV in the live check (O-15) | Open; fix proposed in DISCREPANCIES row 18 |
+| At a 1440-pixel viewport the User Control Centre stacks the account table and record panel in one narrow column and clips the Role column | Screenshot capture (Figure 5.2) | Open; to be confirmed in a headed browser (DISCREPANCIES row 19) |
+
+Every Jest run also ends with the warning "Jest did not exit one second after
+the test run has completed". The runs exit with code 0; the open handle was not
+investigated.
 
 ### 5.4.6 Accessibility and responsive testing
 
@@ -403,14 +535,24 @@ design's single 1000 px breakpoint, so the navigation rail narrows and multi-col
 panels stack on tablet-width viewports. The compiled stylesheet was inspected to
 confirm these rules survive the build.
 
+The ten figures were captured with headless Google Chrome 157 driven by a
+script at a 1440 × 900 viewport (Appendix 3). That run rendered every screen
+and exposed the layout defect above, but it was a capture, not a browser test:
+it did not follow the checklist and is not reported as a Chrome result.
+
 **Not yet verified.** Manual checks in Chrome, Firefox and Edge, including the
 tablet-to-desktop width sweep, have not been performed. The step-by-step
-checklist for doing so is `docs/BROWSER_CHECKLIST.md`; results will be recorded
-there. Accessibility has not been tested with a screen reader.
+checklist for doing so is `docs/BROWSER_CHECKLIST.md`, which has a Result
+column for the outcomes. Accessibility has not been tested with a screen reader.
 
 ## 5.5 Version Control
 
-The project is a Git repository with 19 commits at the time of writing. Work was
+The project is a Git repository on branch `master` with 30 commits after the
+final documentation commit of 20 November 2026 (`git rev-list --count HEAD`
+returned 29 before it). The history was carried over from the reference
+repository when the work was relocated on 12 November, and the audit-provenance
+change was committed as
+`feat(audit): record provenance on the ledger - source IP, outcome and correlation id [CON-AUD-005]`. Work was
 committed slice by slice, with the requirement identifiers named in the commit
 message, for example:
 
@@ -426,13 +568,24 @@ artifacts; and no committed credentials. The two database passwords and the toke
 signing secret are generated at setup time and written only to a gitignored
 environment file.
 
-The repository has not been tagged with a release version and has not been pushed
-to a remote; both remain to be done before submission.
+On 20 November `git ls-files` listed no environment file other than the two
+templates (`server/.env.example`, `deploy/.env.production.example`), and
+`.gitignore` covers `node_modules/`, `dist/`, `.venv/`, `.env` and the local
+PostgreSQL data directory (`server/.pgdata*`).
 
-## 5.6 Declaration of AI Use
+The repository has no configured remote and no release tag (`git remote -v` and
+`git tag` returned nothing on 20 November). Tagging and pushing remain operator
+actions and are **not yet verified**.
+
+## 5.6 Author Oversight and Use of AI-Assisted Tools
 
 AI assistance was used materially in this project and is declared here as the
-writing guide requires. It was used to analyse the supervisor documents, to draft
+writing guide requires. The author remains responsible for the design, the
+behaviour of the system and the conclusions drawn in this report. Each
+AI-assisted change was checked by running the build, the type checks and the
+three test suites, and the final figures in this chapter were reproduced on 20
+November from a new, empty database rather than carried forward from earlier
+drafts. It was used to analyse the supervisor documents, to draft
 and implement code, to write the automated tests, and to draft this chapter from
 recorded results. It was **not** used to fabricate data: all training data is
 synthetic and generated by a committed script with a fixed seed, and all test
@@ -453,7 +606,8 @@ Chapter 2.
 **Objective (iii) — design a role-based administration and content moderation
 architecture.** The architecture is implemented and observable: three privilege
 tiers enforced by a database-held permission matrix, a two-role database
-separation, and an append-only ledger. The design is evidenced by eight tracked
+separation, and an append-only ledger that records the outcome, source address
+and correlation id of each event. The design is evidenced by nine tracked
 migrations, the permission matrix, and `docs/PLAN.md`.
 
 **Objective (iv) — develop and evaluate the system.** The system is developed and
@@ -466,7 +620,10 @@ automatically tested. The measured results are:
   was asserted with its status code (`npm test`, 86 tests passed).
 - **Audit immutability** is verified at the database level: `UPDATE`, `DELETE` and
   `TRUNCATE` against the ledger are all refused for the application role with
-  SQLSTATE 42501, both in the automated suite and in the deployment smoke test.
+  SQLSTATE 42501, in the automated suite (O) and in the local deployment smoke
+  test of 31 October (R).
+- **Audit provenance** is verified live: the correlation id is echoed and stored,
+  and the export carries the outcome and source address (O-14, O-15).
 - **Moderation workflow** is verified end to end: approve, reject and escalate
   transitions, bulk application with per-item outcomes, and the two escalation
   outcomes including the ban path.
@@ -517,8 +674,11 @@ than they are.
    identifiers are outside this build.
 2. **Deployment.** The system runs locally. The server has not been provisioned
    and the runbook has not been executed; deployment is **not yet verified**.
+   The local smoke test result (12 passed, 1 skipped) predates migration 009 and
+   was not rerun.
 3. **Browser coverage.** Browser checks have **not yet been performed**. Only
-   browsers that are actually tested will be claimed.
+   browsers that are actually tested are claimed, and none is claimed in this
+   report. The headless capture run of 20 November is not a browser test.
 4. **Accessibility.** Contrast was measured and corrected programmatically, but no
    screen-reader pass and no full WCAG conformance audit has been performed.
 5. **Test coverage** is not measured; no coverage percentage is claimed.
@@ -529,3 +689,9 @@ than they are.
    Future Work.
 8. **Single tenancy.** The console is single-tenant; tenant-scoped requirements
    were therefore not implemented.
+9. **Open defects.** The CSV timestamp quoting and the account-record layout at
+   1440 pixels (§5.4.5) are known and uncorrected.
+10. **Performance and load** are not measured. No response-time, throughput or
+    resource figure is claimed.
+11. **Repository publication.** No release tag exists and the repository has
+    not been pushed to a remote.

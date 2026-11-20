@@ -147,3 +147,13 @@ Not started (only if the user asks).
 **Live check (2026-11-12):** the API was started on port 3100 against the local PostgreSQL cluster and exercised over HTTP: a login with `x-correlation-id: report-smoke-001` echoed that id in the response header and stored it on the ledger row; the CSV export header row was `id,createdAt,operatorId,operatorEmail,actionType,targetEntityType,targetEntityId,outcome,actorIp,correlationId,metadata`; the newest row carried `Success`, `127.0.0.1` and the correlation id; `GET /api/v1/audit?outcome=Blocked` returned 25 blocked rows. Recorded as appendix rows 17-21.
 
 **Note for the operator:** a `tsx watch src/index.ts` dev server from the previous working copy is still listening on port 3000. It serves the old copy of the code, so it should be stopped and restarted from this workspace before the demo.
+
+---
+
+## Final work and documentation (2026-11-20)
+
+**Done:** port 3000 checked (not listening; no stale R server). New disposable database on 5433 (D-068); on Node 22.23.5 (D-069): migrate 9/9, seed, Jest **86/86 ×3** without re-seed, Vitest **7**, pytest **7**, both `tsc --noEmit` exit 0, build JS 386.76 kB / 116.83 kB gzip. `dev:all` on API 3100 / web 8543 / model 8100; health 200 direct and through the Vite proxy; correlation id echoed; 11-column CSV; Blocked first page 25, total 58; Viewer export 403. Ten screenshots captured (D-070) with SHA-256 register. Wrote `docs/FINAL_RECONCILIATION.md`; finished Chapter 5/6, appendices (rows O-01…O-21, screenshot register), DISCREPANCIES rows 16–21, chapters 1–4 outstanding table. Evidence in `docs/draft/evidence/`.
+
+**Next:** operator runs `docs/BROWSER_CHECKLIST.md` (Chrome, Firefox, Edge, including the 1440 px users layout), decides on the two open defects after the panel, resolves the `[reference needed]` entries, tags and pushes.
+
+**Blockers:** none from the agent. The `server/.pgdata` cluster is still running on 5433 for the demo; stop it with `pg_ctl -D server\.pgdata stop`.

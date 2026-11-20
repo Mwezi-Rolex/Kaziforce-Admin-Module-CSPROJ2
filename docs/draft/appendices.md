@@ -42,7 +42,7 @@ recorded is the observed output.
 | 9 | `cd server && npm run seed` | roles, permission matrix, 3 operators, sample content inserted |
 | 10 | `cd server && npm run demo:reset` | locks cleared, `audit_log` untouched |
 | 11 | `NODE_ENV=production npm run seed` (no password variables) | correctly refused: required `SEED_VIEWER_PASSWORD` |
-| 12 | `NODE_ENV=production SEED_VIEWER_PASSWORD='ViewerDemo!2026' ... npm run seed` | correctly refused: demo password rejected |
+| 12 | `NODE_ENV=production SEED_VIEWER_PASSWORD='<the demo password>' ... npm run seed` | correctly refused: demo password rejected |
 | 13 | `NODE_ENV=production SEED_*=<strong values> npm run seed` | succeeded; printed "passwords not shown" |
 | 14 | `npm run bootstrap` with `server/.env` present | correctly refused to overwrite |
 | 15 | `API_PORT=3100 MODEL_PORT=8100 PORT=8543 npm run dev:all` | API, frontend and model service all started; API reached the model service on the same port |
@@ -51,42 +51,106 @@ recorded is the observed output.
 | 18 | `cd server && npm test` (2026-11-12, three consecutive runs, no re-seed) | 8 suites passed, 86 tests passed, 0 failed |
 | 19 | Live API check on port 3100: login with header `x-correlation-id: report-smoke-001` | response header echoed `report-smoke-001` |
 | 20 | Live API check: `GET /api/v1/audit/export.csv` | header row `id,createdAt,operatorId,operatorEmail,actionType,targetEntityType,targetEntityId,outcome,actorIp,correlationId,metadata`; newest row carried `Success`, `127.0.0.1`, the correlation id |
-| 21 | Live API check: `GET /api/v1/audit?outcome=Blocked` | 25 rows returned, all with `outcome = 'Blocked'` |
+| 21 | Live API check: `GET /api/v1/audit?outcome=Blocked` | first page of 25 rows (the default page size), all with `outcome = 'Blocked'`; the total was not recorded |
+
+Rows 1–16 were recorded in the reference repository before the relocation (R);
+rows 17–21 were run in this workspace on 12 November (O).
+
+### Final verification run, 20 November 2026 (track O)
+
+Run on Node.js v22.23.5 and pnpm 10.34.3 against a new, empty PostgreSQL
+database on 127.0.0.1:5433. Times are EAT. Full detail, including the
+environment and observations, is in
+`docs/draft/evidence/o-command-results-2026-11-20.md`; machine-readable output
+of O-12 to O-20 is in `docs/draft/evidence/o-live-check.json`.
+
+| # | Command | Observed result |
+|---|---|---|
+| O-01 | `cd server && npm run migrate` | 9 migrations applied, `001` … `009_audit_provenance.sql` |
+| O-02 | `cd server && npm run seed` | roles, permissions, 3 demo operators, 4 sample accounts, 4 content items with flags, 3 settings keys |
+| O-03 | `cd server && npm test` (run 1) | 8 suites passed, 86 passed / 86 |
+| O-04 | `npm test` (run 2, no re-seed) | 8 suites passed, 86 passed / 86 |
+| O-05 | `npm test` (run 3, no re-seed) | 8 suites passed, 86 passed / 86 |
+| O-06 | `cd server && npm run typecheck` | exit 0 |
+| O-07 | `npx pnpm@10.34.3 test` | 2 files, 7 passed |
+| O-08 | `npx pnpm@10.34.3 typecheck` | exit 0 |
+| O-09 | `npx pnpm@10.34.3 build` | JS 386.76 kB (gzip 116.83 kB), CSS 32.47 kB (gzip 7.64 kB) |
+| O-10 | `ml\.venv\Scripts\python -m pytest ml\tests -q` | 7 passed |
+| O-11 | `API_PORT=3100 MODEL_PORT=8100 PORT=8543 API_ORIGIN=http://localhost:3100 npm run dev:all` | API 3100, frontend 8543, model service 127.0.0.1:8100 started; port 3000 was not in use |
+| O-12 | `GET :3100/api/v1/health` | 200, `status: ok`, `database: reachable` |
+| O-13 | `GET :8543/api/v1/health` (Vite proxy) | 200, same body |
+| O-14 | Moderator login with `x-correlation-id: final-recon-20261120` | 200; header echoed the id |
+| O-15 | `GET /api/v1/audit/export.csv` as Moderator | 200; 11-column header as in row 20; login row `Success`, `::1`, the correlation id |
+| O-16 | `GET /api/v1/audit?outcome=Blocked` | first page of 25 rows, all `Blocked` |
+| O-17 | `GET /api/v1/audit?outcome=Blocked&size=200` | `meta.total` 58, all `Blocked` |
+| O-18 | `GET /api/v1/audit?outcome=Maybe` | 422 |
+| O-19 | `GET /api/v1/audit/export.csv` as Viewer | 403 `AUTHZ-001`, "Permission required: audit.export" |
+| O-20 | `GET /api/v1/users` without a session | 401 |
+| O-21 | Screenshot capture scripts (Appendix 3) | 10 PNG files |
 
 **Not measured.** Test coverage percentage: no coverage run was performed.
 Performance and load: not measured. Memory or CPU profiling: not measured.
 
 ## Appendix 3: Screenshots
 
-**Outstanding — not yet captured.** Screenshots of the six console screens, the
-landing page, the login page and the not-found page are required by the report
-template (Appendix with screen captures) and have not been produced. They should
-be taken from a running instance and will show the interface brand, which is
-permitted for screenshots.
+**Captured on 20 November 2026 from the running application (track O).** Ten
+full-page PNG files are in `docs/draft/screenshots/`. They show the interface
+brand, which is permitted for screenshots.
 
-Suggested set, matching the implemented screens:
+**How they were captured.** The application ran with `npm run dev:all` (API on
+port 3100, frontend on 8543, model service on 8100; Appendix 2, O-11), after a
+re-seed of the sample data. The in-app browser tools named in the capture
+prompt were not available in this session, so a script drove the installed
+**headless Google Chrome 157.0.8103.79** through `puppeteer-core` 24 (installed
+in a temporary folder, not added to the project), at a 1440 × 900 viewport with
+`page.screenshot({ fullPage: true, type: 'png' })`. The script only signed in
+and navigated; it submitted no decision, sanction or settings change. Sign-ins
+wrote the normal `Operator Login` events. This was a capture, not a browser
+compatibility test, and it is not reported as a Chrome result (Appendix 4).
 
-| Figure | Screen | Route |
-|---|---|---|
-| A3.1 | Landing page | `/` |
-| A3.2 | Login | `/login` |
-| A3.3 | Dashboard (analytics intentionally unpopulated) | `/console/dashboard` |
-| A3.4 | User Control Centre with the account record panel open | `/console/users` |
-| A3.5 | Moderation Queue with model suggestions shown | `/console/queue` |
-| A3.6 | Moderation Queue with "Suggestion unavailable" (model stopped) | `/console/queue` |
-| A3.7 | Escalation review lane | `/console/queue` |
-| A3.8 | Audit Explorer with filters applied | `/console/audit` |
-| A3.9 | System Settings | `/console/settings` |
-| A3.10 | Not-found page | any invalid path |
-| A3.11 | Refused authorization: Viewer requesting the CSV export directly | `/api/v1/audit/export.csv` |
+Because the console rail is fixed to the viewport, it ends at 900 pixels in the
+taller full-page images; that is a capture artefact, not a layout fault.
+
+**Screenshot register.** SHA-256 values are of the files as committed. The
+machine-readable register is `docs/draft/evidence/o-screenshot-register.json`.
+
+| File | Figure | Route | Role | Captured (UTC) | Size | SHA-256 |
+|---|---|---|---|---|---|---|
+| `01-landing.png` | 5.8 | `/` | Public | 2026-11-20 14:16:03 | 1440 × 1030 | `b21f7f8f67b25239214225c20cd2920177cd12aa24fc1d605a6f9bb4163f0aa8` |
+| `02-login.png` | 5.1 | `/login` | Public | 2026-11-20 14:16:06 | 1440 × 900 | `e5ffa4a31ff8622fc297a63cf71cb02936b50eabbf2dd9cc0c51fa9d311383c8` |
+| `03-dashboard-viewer.png` | 5.9 | `/console/dashboard` | Viewer | 2026-11-20 14:16:18 | 1440 × 900 | `1c2e8698039d7e8893d4bb00582d9a8c07c1e65bb2426c9c56fcf028a33efaec` |
+| `04-users-moderator.png` | 5.2 | `/console/users` | Moderator | 2026-11-20 14:21:43 | 1440 × 1413 | `60c8f0e6354d9fede44230dd4ea78d2422e1ab05aad88fa7b2716ec345cd5ec2` |
+| `05-queue-moderator.png` | 5.3 | `/console/queue` | Moderator | 2026-11-20 14:16:39 | 1440 × 936 | `e0d8238f6aefa31f32e6610011e8bc45d9a63c674b79c37626bd5a726d7b2c6c` |
+| `06-audit-moderator.png` | 5.5 | `/console/audit` | Moderator | 2026-11-20 14:16:42 | 1440 × 914 | `c5ccd066480ff73d0d99608b17a321d1560714d017251ae765753a9f871acce8` |
+| `07-audit-viewer-no-export.png` | 5.6 | `/console/audit` | Viewer | 2026-11-20 14:16:21 | 1440 × 950 | `89ae263dccf8d3b2de79990f788c1889dabd77ab8a53f5ba1a728cc51ed074a0` |
+| `08-settings-superadmin.png` | 5.7 | `/console/settings` | Super Admin | 2026-11-20 14:16:53 | 1440 × 900 | `8b4743cb25505faa347af5c807859acdebfd809b2e3eb5da1412b1822646892b` |
+| `09-escalation-superadmin.png` | 5.4 | `/console/queue`, Escalation review lane | Super Admin | 2026-11-20 14:16:59 | 1440 × 900 | `be29da75a3d1ad842982cf9ca740d69a0b9e7b68ebccb100b2124a9e9b4b6309` |
+| `10-not-found.png` | 5.10 | `/documentation-not-a-page` | Public | 2026-11-20 14:16:08 | 1440 × 900 | `e06b99d7cd99fcf603c1754b4530105d4e7f28b0d8b56ef0d0c079ecd0b22ad5` |
+
+**Not captured.**
+
+- `04b-users-moderator-scrolled.png` — [screenshot not captured — with the seed
+  data no list in the account record panel is long enough to scroll; the script
+  found no overflowing scroll container].
+- A queue image with "Suggestion unavailable" (model service stopped) was not
+  captured; the behaviour is covered by TC-26.
+- The Viewer's refused CSV request is an API response, not a screen; it is
+  recorded as Appendix 2, O-19.
+
+**Hosted adaptation, comparison only.** The hosted adaptation has its own
+eleven screenshots under `C:\Users\smmwe\Documents\Figma\CS Project II v3\docs\draft\screenshots\`
+(track F). They show a different implementation and are not used as figures of
+this system. If one is reproduced for comparison it must be captioned "hosted
+adaptation".
 
 ## Appendix 4: Browser and device test record
 
 **Outstanding — not yet executed.** The manual checks in
 `docs/BROWSER_CHECKLIST.md` cover Chrome (primary), Firefox and Edge, including a
 tablet-to-desktop width sweep. That document contains a Result column to be
-completed. Per the project rules, only browsers actually tested will be reported
-in the final documentation.
+completed. Per the project rules, only browsers actually tested appear in the
+documentation; none has been tested yet. The headless Chrome run that produced
+the Appendix 3 screenshots was a capture, not an execution of this checklist.
 
 ## Appendix 5: Deployment record
 
@@ -114,7 +178,7 @@ listed; only names and purposes.
 | `TRUST_PROXY` | behind a reverse proxy | set to `1` so the rate limiter sees real client addresses |
 | `RATE_LIMIT_MAX`, `RATE_LIMIT_WINDOW_MS` | no | defaults 600 and 300000 |
 | `MODEL_SERVICE_URL` | no | default `http://127.0.0.1:8000` |
-| `MODEL_TIMEOUT_MS` | no | default 800 ms; the queue never waits longer |
+| `MODEL_TIMEOUT_MS` | no | default 3000 ms since D-059 (the first call measured about 2.4 s); the queue never waits longer |
 | `SEED_VIEWER_PASSWORD`, `SEED_MODERATOR_PASSWORD`, `SEED_SUPERADMIN_PASSWORD` | production seeding | required when `NODE_ENV=production`; the seed refuses demo passwords |
 
 The environment file is gitignored, is generated at setup time by
@@ -166,6 +230,6 @@ required changes are listed instead, as instructed.
 
 ## Appendix 10: AI use log
 
-Maintained in `docs/DECISIONS.md` (entries D-001 to D-053) and summarised in
+Maintained in `docs/DECISIONS.md` (entries D-001 to D-070) and summarised in
 Chapter 5.6. No fabricated citations, data, results or approvals were produced.
 Every metric in this report names the command that produced it.

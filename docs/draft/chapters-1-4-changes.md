@@ -205,9 +205,14 @@ reference entries listed in `docs/draft/references.md` Section B.
 
 | Item | Where it goes | Status |
 |---|---|---|
-| Screenshots of all screens | Appendix | Not yet captured |
-| Browser results (Chrome, Firefox, Edge) | Appendix | Not yet executed |
+| Browser results (Chrome, Firefox, Edge) | Appendix | Not yet executed (the 20 Nov headless capture is not a browser test) |
 | Deployment runbook results | Appendix | Not yet executed |
 | Coverage figure (if the 80% target is retained) | Chapter 5 | Not measured |
 | Full reference entries for ~25 in-text citations | References | Outstanding |
 | Repository release tag and remote push | Chapter 5 version control | Outstanding |
+| Screen-reader pass | Chapter 5 §5.4.6 | Not yet verified |
+| Performance and load figures | Chapter 5 §5.8 | Not measured |
+| Decision on the two open defects (CSV timestamp quoting, account-record layout) | Chapter 5 §5.4.5 | Recorded, not fixed (feature freeze) |
+
+Screenshots were removed from this table on 20 November 2026: ten were captured
+from the running application (Appendix 3).

@@ -1,0 +1,112 @@
+[
+  {
+    "file": "01-landing.png",
+    "route": "/",
+    "role": "Public",
+    "captured": "2026-11-20T14:16:03.190Z",
+    "tool": "puppeteer-core page.screenshot({fullPage:true,type:'png'}) on headless Chrome/157.0.8103.79",
+    "width": 1440,
+    "height": 1030,
+    "sha256": "b21f7f8f67b25239214225c20cd2920177cd12aa24fc1d605a6f9bb4163f0aa8",
+    "note": "Public landing page."
+  },
+  {
+    "file": "02-login.png",
+    "route": "/login",
+    "role": "Public",
+    "captured": "2026-11-20T14:16:06.017Z",
+    "tool": "puppeteer-core page.screenshot({fullPage:true,type:'png'}) on headless Chrome/157.0.8103.79",
+    "width": 1440,
+    "height": 900,
+    "sha256": "e5ffa4a31ff8622fc297a63cf71cb02936b50eabbf2dd9cc0c51fa9d311383c8",
+    "note": "Empty sign-in form; no credentials entered."
+  },
+  {
+    "file": "03-dashboard-viewer.png",
+    "route": "/console/dashboard",
+    "role": "Viewer",
+    "captured": "2026-11-20T14:16:18.091Z",
+    "tool": "puppeteer-core page.screenshot({fullPage:true,type:'png'}) on headless Chrome/157.0.8103.79",
+    "width": 1440,
+    "height": 900,
+    "sha256": "1c2e8698039d7e8893d4bb00582d9a8c07c1e65bb2426c9c56fcf028a33efaec",
+    "note": "Viewer dashboard; analytics area deliberately unpopulated (CON-DASH-001)."
+  },
+  {
+    "file": "04-users-moderator.png",
+    "route": "/console/users",
+    "role": "Moderator",
+    "captured": "2026-11-20T14:21:43.916Z",
+    "tool": "puppeteer-core page.screenshot({fullPage:true,type:'png'}) on headless Chrome/157.0.8103.79",
+    "width": 1440,
+    "height": 1413,
+    "sha256": "60c8f0e6354d9fede44230dd4ea78d2422e1ab05aad88fa7b2716ec345cd5ec2",
+    "note": "View clicked for a sample account; record panel opened. No sanction submitted. With the seed data no list in the record panel overflows, so no 04b scrolled capture exists. At 1440 px the table and record panel stack in one column and the Role column is clipped (see DISCREPANCIES row 19)."
+  },
+  {
+    "file": "05-queue-moderator.png",
+    "route": "/console/queue",
+    "role": "Moderator",
+    "captured": "2026-11-20T14:16:39.861Z",
+    "tool": "puppeteer-core page.screenshot({fullPage:true,type:'png'}) on headless Chrome/157.0.8103.79",
+    "width": 1440,
+    "height": 936,
+    "sha256": "e0d8238f6aefa31f32e6610011e8bc45d9a63c674b79c37626bd5a726d7b2c6c",
+    "note": "Two flags selected so the bulk bar shows. The automated text probe returned false because CSS text-transform renders the label as SUGGESTION ONLY; the label and per-flag severity/action/confidence are visible in the image (checked by eye). No decision submitted."
+  },
+  {
+    "file": "06-audit-moderator.png",
+    "route": "/console/audit",
+    "role": "Moderator",
+    "captured": "2026-11-20T14:16:42.877Z",
+    "tool": "puppeteer-core page.screenshot({fullPage:true,type:'png'}) on headless Chrome/157.0.8103.79",
+    "width": 1440,
+    "height": 914,
+    "sha256": "c5ccd066480ff73d0d99608b17a321d1560714d017251ae765753a9f871acce8",
+    "note": "Audit Explorer as Moderator; export control visible: true; outcome values visible: true."
+  },
+  {
+    "file": "07-audit-viewer-no-export.png",
+    "route": "/console/audit",
+    "role": "Viewer",
+    "captured": "2026-11-20T14:16:21.238Z",
+    "tool": "puppeteer-core page.screenshot({fullPage:true,type:'png'}) on headless Chrome/157.0.8103.79",
+    "width": 1440,
+    "height": 950,
+    "sha256": "89ae263dccf8d3b2de79990f788c1889dabd77ab8a53f5ba1a728cc51ed074a0",
+    "note": "Audit Explorer as Viewer; export control visible in DOM: false."
+  },
+  {
+    "file": "08-settings-superadmin.png",
+    "route": "/console/settings",
+    "role": "Super Admin",
+    "captured": "2026-11-20T14:16:53.386Z",
+    "tool": "puppeteer-core page.screenshot({fullPage:true,type:'png'}) on headless Chrome/157.0.8103.79",
+    "width": 1440,
+    "height": 900,
+    "sha256": "8b4743cb25505faa347af5c807859acdebfd809b2e3eb5da1412b1822646892b",
+    "note": "System Settings with sample.* keys and the feature toggle; no value changed."
+  },
+  {
+    "file": "09-escalation-superadmin.png",
+    "route": "/console/queue (Escalation review lane)",
+    "role": "Super Admin",
+    "captured": "2026-11-20T14:16:59.271Z",
+    "tool": "puppeteer-core page.screenshot({fullPage:true,type:'png'}) on headless Chrome/157.0.8103.79",
+    "width": 1440,
+    "height": 900,
+    "sha256": "be29da75a3d1ad842982cf9ca740d69a0b9e7b68ebccb100b2124a9e9b4b6309",
+    "note": "Escalation lane opened: true. The automated text probe for 'Uphold and ban' returned false because the button text wraps over two lines; both Overrule and Uphold and ban are visible in the image (checked by eye). Neither submitted."
+  },
+  {
+    "file": "10-not-found.png",
+    "route": "/documentation-not-a-page",
+    "role": "Public",
+    "captured": "2026-11-20T14:16:08.807Z",
+    "tool": "puppeteer-core page.screenshot({fullPage:true,type:'png'}) on headless Chrome/157.0.8103.79",
+    "width": 1440,
+    "height": 900,
+    "sha256": "e06b99d7cd99fcf603c1754b4530105d4e7f28b0d8b56ef0d0c079ecd0b22ad5",
+    "note": "Unknown route rendered by the SPA not-found page."
+  }
+]
