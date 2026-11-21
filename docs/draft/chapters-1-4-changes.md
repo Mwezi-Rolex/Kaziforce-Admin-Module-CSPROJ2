@@ -206,7 +206,7 @@ reference entries listed in `docs/draft/references.md` Section B.
 | Item | Where it goes | Status |
 |---|---|---|
 | Browser results (Chrome, Firefox, Edge) | Appendix | Not yet executed (the 20 Nov headless capture is not a browser test) |
-| Deployment runbook results | Appendix | Not yet executed |
+| Deployment runbook results | Appendix 5 | **Done 21 Nov**: Azure VM, HTTPS, smoke test 13 passed / 0 failed. Chapter 3's tool list should name the region actually used (Spain Central) if it names one |
 | Coverage figure (if the 80% target is retained) | Chapter 5 | Not measured |
 | Full reference entries for ~25 in-text citations | References | Outstanding |
 | Repository release tag and remote push | Chapter 5 version control | Outstanding |

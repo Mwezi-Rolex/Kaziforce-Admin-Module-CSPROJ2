@@ -157,3 +157,13 @@ Not started (only if the user asks).
 **Next:** operator runs `docs/BROWSER_CHECKLIST.md` (Chrome, Firefox, Edge, including the 1440 px users layout), decides on the two open defects after the panel, resolves the `[reference needed]` entries, tags and pushes.
 
 **Blockers:** none from the agent. The `server/.pgdata` cluster is still running on 5433 for the demo; stop it with `pg_ctl -D server\.pgdata stop`.
+
+---
+
+## Azure deployment (2026-11-21)
+
+**Done:** operator created `kaziforce-vm` (Azure for Students, Spain Central after a region-policy refusal, Ubuntu 24.04.5, 2 vCPU / 3.8 GiB). `deploy/azure-vm-install.sh` (commit `f7c13fc`) exited 0 with four health checks OK; audit grants `update/delete/truncate = f`; certbot issued and deployed a certificate for `kaziforce-demo.spaincentral.cloudapp.azure.com`; smoke test over HTTPS **13 passed, 0 failed, 0 skipped**. Transcript in `docs/draft/evidence/vm-deployment-2026-11-21.md`; Appendix 5, Chapter 5 §5.2.3/§5.4.4/§5.8 and Chapter 6 updated.
+
+**Next:** operator signs in once in a browser on the deployed site; optional `sudo certbot renew --dry-run`; keep the VM running (auto-shutdown at 23:00) for 23–27 Nov.
+
+**Blockers:** none.

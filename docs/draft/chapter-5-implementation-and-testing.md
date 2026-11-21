@@ -27,7 +27,8 @@ the remaining 1,540 SRS identifiers fall outside this build. The complete
 in-scope list with per-row status is maintained in `docs/TRACEABILITY_SCOPE.md`.
 
 **Evidence labels.** Every figure in this chapter carries the track it comes
-from. **O** marks a command rerun in the delivered workspace on 20 November 2026
+from. **D** marks output from the deployed server, run by the operator and
+committed as a raw transcript (Appendix 5). **O** marks a command rerun in the delivered workspace on 20 November 2026
 (Appendix 2, rows O-01 to O-21). **R** marks a result recorded earlier in the
 reference repository from which the workspace was copied and not rerun.
 **F** marks an observation from a separate hosted adaptation of the console,
@@ -127,12 +128,16 @@ The clone-to-running sequence in `README.md` is:
    frontend proxy reaches this API; this was done for the 20 November run
    (O-11, O-13).
 
-Deployment is described honestly: **the system runs as a local prototype.** It
-has not been deployed to a public host. Deployment artifacts and a runbook for an
-Ubuntu virtual private server with Nginx were produced (`deploy/`,
-`docs/DEPLOY.md`), but the server has not been provisioned and the runbook has
-not been executed end to end; the steps that could not be verified are marked in
-that document, and the deployment remains **not yet verified**.
+**Deployment.** On 21 November 2026 the system was deployed to an Azure virtual
+machine (Ubuntu 24.04.5 LTS, 2 vCPU, 3.8 GiB RAM, region Spain Central) behind
+Nginx with a Let's Encrypt certificate, at
+`https://kaziforce-demo.spaincentral.cloudapp.azure.com`. The operator ran
+`deploy/azure-vm-install.sh`, which scripts the numbered steps of
+`docs/DEPLOY.md`, then certbot, then the smoke test, and pasted the output
+back (Appendix 5; evidence track D). Planning had named the East US region;
+the student subscription's region policy refused it, so an allowed region was
+used (D-071). Deployment followed the 20 November submission. Response time,
+load and uptime on the server are not measured.
 
 ## 5.3 System Implementation
 
@@ -416,7 +421,8 @@ cannot be modified by the application.
 | API type check | `cd server && npm run typecheck` | exit 0, no errors (O-06) | O |
 | Production build | `npx pnpm@10.34.3 build` | success: JS 386.76 kB (116.83 kB gzipped), CSS 32.47 kB (7.64 kB gzipped) (O-09) | O |
 | Live provenance check | HTTP requests to the API on port 3100 | correlation id echoed; 11-column CSV; Viewer export 403; unknown outcome 422 (O-12 to O-20) | O |
-| Deployment smoke test (local) | `deploy/smoke-test.sh` | **12 passed, 0 failed, 1 skipped** on 31 October; not rerun on 20 November | R |
+| Deployment smoke test (local) | `deploy/smoke-test.sh` | **12 passed, 0 failed, 1 skipped** on 31 October | R |
+| Deployment smoke test (Azure VM, HTTPS) | `BASE_URL=https://kaziforce-demo.spaincentral.cloudapp.azure.com deploy/smoke-test.sh` | **13 passed, 0 failed, 0 skipped** on 21 November | D |
 
 For comparison only, the hosted adaptation's own suite of 11 Node tests passed
 in that environment (F). Those tests exercise a different implementation and
@@ -478,9 +484,12 @@ against a running deployment: that login works, that a Viewer is refused on the
 log download, that a Moderator action succeeds and is audited, and that `UPDATE`,
 `DELETE` and `TRUNCATE` on the audit ledger are refused for the application role.
 Run locally against the live API and database on 31 October, before migration
-009, it reported **12 passed, 0 failed, 1 skipped** (R). It was not rerun on 20
-November; the audit-immutability checks it contains are also covered by the
-Jest suite that passed that day (O). The single skip is the check that the model service is not publicly
+009, it reported **12 passed, 0 failed, 1 skipped** (R). On 21 November it was
+run on the deployed Azure virtual machine against the HTTPS origin and reported
+**13 passed, 0 failed, 0 skipped** (D): the check skipped locally, that the
+model service is not reachable from outside, executed through Nginx and
+passed. On the same server the application role's privileges on the audit
+ledger read `can_update = f, can_delete = f, can_truncate = f`. The single skip is the check that the model service is not publicly
 reachable, which requires the Nginx origin and therefore could not execute in a
 direct-to-API run; the script reports it as skipped rather than passed.
 
@@ -620,8 +629,8 @@ automatically tested. The measured results are:
   was asserted with its status code (`npm test`, 86 tests passed).
 - **Audit immutability** is verified at the database level: `UPDATE`, `DELETE` and
   `TRUNCATE` against the ledger are all refused for the application role with
-  SQLSTATE 42501, in the automated suite (O) and in the local deployment smoke
-  test of 31 October (R).
+  SQLSTATE 42501, in the automated suite (O), in the local deployment smoke
+  test of 31 October (R) and on the deployed server on 21 November (D).
 - **Audit provenance** is verified live: the correlation id is echoed and stored,
   and the export carries the outcome and source address (O-14, O-15).
 - **Moderation workflow** is verified end to end: approve, reject and escalate
@@ -672,10 +681,11 @@ than they are.
 
 1. **Scope.** Only the console subset is implemented; the remaining 1,540 SRS
    identifiers are outside this build.
-2. **Deployment.** The system runs locally. The server has not been provisioned
-   and the runbook has not been executed; deployment is **not yet verified**.
-   The local smoke test result (12 passed, 1 skipped) predates migration 009 and
-   was not rerun.
+2. **Deployment.** The system is deployed to a single Azure virtual machine and
+   passed the smoke test there (13 passed, 0 failed). It has no redundancy,
+   backup schedule or monitoring, and its performance under load is not
+   measured. A browser sign-in on the deployed site and certificate renewal
+   are not yet verified.
 3. **Browser coverage.** Browser checks have **not yet been performed**. Only
    browsers that are actually tested are claimed, and none is claimed in this
    report. The headless capture run of 20 November is not a browser test.

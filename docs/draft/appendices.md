@@ -154,13 +154,28 @@ the Appendix 3 screenshots was a capture, not an execution of this checklist.
 
 ## Appendix 5: Deployment record
 
-**Outstanding — not yet executed.** `docs/DEPLOY.md` provides the numbered runbook
-for an Ubuntu virtual private server with Nginx, including the HTTPS path with
-certbot and the alternative when no domain is available. The server has not been
-provisioned and the runbook has not been run. Every step that could not be
-verified without a server is marked in that document. The deployment smoke test
-(Appendix 2, row 7) was executed locally against a real API and database, which
-validates the script itself but not the server configuration.
+**Deployed on 21 November 2026 (track D: run by the operator on the server,
+raw output committed in `docs/draft/evidence/vm-deployment-2026-11-21.md`).**
+
+| Item | Observed |
+|---|---|
+| Host | Azure for Students VM `kaziforce-vm`, region Spain Central, Ubuntu 24.04.5 LTS, 2 vCPU, 3.8 GiB RAM |
+| Address | `https://kaziforce-demo.spaincentral.cloudapp.azure.com` (Azure DNS label; Let's Encrypt certificate, expires 2027-02-19) |
+| Install | `sudo DOMAIN=… bash deploy/azure-vm-install.sh` (commit `f7c13fc`), which scripts `docs/DEPLOY.md` steps 1–9; exit 0, four health checks OK |
+| Audit-ledger grants on the server | `can_select = t, can_insert = t, can_update = f, can_delete = f, can_truncate = f` |
+| HTTPS | `certbot --nginx … --redirect`: certificate issued and deployed; `GET /api/v1/health` over HTTPS → `status: ok, database: reachable` |
+| Smoke test | `BASE_URL=https://kaziforce-demo.spaincentral.cloudapp.azure.com deploy/smoke-test.sh` → **13 passed, 0 failed, 0 skipped** |
+
+The Azure region differs from the East US named during planning: the student
+subscription's region policy refused East US and East Asia
+(`RequestDisallowedByAzure`), so the VM was created in an allowed region
+(D-071). Not measured: response time, load, uptime. Not yet verified: a
+browser sign-in on the deployed site and certificate renewal
+(`certbot renew --dry-run`).
+
+The earlier local run of the same smoke test (Appendix 2, row 7, 31 October)
+reported 12 passed and 1 skipped; the skipped check needs an Nginx origin and
+ran on the server.
 
 ## Appendix 6: Environment variables
 

@@ -78,8 +78,9 @@ tested.
 
 **The audit ledger is immutable in practice, not only in intent.** All three
 destructive operations against it fail for the application role with a
-database-level permission error, verified in the automated suite and in a local
-smoke test against a running API and database. A live check also confirmed that
+database-level permission error, verified in the automated suite, in a local
+smoke test, and on the deployed server, where the full smoke test passed over
+HTTPS. A live check also confirmed that
 the correlation identifier sent with a request is returned to the caller and
 stored on the ledger row.
 
@@ -130,10 +131,11 @@ script re-applies the restriction and can be re-run to correct drift.
 quoting and the account-record layout recorded in Chapter 5 should be corrected
 first, each with a test that would have caught it.
 
-**To the project supervisor, regarding evidence.** The deployment runbook and the
-browser checklist were prepared but not executed by the developer. Their results
-should be obtained before any deployment or cross-browser claim is made in the
-final documentation, because a claim that has not been observed cannot be defended.
+**To the project supervisor, regarding evidence.** The deployment was run on a
+cloud virtual machine and its smoke test passed, but the browser checklist was
+prepared and not executed. Its results should be obtained before any
+cross-browser claim is made, because a claim that has not been observed cannot be
+defended.
 
 **Regarding the model.** The severity model is usable as a triage aid; the action
 suggestion is weaker and should be treated as a prompt for attention rather than a
