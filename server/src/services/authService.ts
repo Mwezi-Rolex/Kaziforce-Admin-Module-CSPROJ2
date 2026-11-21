@@ -52,14 +52,24 @@ export async function authenticate(
   const ok = await bcrypt.compare(password, row.password_hash)
 
   if (!ok) {
-    const attempts = Number(row.failedAttempts) + 1
-    if (attempts >= MAX_FAILED_ATTEMPTS) {
+    // Atomic increment-and-lock in one statement (SEMANTIC_MODEL.md BUG-6,
+    // fixed): the counter is incremented by the database, not read-modify-write
+    // in Node, so concurrent failures cannot lose updates, and the lock fires
+    // exactly once at the MAX_FAILED_ATTEMPTS-th failure. The WHERE clause
+    // re-checks the lock inside the statement, so a request racing a fresh
+    // lock matches no row and is refused without writing.
+    const until = new Date(Date.now() + lockoutIntervalMs())
+    const { rows } = await pool.query<{ failedAttempts: number; lockedUntil: Date | null }>(
+      `UPDATE users SET
+         failed_login_attempts = CASE WHEN failed_login_attempts + 1 >= $2 THEN 0 ELSE failed_login_attempts + 1 END,
+         locked_until = CASE WHEN failed_login_attempts + 1 >= $2 THEN $3 ELSE locked_until END
+       WHERE id = $1 AND (locked_until IS NULL OR locked_until <= now())
+       RETURNING failed_login_attempts AS "failedAttempts", locked_until AS "lockedUntil"`,
+      [row.id, MAX_FAILED_ATTEMPTS, until],
+    )
+    const updated = rows[0]
+    if (updated && updated.lockedUntil) {
       // Lock reached: store the lock, clear the counter, audit the LOCK only.
-      const until = new Date(Date.now() + lockoutIntervalMs())
-      await pool.query(
-        `UPDATE users SET locked_until = $2, failed_login_attempts = 0 WHERE id = $1`,
-        [row.id, until],
-      )
       await writeEvent({
         operatorId: null, // no authenticated actor: the lock is automatic
         actionType: 'Account Locked',
@@ -67,13 +77,18 @@ export async function authenticate(
         targetEntityId: row.id,
         outcome: 'Blocked',
         ...context,
-        metadata: { reason: 'consecutive_failed_logins', attempts, lockedUntil: until.toISOString() },
+        metadata: {
+          reason: 'consecutive_failed_logins',
+          attempts: MAX_FAILED_ATTEMPTS,
+          lockedUntil: new Date(updated.lockedUntil).toISOString(),
+        },
       })
-    } else {
-      // Ordinary failure: increment silently. Deliberately NOT audited, so a
-      // password-guessing run cannot flood the ledger.
-      await pool.query(`UPDATE users SET failed_login_attempts = $2 WHERE id = $1`, [row.id, attempts])
+    } else if (!updated) {
+      // The row was locked between our pre-check and the write: the lock wins.
+      throw new ApiError(401, 'AUTH-001', 'Invalid credentials')
     }
+    // Otherwise an ordinary failure: incremented silently. Deliberately NOT
+    // audited, so a password-guessing run cannot flood the ledger.
     throw new ApiError(401, 'AUTH-001', 'Invalid credentials')
   }
 
