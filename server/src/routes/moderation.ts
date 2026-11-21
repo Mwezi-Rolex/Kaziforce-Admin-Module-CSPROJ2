@@ -160,15 +160,26 @@ async function decideFlag(
   decision: keyof typeof DECISION_TO_STATUS,
   context: AuditContext = { actorIp: null, correlationId: null },
 ) {
+  // The state machine's single enforcement point: the UPDATE re-checks the
+  // status inside the statement, so a concurrent decision (double-click, two
+  // operators, a retry) can never both apply — the loser's UPDATE matches no
+  // row and is refused with 409 (SEMANTIC_MODEL.md BUG-2, fixed).
   const { rows } = await pool.query(
-    `SELECT f.id, f.flag_status AS "flagStatus", f.content_item_id AS "contentItemId", c.owner_id AS "ownerId"
-     FROM flags f JOIN content_items c ON c.id = f.content_item_id WHERE f.id = $1`,
-    [flagId],
+    `UPDATE flags f SET flag_status = $2, decided_by = $3, decided_at = now()
+     WHERE f.id = $1 AND f.flag_status = 'Pending'
+     RETURNING f.content_item_id AS "contentItemId",
+               (SELECT c.owner_id FROM content_items c WHERE c.id = f.content_item_id) AS "ownerId"`,
+    [flagId, DECISION_TO_STATUS[decision], actorId],
   )
   const flag = rows[0]
-  if (!flag) throw new ApiError(404, 'FLAG-001', 'Flag not found')
-  if (flag.flagStatus !== 'Pending') {
-    throw new ApiError(409, 'FLAG-002', `Flag is already ${flag.flagStatus}; only Pending flags can be decided`)
+  if (!flag) {
+    const existing = await pool.query(`SELECT flag_status FROM flags WHERE id = $1`, [flagId])
+    if (!existing.rows[0]) throw new ApiError(404, 'FLAG-001', 'Flag not found')
+    throw new ApiError(
+      409,
+      'FLAG-002',
+      `Flag is already ${existing.rows[0].flag_status}; only Pending flags can be decided`,
+    )
   }
   // Record the model's suggestion, its version, and whether the moderator
   // followed or overrode it. Fail-safe: the decision is never blocked by the model.
@@ -185,11 +196,6 @@ async function decideFlag(
       }
     : { available: false, reason: suggestion.reason }
 
-  await pool.query(`UPDATE flags SET flag_status = $2, decided_by = $3, decided_at = now() WHERE id = $1`, [
-    flagId,
-    DECISION_TO_STATUS[decision],
-    actorId,
-  ])
   await writeEvent({
     operatorId: actorId,
     actionType: DECISION_TO_AUDIT[decision],
@@ -225,26 +231,24 @@ const bulkSchema = z.object({
 })
 
 // Bulk approve/reject/escalate (CON-MOD-003). Each state change gets its own
-// audit event (the export's bulk-confirmation copy is explicit about this).
+// audit event (the export's bulk-confirmation copy is explicit about this), and
+// each flag commits independently: applied/failed are reported per flag. There
+// is deliberately no wrapping transaction — the per-flag guard inside
+// decideFlag is what keeps concurrent bulks honest.
 moderationRouter.post('/bulk', requirePermission('moderation.decide'), async (req: AuthedRequest, res, next) => {
   try {
     const parsed = bulkSchema.safeParse(req.body)
     if (!parsed.success) throw new ApiError(422, 'VALIDATION', parsed.error.issues[0]?.message ?? 'Invalid bulk request')
     const { flagIds, decision } = parsed.data
-    const client = await pool.connect()
     const applied: string[] = []
     const failed: Array<{ id: string; reason: string }> = []
-    try {
-      for (const id of flagIds) {
-        try {
-          await decideFlag(req.user!.id, id, decision, auditContext(req))
-          applied.push(id)
-        } catch (e) {
-          failed.push({ id, reason: e instanceof ApiError ? e.message : 'Failed' })
-        }
+    for (const id of flagIds) {
+      try {
+        await decideFlag(req.user!.id, id, decision, auditContext(req))
+        applied.push(id)
+      } catch (e) {
+        failed.push({ id, reason: e instanceof ApiError ? e.message : 'Failed' })
       }
-    } finally {
-      client.release()
     }
     res.json({
       success: true,
@@ -257,7 +261,11 @@ moderationRouter.post('/bulk', requirePermission('moderation.decide'), async (re
 })
 
 // Super Admin escalation lane (CON-MOD-004; Note 8 activity diagram):
-// overrule -> flag & content approved; uphold and ban -> content owner Terminated.
+// overrule -> flag Approved; uphold and ban -> owner Terminated AND the flag
+// resolved to Rejected so it leaves the lane (SEMANTIC_MODEL.md BUG-7, fixed).
+// Both resolutions claim the flag with a guarded UPDATE (status re-checked in
+// the statement), so concurrent Super Admins cannot double-resolve one flag,
+// and the owner ban is guarded so the shared owner is banned exactly once.
 const escalationSchema = z.object({ resolution: z.enum(['overrule', 'uphold']) })
 
 moderationRouter.post(
@@ -268,22 +276,20 @@ moderationRouter.post(
       const flagId = z.string().uuid('Flag ID must be a UUID').parse(req.params.id)
       const parsed = escalationSchema.safeParse(req.body)
       if (!parsed.success) throw new ApiError(422, 'VALIDATION', 'Resolution must be overrule or uphold')
-      const { rows } = await pool.query(
-        `SELECT f.flag_status AS "flagStatus", f.content_item_id AS "contentItemId", c.owner_id AS "ownerId"
-         FROM flags f JOIN content_items c ON c.id = f.content_item_id WHERE f.id = $1`,
-        [flagId],
-      )
-      const flag = rows[0]
-      if (!flag) throw new ApiError(404, 'FLAG-001', 'Flag not found')
-      if (flag.flagStatus !== 'Escalated') {
-        throw new ApiError(409, 'FLAG-003', 'Only escalated flags can be resolved in the escalation lane')
-      }
+      const { resolution } = parsed.data
 
-      if (parsed.data.resolution === 'overrule') {
-        await pool.query(`UPDATE flags SET flag_status = 'Approved', decided_by = $2, decided_at = now() WHERE id = $1`, [
-          flagId,
-          req.user!.id,
-        ])
+      if (resolution === 'overrule') {
+        const { rows } = await pool.query(
+          `UPDATE flags SET flag_status = 'Approved', decided_by = $2, decided_at = now()
+           WHERE id = $1 AND flag_status = 'Escalated'
+           RETURNING content_item_id AS "contentItemId"`,
+          [flagId, req.user!.id],
+        )
+        if (!rows[0]) {
+          const existing = await pool.query(`SELECT flag_status FROM flags WHERE id = $1`, [flagId])
+          if (!existing.rows[0]) throw new ApiError(404, 'FLAG-001', 'Flag not found')
+          throw new ApiError(409, 'FLAG-003', 'Only escalated flags can be resolved in the escalation lane')
+        }
         await writeEvent({
           operatorId: req.user!.id,
           actionType: 'Flag Overruled',
@@ -291,26 +297,48 @@ moderationRouter.post(
           targetEntityId: flagId,
           outcome: 'Success',
           ...auditContext(req),
-          metadata: { resolution: 'overrule', contentItemId: flag.contentItemId },
+          metadata: { resolution: 'overrule', contentItemId: rows[0].contentItemId },
         })
         return res.json({ success: true, data: { id: flagId, status: 'Approved' }, timestamp: new Date().toISOString() })
       }
 
-      // uphold: ban the content owner (Set User: Terminated in the activity diagram).
+      // uphold: resolve the flag to Rejected and ban the content owner
+      // (Set User: Terminated in the activity diagram).
+      const { rows: claimed } = await pool.query(
+        `UPDATE flags SET flag_status = 'Rejected', decided_by = $2, decided_at = now()
+         WHERE id = $1 AND flag_status = 'Escalated'
+         RETURNING content_item_id AS "contentItemId",
+                   (SELECT c.owner_id FROM content_items c WHERE c.id = flags.content_item_id) AS "ownerId"`,
+        [flagId, req.user!.id],
+      )
+      const flag = claimed[0]
+      if (!flag) {
+        const existing = await pool.query(`SELECT flag_status FROM flags WHERE id = $1`, [flagId])
+        if (!existing.rows[0]) throw new ApiError(404, 'FLAG-001', 'Flag not found')
+        throw new ApiError(409, 'FLAG-003', 'Only escalated flags can be resolved in the escalation lane')
+      }
       if (!flag.ownerId) throw new ApiError(409, 'FLAG-004', 'Flagged content has no owner to ban')
       const { rows: owner } = await pool.query(`SELECT status FROM users WHERE id = $1`, [flag.ownerId])
       if (!owner[0]) throw new ApiError(404, 'USER-001', 'Content owner not found')
-      if (owner[0].status === 'Terminated') throw new ApiError(409, 'USER-003', 'Content owner is already terminated')
-      await pool.query(`UPDATE users SET status = 'Terminated' WHERE id = $1`, [flag.ownerId])
-      await writeEvent({
-        operatorId: req.user!.id,
-        actionType: 'Account Terminated',
-        targetEntityType: 'user',
-        targetEntityId: flag.ownerId,
-        outcome: 'Success',
-        ...auditContext(req),
-        metadata: { resolution: 'uphold', flagId, contentItemId: flag.contentItemId },
-      })
+
+      // Guarded ban: if another uphold already terminated this owner, the
+      // UPDATE matches no row — the resolution still completes, but the ban is
+      // audited exactly once (by whichever uphold applied it).
+      const { rows: banned } = await pool.query(
+        `UPDATE users SET status = 'Terminated' WHERE id = $1 AND status <> 'Terminated' RETURNING id`,
+        [flag.ownerId],
+      )
+      if (banned[0]) {
+        await writeEvent({
+          operatorId: req.user!.id,
+          actionType: 'Account Terminated',
+          targetEntityType: 'user',
+          targetEntityId: flag.ownerId,
+          outcome: 'Success',
+          ...auditContext(req),
+          metadata: { resolution: 'uphold', flagId, contentItemId: flag.contentItemId },
+        })
+      }
       await writeEvent({
         operatorId: req.user!.id,
         actionType: 'Escalation Upheld',
@@ -318,9 +346,9 @@ moderationRouter.post(
         targetEntityId: flagId,
         outcome: 'Success',
         ...auditContext(req),
-        metadata: { bannedUserId: flag.ownerId },
+        metadata: { bannedUserId: flag.ownerId, ownerWasAlreadyTerminated: !banned[0] },
       })
-      res.json({ success: true, data: { id: flagId, status: 'Escalated', ownerBanned: true }, timestamp: new Date().toISOString() })
+      res.json({ success: true, data: { id: flagId, status: 'Rejected', ownerBanned: true }, timestamp: new Date().toISOString() })
     } catch (err) {
       next(err)
     }
