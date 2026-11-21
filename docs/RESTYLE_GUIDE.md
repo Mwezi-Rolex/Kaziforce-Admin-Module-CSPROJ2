@@ -8,6 +8,7 @@ stay exactly as they are.
 **Decision:** requested by the project owner on 21 November 2026 (D-072). It
 replaces the "do not restyle" note in `docs/draft/DISCREPANCIES.md` row 16.
 
+If you're using an AI agent, start it with `docs/prompts/restyle-figma-make.md`.
 When you finish, send the work back as described in section 8. It will be
 proofread, tested, redeployed and recorded in the report.
 
