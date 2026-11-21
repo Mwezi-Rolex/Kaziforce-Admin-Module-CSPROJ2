@@ -160,6 +160,16 @@ Not started (only if the user asks).
 
 ---
 
+## Semantic-model audit (2026-11-22, branch `audit/semantic-model`)
+
+**Done:** recovered the program's minimal semantic model into `docs/SEMANTIC_MODEL.md` (state inventory S1–S15, state machines M1–M7 with transition tables and audit side effects, transition algebra, effect dependencies) and recorded 18 findings with file:line evidence, ranked by impact. High-impact items confirmed live against a scratch API on 3123 + the local 5433 cluster (Node 22): the audit-export UI href can never reach `/export.csv` (JSON or 422 downloads); 9/10 concurrent decision pairs both apply and both write audit rows; a Moderator can flip Terminated→Suspended (un-ban); the escalation-lane bulk bar resolves only `selected[0]`; the role-assignment "transaction" spans pool clients; the lockout counter lost 6 of 8 concurrent updates; uphold leaves the flag Escalated and Uphold→Overrule leaves the owner banned. Demo data re-seeded and locks reset afterwards; no application code changed; Azure VM untouched.
+
+**Next:** a maintainer triages the findings (BUG-1/2/3 are the panel-critical ones); fixes are out of scope for this audit branch by prompt.
+
+**Blockers:** none.
+
+---
+
 ## Azure deployment (2026-11-21)
 
 **Done:** operator created `kaziforce-vm` (Azure for Students, Spain Central after a region-policy refusal, Ubuntu 24.04.5, 2 vCPU / 3.8 GiB). `deploy/azure-vm-install.sh` (commit `f7c13fc`) exited 0 with four health checks OK; audit grants `update/delete/truncate = f`; certbot issued and deployed a certificate for `kaziforce-demo.spaincentral.cloudapp.azure.com`; smoke test over HTTPS **13 passed, 0 failed, 0 skipped**. Transcript in `docs/draft/evidence/vm-deployment-2026-11-21.md`; Appendix 5, Chapter 5 §5.2.3/§5.4.4/§5.8 and Chapter 6 updated.
