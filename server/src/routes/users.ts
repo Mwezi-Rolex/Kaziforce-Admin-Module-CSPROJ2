@@ -102,6 +102,15 @@ usersRouter.get('/:id', requirePermission('users.view'), async (req: AuthedReque
   }
 })
 
+// The account status machine's single enforcement point (SEMANTIC_MODEL.md
+// BUG-3, fixed). suspend and ban are only legal FROM these states; the UPDATE
+// re-checks the status inside the statement, so concurrent or repeated calls
+// cannot both apply, and a Terminated account can never leave Terminated.
+const STATUS_TRANSITIONS: Record<'suspend' | 'ban', string[]> = {
+  suspend: ['Active'],
+  ban: ['Active', 'Suspended'],
+}
+
 async function mutateStatus(
   req: AuthedRequest,
   res: { json: (b: unknown) => void },
@@ -115,11 +124,18 @@ async function mutateStatus(
     throw new ApiError(403, 'AUTHZ-001', 'Only a Super Admin may suspend operator accounts')
   }
   const nextStatus = action === 'suspend' ? 'Suspended' : 'Terminated'
-  if (target.status === nextStatus) throw new ApiError(409, 'USER-003', `Account is already ${nextStatus}`)
   const { rows } = await pool.query(
-    `UPDATE users SET status = $2 WHERE id = $1 RETURNING id, email, status`,
-    [id, nextStatus],
+    `UPDATE users SET status = $2 WHERE id = $1 AND status = ANY($3::text[]) RETURNING id, email, status`,
+    [id, nextStatus, STATUS_TRANSITIONS[action]],
   )
+  if (!rows[0]) {
+    const current = await pool.query(`SELECT status FROM users WHERE id = $1`, [id])
+    if (!current.rows[0]) throw new ApiError(404, 'USER-001', 'Account not found')
+    if (current.rows[0].status === nextStatus) {
+      throw new ApiError(409, 'USER-003', `Account is already ${nextStatus}`)
+    }
+    throw new ApiError(409, 'USER-003', `A ${current.rows[0].status} account cannot be ${action === 'suspend' ? 'suspended' : 'banned'}`)
+  }
   await writeEvent({
     operatorId: req.user!.id,
     actionType: action === 'suspend' ? 'User Suspended' : 'Account Terminated',
