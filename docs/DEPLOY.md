@@ -3,6 +3,15 @@
 Audience: the operator (you). This runbook targets a **fresh Ubuntu 22.04 or 24.04
 LTS VPS**. Every command is meant to be run in order, mostly with `sudo`.
 
+> **Scripted path (Azure VM, Ubuntu 24.04).** `deploy/azure-vm-install.sh` runs
+> steps 1–9 below in one pass, generating every secret on the VM. Steps 10
+> (HTTPS) and 11 (smoke test) stay manual. See the script header for usage.
+> Corrections made while preparing it, which also apply to the manual steps:
+> install Node 22 (not 20); install with `pnpm install --frozen-lockfile`
+> (`npm ci` fails: there is no `package-lock.json`); and the production seed
+> does **not** print passwords: it requires `SEED_*_PASSWORD` in the
+> environment (D-050).
+
 > **Verification status — read before you start.**
 > I cannot provision a VPS, so I could not run this end to end. What *was* verified
 > on a local machine is listed at the end under **Verification status**. Anything
@@ -26,10 +35,11 @@ LTS VPS**. Every command is meant to be run in order, mostly with `sudo`.
 sudo apt update && sudo apt upgrade -y
 sudo apt install -y curl git nginx postgresql postgresql-contrib ufw ca-certificates
 
-# Node.js 20 LTS
-curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+# Node.js 22 LTS (Vite 8 and the pinned toolchain need 22; see D-065, D-069)
+curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
 sudo apt install -y nodejs
-node --version    # expect v20.x
+node --version    # expect v22.x
+sudo npm install -g pnpm@10.34.3   # server/ ships pnpm-lock.yaml, not package-lock.json
 
 # Python 3 for the model service
 sudo apt install -y python3 python3-venv python3-pip
@@ -109,8 +119,8 @@ On the VPS:
 
 ```bash
 cd /opt/kaziforce/server
-sudo -u kaziforce npm ci
-sudo -u kaziforce npm run build          # tsc -> server/dist
+sudo -u kaziforce -H pnpm install --frozen-lockfile
+sudo -u kaziforce -H pnpm run build      # tsc -> server/dist
 
 cd /opt/kaziforce/ml
 sudo -u kaziforce python3 -m venv .venv
@@ -162,8 +172,10 @@ whitespace: any value containing a space makes the command fail outright
 (verified locally — `env: 'world': No such file or directory`, exit 127), so the
 migration silently never runs. The `set -a` form above is equivalent and safe.
 
-**The seed prints the three demo operator passwords.** Capture them; the panel
-will use them. In a real deployment you would replace these accounts.
+**With `NODE_ENV=production` the seed refuses to run** unless
+`SEED_VIEWER_PASSWORD`, `SEED_MODERATOR_PASSWORD` and `SEED_SUPERADMIN_PASSWORD`
+are set (at least 12 characters, not the demo values), and it never prints them.
+Put them in `/etc/kaziforce/api.env` before seeding and keep a copy for the panel.
 
 Then re-assert the audit-log restrictions (BRIEF requires the explicit script):
 
