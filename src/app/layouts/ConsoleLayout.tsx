@@ -7,7 +7,8 @@ type NavEntry = { to: string; label: string; glyph: string; permission?: string 
 
 // Ch5 §3.4.6 wireframes: persistent left navigation rail across the four
 // domains plus Super-Admin settings. Entries the session lacks permission for
-// are hidden entirely; the queue count badge appears only with real data.
+// are hidden entirely (the export's queue-count badge is not implemented —
+// the counts live on each screen instead).
 const NAV: NavEntry[] = [
   { to: '/console/dashboard', label: 'Dashboard Analytics', glyph: '▦' },
   { to: '/console/users', label: 'User Control Centre', glyph: '◎', permission: PERMISSIONS.usersView },
