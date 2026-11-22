@@ -289,3 +289,13 @@ Not started (only if the user asks).
 **Next:** operator review of the dashboard visuals (screenshots for the report are a person's retake); note the stale process on port 3000 serves old code and should be restarted from this workspace before any demo.
 
 **Blockers:** none.
+
+---
+
+## Final documentation Word document (2026-11-23, branch `feat/dashboard-analytics`)
+
+**Done:** the user's request "documentation written into a complete word doc, copy the chapter 5 update and create a new file" delivered as `docs/draft/Chapter 5 Update - Final Documentation.docx` (D-099). Built with the docx skill in a temp workspace (repo untouched except the deliverable): title page (December 2026, "Final Project Documentation"), declaration/approval, acknowledgment, present-tense abstract, field-based TOC with placeholders, List of Figures/Tables/Abbreviations, Chapters 1–4 from the attached docx with the chapters-1-4-changes corrections and tense conversion, complete Chapter 5 (environment tables, dataset description, per-module implementation with the 10 real screenshots from docs/draft/screenshots, 35-row test-case table, defects incl. the two post-freeze fixes confirmed in branch history, accessibility, results with model metrics, version control, AI declaration, limitations), Chapter 6, references + [reference needed] paragraph, Appendix A1 with Semester 1 + new Semester 2 (July–December 2026) schedules and a regenerated Apr–Dec Gantt (matplotlib, style-matched), Appendix A2 Turn-It-In placeholder. Verified: postcheck.py 0 errors / 2 acceptable warnings (mandated TOC page-break paragraph; intentional tighter table-cell line spacing); LibreOffice render → 75-page PDF; page inspection (visual-judge subagents unavailable — provider-not-found — so pages were inspected directly): title, declaration, abstract, TOC dot-leader entries, lists, Table 3.1, Figures 2.1/4.2/4.6, screenshot figures, Table 5.6 header repeat (ID/Verdict widths fixed after first render), References italics, Appendix tables + Gantt all pass; TOC placeholder script exit 0; footer PAGE fields patched (front matter `\* roman`, body `\* arabic`), empty pgNumType stripped.
+
+**Next:** a person opens the file in Word and runs TOC → Update Field (the placeholder page numbers are approximate); fills the [reference needed] entries and the Turn-It-In appendix; retakes any screenshots they want replaced.
+
+**Blockers:** none.
