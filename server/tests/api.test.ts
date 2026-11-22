@@ -1,7 +1,10 @@
 import request from 'supertest'
 import type { Express } from 'express'
 import type { Pool } from 'pg'
+import { createRequire } from 'module'
 import { createPool, hasDb as envHasDb } from './helpers/db'
+
+const require2 = createRequire('C:/Users/smmwe/Documents/OpenCode Projects/CS Project II v2/server/package.json')
 
 // Skips cleanly when the database has not been bootstrapped yet (CI/dev without
 // server/.env). Runs once `npm run bootstrap && npm run migrate && npm run seed` completed.
@@ -65,6 +68,42 @@ d('auth', () => {
   it('denies /me without a session (401)', async () => {
     const res = await request(app).get('/api/v1/auth/me').expect(401)
     expect(res.body.error.code).toBe('AUTH-002')
+  })
+
+  it('rejects an expired session token (401 AUTH-002) — sessions really expire', async () => {
+    // SEMANTIC_MODEL.md M4: the session state machine's expiry transition. A
+    // token signed with the real secret but already past its exp must be
+    // refused exactly like an invalid one — expiry is not just cosmetic.
+    const jwt = require2('jsonwebtoken')
+    const operator = await pool.query<{ id: string }>(
+      `SELECT id FROM users WHERE email = 'moderator@kaziforce.local'`,
+    )
+    const expired = jwt.sign(
+      { sub: operator.rows[0].id, email: 'moderator@kaziforce.local' },
+      process.env.JWT_SECRET,
+      { expiresIn: '-1s', issuer: 'kaziforce-auth', audience: 'kaziforce-api' },
+    )
+    const res = await request(app)
+      .get('/api/v1/auth/me')
+      .set('Cookie', `kz_session=${expired}`)
+      .expect(401)
+    expect(res.body.error.code).toBe('AUTH-002')
+  })
+
+  it('logout clears the session cookie and writes the Operator Logout audit row', async () => {
+    const login = await request(app)
+      .post('/api/v1/auth/login')
+      .send({ email: 'moderator@kaziforce.local', password: 'ModeratorDemo!2026' })
+      .expect(200)
+    const cookie = login.headers['set-cookie'][0]
+    const res = await request(app).post('/api/v1/auth/logout').set('Cookie', cookie).expect(200)
+    const cleared = res.headers['set-cookie'] as unknown as string[]
+    expect(cleared.join(';')).toMatch(/kz_session=;/)
+    const audited = await pool.query(
+      `SELECT 1 FROM audit_log WHERE action_type = 'Operator Logout' AND operator_id = $1`,
+      [login.body.data.id],
+    )
+    expect(audited.rows.length).toBeGreaterThan(0)
   })
 })
 

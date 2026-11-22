@@ -138,6 +138,24 @@ d('single decision (moderation.decide)', () => {
     void queue
   })
 
+  it('serves suggestions fail-safe over HTTP when the model service is down (CON-ML-A-001)', async () => {
+    // Rule-2 guarantee: the model only suggests and fails safe. Nothing
+    // listens on the model port in the test run, so this exercises the real
+    // unreachable-service path through the HTTP handler.
+    const cookie = await loginAs('moderator@kaziforce.local', 'ModeratorDemo!2026')
+    const flag = await ensurePendingFlag('Low')
+    const res = await request(app)
+      .get(`/api/v1/moderation/flags/${flag.id}/suggestion`)
+      .set('Cookie', cookie)
+      .expect(200)
+    expect(res.body.success).toBe(true)
+    expect(res.body.data.available).toBe(false)
+    expect(typeof res.body.data.reason).toBe('string')
+    // The queue listing itself is unaffected by the model being down.
+    const queue = await request(app).get('/api/v1/moderation/queue?status=Pending').set('Cookie', cookie).expect(200)
+    expect(queue.body.success).toBe(true)
+  })
+
   it('records the model suggestion (version + followed flag) in the audit payload (CON-ML-A-001)', async () => {
     const cookie = await loginAs('moderator@kaziforce.local', 'ModeratorDemo!2026')
     const flag = await ensurePendingFlag('Medium')

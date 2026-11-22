@@ -89,4 +89,24 @@ d('BUG-5: concurrent role assignments keep the single-role invariant', () => {
     // Restore the seeded role for the sample account.
     await request(app).post(`/api/v1/users/${id}/role`).set('Cookie', cookie).send({ role: 'viewer' })
   })
+
+  it('leaves no dangling open transactions on the database (connection hygiene)', async () => {
+    // Behavioural replacement for the former implementation-level fake-client
+    // tests: whatever the role-assignment transaction does internally, the
+    // observable result in the database is that no backend of this application
+    // is left "idle in transaction" after concurrent traffic.
+    const storm = await userIdByEmail('adwoa.mensah@example.com')
+    const cookie = await loginSuperAdmin()
+    await Promise.all(
+      Array.from({ length: 8 }, (_, i) =>
+        request(app).post(`/api/v1/users/${storm}/role`).set('Cookie', cookie).send({ role: i % 2 ? 'moderator' : 'viewer' }),
+      ),
+    )
+    const { rows } = await pool.query<{ n: number }>(
+      `SELECT count(*)::int AS n FROM pg_stat_activity WHERE state = 'idle in transaction' AND usename = current_user`,
+    )
+    expect(rows[0].n).toBe(0)
+    // Restore the seeded role for the sample account.
+    await request(app).post(`/api/v1/users/${storm}/role`).set('Cookie', cookie).send({ role: 'viewer' })
+  })
 })
