@@ -1,68 +1,168 @@
+import { Link } from 'react-router-dom'
 import { useSession } from '../../app/SessionContext'
-import { PageTitle, Panel } from '../../components/ui/primitives'
-import { PERMISSIONS, ROLE_LABEL, can } from '../../lib/permissions'
+import { useApi } from '../../lib/useApi'
+import { can, PERMISSIONS, ROLE_LABEL } from '../../lib/permissions'
+import type { AuditEvent } from '../../lib/types'
 
-// Dashboard shell (CON-DASH-001; FR-ADM-008/046).
-//
-// The documents define no dashboard KPI set, so the analytics area is
-// deliberately unpopulated rather than filled with invented metrics (OQ-2,
-// AGENTS.md "never invent a requirement"). What is shown is real session and
-// role-scope information, which the documents do support.
+// Dashboard (CON-DASH-001): the documents define no KPI set, so analytics stay
+// deliberately unpopulated (OQ-2). The restyle adds the F-layout bands — hero,
+// control-centre links, analytics placeholder and a read-only recent-audit
+// card fed by the same permission-gated /audit endpoint every tier can read.
+// No invented metrics: "Meaningful measures come first." stays the rule.
 export function DashboardPage() {
   const { user } = useSession()
+  const recent = useApi<AuditEvent[]>('/api/v1/audit?size=4')
+  const firstName = user?.fullName.split(' ')[0] ?? 'operator'
+  const today = new Date().toLocaleDateString('en-GB', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  })
 
   return (
-    <>
-      <PageTitle kicker="Governance overview" title="Dashboard">
-        <p className="font-mono text-[10px] uppercase tracking-[.14em] text-[#636d66]">
-          Role scope · {user ? ROLE_LABEL[user.role] : '—'}
-        </p>
-      </PageTitle>
-
-      <div className="grid grid-cols-[1.3fr_.7fr] gap-5">
-        <Panel>
-          <p className="eyebrow">Analytics access</p>
-          <h2 className="mt-4 max-w-md font-serif text-3xl leading-tight">
-            Dashboard analytics are available to all operator tiers.
-          </h2>
-          <p className="mt-5 max-w-lg text-sm leading-6 text-[#636d67]">
-            The source documentation does not define a dashboard KPI set. This page intentionally leaves the
-            analytical content unpopulated rather than introduce unapproved measures.
-          </p>
-          <div className="mt-10 flex items-center gap-3 border-t border-[#dfe0d8] pt-5">
-            <span className="h-2 w-2 rounded-full bg-[#c99735]" aria-hidden="true" />
-            <span className="font-mono text-[10px] uppercase tracking-[.1em] text-[#666c66]">
-              Metric definitions pending
-            </span>
-          </div>
-        </Panel>
-
-        <section className="bg-[#183a35] p-7 text-[#f8f5ec]">
-          <p className="eyebrow text-[#bcd7c2]">Your operator scope</p>
-          <dl className="mt-6 space-y-3 text-sm leading-5">
-            <div className="flex justify-between gap-4 border-b border-white/15 pb-2">
-              <dt className="text-[#c5d4c7]">Signed in as</dt>
-              <dd className="truncate text-right">{user?.email}</dd>
-            </div>
-            <div className="flex justify-between gap-4 border-b border-white/15 pb-2">
-              <dt className="text-[#c5d4c7]">Role</dt>
-              <dd className="text-right">{user ? ROLE_LABEL[user.role] : '—'}</dd>
-            </div>
-            <div className="flex justify-between gap-4 border-b border-white/15 pb-2">
-              <dt className="text-[#c5d4c7]">Moderation decisions</dt>
-              <dd className="text-right">{can(user?.permissions, PERMISSIONS.moderationDecide) ? 'Yes' : 'No'}</dd>
-            </div>
-            <div className="flex justify-between gap-4 border-b border-white/15 pb-2">
-              <dt className="text-[#c5d4c7]">Log download (CSV)</dt>
-              <dd className="text-right">{can(user?.permissions, PERMISSIONS.auditExport) ? 'Yes' : 'No'}</dd>
-            </div>
-            <div className="flex justify-between gap-4">
-              <dt className="text-[#c5d4c7]">System settings</dt>
-              <dd className="text-right">{can(user?.permissions, PERMISSIONS.settingsManage) ? 'Yes' : 'No'}</dd>
-            </div>
-          </dl>
-        </section>
+    <div className="kz-dashboard">
+      <p className="eyebrow">Your daily overview</p>
+      <div className="mt-2 flex items-end justify-between gap-4">
+        <h1>
+          Welcome back, <em className="kz-serif-em">{firstName}.</em>
+        </h1>
+        <span className="kz-date-chip">
+          <span aria-hidden="true">🗓</span> {today}
+        </span>
       </div>
-    </>
+      <p className="kz-sub">A clear view of your workspace. A considered approach to every decision.</p>
+
+      {/* Hero band */}
+      <div className="kz-dash-hero">
+        <img src="/images/workforce-collab.jpg" alt="" loading="lazy" />
+        <div className="kz-dash-hero-overlay" />
+        <div className="kz-dash-hero-copy">
+          <span className="kz-kicker">
+            <span />
+            People first. Always.
+          </span>
+          <h2 className="kz-dash-hero-title">
+            Good work starts
+            <br />
+            with <em>trust.</em>
+          </h2>
+          <p>Creating a safer, fairer marketplace for Africa's digital workforce.</p>
+          <Link to="/console/audit" className="kz-cta lime">
+            Explore the audit trail <span aria-hidden="true">→</span>
+          </Link>
+        </div>
+        <span className="kz-dash-hero-caption">BUILT AROUND REAL PEOPLE</span>
+      </div>
+
+      {/* Control centre cards */}
+      <div className="mt-10 flex items-baseline justify-between gap-4">
+        <h2 className="text-lg font-medium">Your control centre</h2>
+        <p className="text-xs text-[#7a847e]">Purposeful tools. Clear responsibilities.</p>
+      </div>
+      <div className="kz-control-cards mt-4">
+        {[
+          {
+            to: '/console/users',
+            glyph: '◎',
+            title: 'People & permissions',
+            desc: 'Review account history and manage access with care.',
+            link: 'User Control Centre',
+            show: can(user?.permissions, PERMISSIONS.usersView),
+          },
+          {
+            to: '/console/queue',
+            glyph: '≡',
+            title: 'Decisions that matter',
+            desc: 'Review flagged content. Keep human judgment at the centre.',
+            link: 'Moderation Queue',
+            show: can(user?.permissions, PERMISSIONS.auditView),
+          },
+          {
+            to: '/console/audit',
+            glyph: '◫',
+            title: 'A record you can trust',
+            desc: 'Follow every operator action through a read-only audit trail.',
+            link: 'Audit Explorer',
+            show: can(user?.permissions, PERMISSIONS.auditView),
+          },
+        ]
+          .filter((c) => c.show)
+          .map((c) => (
+            <Link key={c.to} to={c.to} className="kz-control-card">
+              <div className="flex items-start justify-between">
+                <span className="kz-control-glyph" aria-hidden="true">
+                  {c.glyph}
+                </span>
+                <span aria-hidden="true" className="kz-control-arrow">
+                  ↗
+                </span>
+              </div>
+              <h3>{c.title}</h3>
+              <p>{c.desc}</p>
+              <span className="kz-control-link">
+                {c.link} <span aria-hidden="true">→</span>
+              </span>
+            </Link>
+          ))}
+      </div>
+
+      {/* Analytics placeholder + recent audit */}
+      <div className="kz-dash-grid mt-6">
+        <div className="kz-card kz-dash-cell">
+          <div className="flex items-center justify-between border-b border-[#e3e8e1] px-6 py-4">
+            <h3 className="text-sm font-medium">Dashboard analytics</h3>
+            <span className="kz-notconfigured">Not configured</span>
+          </div>
+          <div className="grid min-h-[280px] place-items-center px-8 text-center">
+            <div>
+              <p className="kz-serif-lg">Meaningful measures come first.</p>
+              <p className="mx-auto mt-3 max-w-xs text-xs leading-5 text-[#7a847e]">
+                Analytics will appear here once the project's KPI definitions have been approved.
+              </p>
+              <p className="mt-4 font-mono text-[9px] uppercase tracking-[1.4px] text-[#739055]">
+                <span className="mr-2 inline-block h-1.5 w-1.5 rounded-full bg-[#d1f77b] align-middle" aria-hidden="true" />
+                No unverified metrics displayed
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="kz-card kz-dash-cell">
+          <div className="flex items-center justify-between border-b border-[#e3e8e1] px-6 py-4">
+            <div>
+              <h3 className="text-sm font-medium">Recent audit activity</h3>
+              <p className="mt-1 text-xs text-[#7a847e]">A traceable record of operator decisions.</p>
+            </div>
+            <Link to="/console/audit" className="text-xs text-[#103e32] underline underline-offset-2">
+              View all
+            </Link>
+          </div>
+          {recent.error ? (
+            <p className="px-6 py-6 text-xs text-[#a83f27]">{recent.error}</p>
+          ) : (
+            <ul>
+              {(recent.data ?? []).map((e) => (
+                <li key={e.id} className="flex items-center justify-between border-b border-[#eef2ec] px-6 py-4">
+                  <div>
+                    <p className="text-sm">{e.actionType}</p>
+                    <p className="mt-0.5 font-mono text-[10px] text-[#7a847e]">{e.operatorEmail ?? 'system'}</p>
+                  </div>
+                  <time className="font-mono text-[10px] text-[#7a847e]">
+                    {new Date(e.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </time>
+                </li>
+              ))}
+              {!recent.loading && (recent.data ?? []).length === 0 && (
+                <li className="px-6 py-6 text-xs text-[#7a847e]">No events yet.</li>
+              )}
+            </ul>
+          )}
+          <p className="flex items-center gap-2 border-t border-[#e3e8e1] px-6 py-3 font-mono text-[9px] uppercase tracking-[1.2px] text-[#7a847e]">
+            <span aria-hidden="true">🔒</span> Read-only record · INSERT-only audit model
+          </p>
+        </div>
+      </div>
+    </div>
   )
 }

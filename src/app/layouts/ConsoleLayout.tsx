@@ -1,96 +1,155 @@
-import { NavLink, Outlet, useNavigate } from 'react-router-dom'
-import { BrandMark, Pill } from '../../components/ui/primitives'
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { PERMISSIONS, ROLE_LABEL, can } from '../../lib/permissions'
 import { useSession } from '../SessionContext'
 
 type NavEntry = { to: string; label: string; glyph: string; permission?: string }
 
-// Ch5 §3.4.6 wireframes: persistent left navigation rail across the four
-// domains plus Super-Admin settings. Entries the session lacks permission for
-// are hidden entirely (the export's queue-count badge is not implemented —
-// the counts live on each screen instead).
+// Console shell restyled to the Figma Make design (CS Project II v3):
+// dark forest rail with a four-item workspace menu — System Settings moved to
+// a header control, shown only to operators holding settings.manage
+// (CON-SET-001; RESTYLE_GUIDE §5.2). The route and its SettingsGate are unchanged.
 const NAV: NavEntry[] = [
   { to: '/console/dashboard', label: 'Dashboard Analytics', glyph: '▦' },
   { to: '/console/users', label: 'User Control Centre', glyph: '◎', permission: PERMISSIONS.usersView },
   { to: '/console/queue', label: 'Moderation Queue', glyph: '≡', permission: PERMISSIONS.auditView },
   { to: '/console/audit', label: 'Audit Explorer', glyph: '◫', permission: PERMISSIONS.auditView },
-  { to: '/console/settings', label: 'System Settings', glyph: '⚙', permission: PERMISSIONS.settingsManage },
 ]
+
+const TITLES: Record<string, string> = {
+  '/console/dashboard': 'Dashboard Analytics',
+  '/console/users': 'User Control Centre',
+  '/console/queue': 'Moderation Queue',
+  '/console/audit': 'Audit Explorer',
+  '/console/settings': 'System Settings',
+}
 
 export function ConsoleLayout() {
   const { user, logout } = useSession()
   const navigate = useNavigate()
+  const location = useLocation()
   if (!user) return null
 
+  const pageTitle = TITLES[location.pathname] ?? 'Workspace'
+  const isSettings = location.pathname === '/console/settings'
+
   return (
-    <main className="min-h-screen bg-[#f7f5ef] text-[#17332f]">
+    <div className="kz-console">
       <a
         href="#console-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:bg-[#183a35] focus:px-3 focus:py-2 focus:text-sm focus:text-[#fcfaf2]"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:bg-[#d1f77b] focus:px-3 focus:py-2 focus:text-sm focus:text-[#103e32]"
       >
         Skip to content
       </a>
-      <aside className="console-sidebar console-rail fixed inset-y-0 left-0 z-20 flex w-[252px] flex-col border-r border-[#d8d8ce] bg-[#eeece3] px-4 py-5">
-        <div className="flex items-center gap-3 px-2">
-          <BrandMark />
-          <div>
-            <p className="font-serif text-lg leading-none">Kaziforce</p>
-            <p className="mt-1 font-mono text-[9px] uppercase tracking-[.18em] text-[#646d66]">Governance console</p>
-          </div>
+
+      {/* ---- Rail ---------------------------------------------------------- */}
+      <aside className="kz-rail">
+        <div className="kz-rail-brand">
+          <span className="kz-rail-logo" aria-hidden="true">
+            K
+          </span>
+          <span className="kz-rail-brand-name">Kaziforce</span>
+          <span className="kz-rail-brand-sub">Governance console</span>
         </div>
-        <div className="mt-12 px-2 font-mono text-[10px] uppercase tracking-[.16em] text-[#686c66]">Operations</div>
-        <nav className="mt-3 space-y-1" aria-label="Console">
+
+        <p className="kz-rail-status">
+          <span className="kz-rail-status-dot" aria-hidden="true" />
+          Marketplace workspace
+        </p>
+
+        <p className="kz-rail-label">Workspace</p>
+        <nav className="kz-rail-nav" aria-label="Console">
           {NAV.filter((entry) => !entry.permission || can(user.permissions, entry.permission)).map((entry) => (
             <NavLink
               key={entry.to}
               to={entry.to}
-              className={({ isActive }) => `nav-item ${isActive ? 'nav-active' : ''}`}
+              className={({ isActive }) => `kz-rail-item ${isActive ? 'kz-rail-active' : ''}`}
             >
-              <span className="grid h-5 w-5 place-items-center text-[15px] leading-none" aria-hidden="true">
+              <span className="kz-rail-glyph" aria-hidden="true">
                 {entry.glyph}
               </span>
               <span>{entry.label}</span>
             </NavLink>
           ))}
         </nav>
-        <div className="mt-auto border-t border-[#d8d8ce] pt-4">
-          <div className="flex items-center gap-3 px-3">
-            <div className="grid h-8 w-8 place-items-center rounded-full bg-[#d5caae] font-serif text-sm" aria-hidden="true">
-              {user.fullName.slice(0, 2).toUpperCase()}
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-xs font-semibold">{user.fullName}</p>
-              <p className="font-mono text-[9px] uppercase tracking-wider text-[#666b64]">{ROLE_LABEL[user.role]}</p>
-            </div>
+
+        <div className="kz-rail-foot">
+          <p className="kz-rail-trust">
+            Trust is built.
+            <br />
+            <em>One decision at a time.</em>
+          </p>
+          <hr className="kz-rail-rule" />
+          <p className="kz-rail-copy">A fairer digital workforce starts with accountable governance.</p>
+          <div className="kz-rail-session">
+            <p className="kz-rail-session-label">
+              <span aria-hidden="true">🔒</span> Session access <span className="kz-rail-demo">Demo</span>
+            </p>
+            <p className="kz-rail-session-role">{ROLE_LABEL[user.role]}</p>
+            <p className="kz-rail-session-note">Access is verified on the server.</p>
           </div>
-          <div className="mt-3 px-2">
+          <div className="kz-rail-operator">
+            <span className="kz-rail-avatar" aria-hidden="true">
+              {user.fullName.slice(0, 2).toUpperCase()}
+            </span>
+            <div className="kz-rail-operator-meta">
+              <p className="kz-rail-operator-name">{user.fullName}</p>
+              <p className="kz-rail-operator-role">{ROLE_LABEL[user.role]}</p>
+            </div>
             <button
-              className="minor-button w-full"
+              type="button"
+              className="kz-rail-signout"
+              aria-label="Sign out"
               onClick={async () => {
                 await logout()
                 navigate('/login')
               }}
             >
-              Sign out
+              ⎋
             </button>
           </div>
         </div>
       </aside>
-      <section className="console-main ml-[252px] min-h-screen">
-        <header className="console-header flex h-[76px] items-center justify-between border-b border-[#deded5] bg-[#faf9f4] px-10">
-          <div className="flex items-center gap-3">
-            <span className="font-mono text-[10px] uppercase tracking-[.15em] text-[#616e67]">Authenticated · JWT session verified</span>
-            <span className="h-1.5 w-1.5 rounded-full bg-[#3e7d5b]" aria-hidden="true" />
-          </div>
-          <div className="header-meta flex items-center gap-3">
-            <Pill tone="active">{ROLE_LABEL[user.role]}</Pill>
-            <span className="font-mono text-[10px] uppercase tracking-[.12em] text-[#666c66]">{user.email}</span>
+
+      {/* ---- Main ---------------------------------------------------------- */}
+      <div className="kz-main">
+        <header className="kz-header">
+          <nav className="kz-breadcrumb" aria-label="Breadcrumb">
+            <span className="kz-breadcrumb-glyph" aria-hidden="true">
+              ▦
+            </span>
+            <span>Workspace</span>
+            <span aria-hidden="true" className="kz-breadcrumb-sep">
+              ›
+            </span>
+            <span aria-current="page">{pageTitle}</span>
+          </nav>
+          <div className="kz-header-meta">
+            <span className="kz-header-note">
+              <span className="kz-header-note-dot" aria-hidden="true" /> Sample workspace · saved records
+            </span>
+            <span className="kz-role-chip">
+              <span aria-hidden="true">🛡</span> {ROLE_LABEL[user.role]}
+            </span>
+            {can(user.permissions, PERMISSIONS.settingsManage) && (
+              <Link
+                to="/console/settings"
+                className={`kz-header-settings ${isSettings ? 'kz-header-settings-active' : ''}`}
+              >
+                <span aria-hidden="true">⚙</span> System Settings
+              </Link>
+            )}
           </div>
         </header>
-        <div id="console-content" className="console-content mx-auto max-w-[1440px] px-10 py-9">
+        <main id="console-content" className="kz-content">
           <Outlet />
-        </div>
-      </section>
-    </main>
+        </main>
+        <footer className="kz-console-footer">
+          <p className="kz-console-footer-left">
+            <span aria-hidden="true">🛡</span> <em className="kz-serif-lg-inline">Accountability, by design.</em>
+          </p>
+          <p className="kz-console-footer-right">Operator actions are recorded · All times UTC</p>
+        </footer>
+      </div>
+    </div>
   )
 }

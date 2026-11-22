@@ -4,7 +4,7 @@ import { BrandMark } from '../components/ui/primitives'
 // CON-WEB-002.
 export function NotFoundPage() {
   return (
-    <main className="grid min-h-screen place-items-center bg-[#f7f5ef] px-6 text-[#17332f]">
+    <main className="grid min-h-screen place-items-center bg-[#f7f9f6] px-6 text-[#173e32]">
       <div className="max-w-md text-center">
         <div className="mb-8 flex justify-center">
           <BrandMark />

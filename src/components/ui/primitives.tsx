@@ -47,7 +47,7 @@ export function Panel({ children, className = '' }: { children: ReactNode; class
 
 export function EmptyState({ title, hint }: { title: string; hint?: string }) {
   return (
-    <div className="border border-dashed border-[#d3d5cb] bg-[#faf9f4] p-8 text-center">
+    <div className="border border-dashed border-[#d3d5cb] bg-[#fcfdf8] p-8 text-center">
       <p className="font-serif text-xl text-[#33473f]">{title}</p>
       {hint && <p className="mt-2 text-xs text-[#656d66]">{hint}</p>}
     </div>
@@ -85,7 +85,7 @@ export function PageTitle({ kicker, title, children }: { kicker: string; title: 
 
 export function BrandMark() {
   return (
-    <div className="grid h-9 w-9 place-items-center rounded-sm bg-[#183a35] font-serif text-xl text-[#fcfaf2]">
+    <div className="grid h-9 w-9 place-items-center rounded-sm bg-[#103e32] font-serif text-xl text-[#fcfaf2]">
       K
     </div>
   )
