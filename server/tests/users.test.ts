@@ -21,10 +21,22 @@ beforeAll(async () => {
   const mod = await import('../src/app')
   app = mod.createApp()
   // Reset the sample accounts so the suite is idempotent across runs
-  // (mutations from earlier runs would otherwise return 409).
+  // (mutations from earlier runs would otherwise return 409). Roles are reset
+  // too: this suite's role test leaves adwoa as moderator, and Jest's suite
+  // order varies, so a later run could otherwise find the no-op 409 instead
+  // of the expected 200 (observed once on test/behaviour).
   await pool.query(
     `UPDATE users SET status = 'Active'
      WHERE email IN ('adwoa.mensah@example.com', 'zainab.okafor@example.com', 'moses.kato@example.com')`,
+  )
+  await pool.query(
+    `DELETE FROM user_roles
+     WHERE user_id IN (SELECT id FROM users WHERE email IN ('adwoa.mensah@example.com', 'moses.kato@example.com', 'zainab.okafor@example.com'))`,
+  )
+  await pool.query(
+    `INSERT INTO user_roles (user_id, role_id)
+     SELECT u.id, r.id FROM users u, roles r
+     WHERE u.email IN ('adwoa.mensah@example.com', 'moses.kato@example.com', 'zainab.okafor@example.com') AND r.name = 'viewer'`,
   )
 })
 afterAll(async () => {
