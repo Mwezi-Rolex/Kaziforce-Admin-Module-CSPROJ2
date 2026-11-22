@@ -311,3 +311,118 @@ Restore evidence: `seed complete — SAMPLE DATA inserted (…)`; `Reset 0 accou
 - The frontend was not exercised in a browser during this audit (the findings about the UI are from component code and the API behaviour behind them).
 - Performance, coverage and load figures: not measured (unchanged from the project's standing "not measured" list).
 - The deployed Azure VM was not touched; nothing was pushed.
+
+---
+
+## 8. Remediation record — branch `fix/state-machine-bugs` (2026-11-22)
+
+Every CONFIRMED finding from §5 was fixed with a failing regression test written first
+(the failure quoted in §8.4), then the fix, then the same test passing. One commit per
+issue, in order: `49f72b1` (I1), `e0a682a` (I2), `9bce74f` (I3), `37b6d0a` (I4),
+`085b084` (I5), `056f0fb` (I6), `5670566` (I7), `594d0f2` (I8), `47107c4` (I9),
+`568d128` (I10). No dependency was added. The panel guarantees are intact: the app
+role's audit_log grants are unchanged (re-checked, §8.5), permissions are still
+checked before every handler, the Viewer CSV 403 is re-asserted by the suite, and the
+model client is untouched.
+
+### 8.1 Fixed findings
+
+| Finding | Issue | Fix (cause, not symptom) | Regression tests |
+|---|---|---|---|
+| BUG-1 export href | I7 | `AuditPage` builds a separate `exportHref` that keeps `/export.csv` on the PATH, filters in the query string | `tests/audit-export.test.tsx` (2) |
+| BUG-2 decision TOCTOU | I1 | `decideFlag`'s UPDATE now carries `AND flag_status='Pending'` and 409s on zero rows — the check lives in the statement, not in a prior read | `server/tests/moderation-races.test.ts` (6) |
+| BUG-3 Terminated→Suspended | I2 | `mutateStatus` enforces the transition table (`suspend` from Active only; `ban` from Active/Suspended) via `status = ANY(...)` in the UPDATE, one guard for both routes | `server/tests/users-status.test.ts` (4) |
+| BUG-4 bulk escalation on `selected[0]` | I1 (UI) | escalated lane: checkboxes and bulk bar removed — escalation is a per-item Super Admin judgment; selection clears on lane switch | covered by `moderation-races` lane tests + Vitest suite |
+| BUG-5 role "transaction" | I4 | `services/roleService.assignRoleTransaction` checks out ONE client for BEGIN/DELETE/INSERT/COMMIT/ROLLBACK and always releases it; INSERT is `ON CONFLICT DO NOTHING` so concurrent identical assignments cannot collide on the PK | `server/tests/role-transaction.test.ts` (contract, pure) + `users-role.test.ts` (2) |
+| BUG-6 lockout lost updates | I3 | increment-and-lock is ONE statement (`CASE` + lock re-check in WHERE); the lock fires exactly once at the 5th failure | `server/tests/lockout-race.test.ts` (1) |
+| BUG-7 uphold residue | I1 | uphold resolves the flag to **Rejected** (stamped decided_by/at) so it leaves the lane; overrule-after-uphold is 409; the owner ban is guarded (`status <> 'Terminated'`) and audited exactly once; a second uphold of an already-banned owner resolves honestly (`ownerBanned: true`, no duplicate ban event) | `moderation-races.test.ts` (3 uphold tests) |
+| BUG-8 silent export cap | I8 | cap is `AUDIT_EXPORT_MAX_ROWS` (default 10000); `X-Total-Matching-Rows` header; capped exports end with an explicit `Export Truncated` marker row carrying both totals | `server/tests/audit-export-truncation.test.ts` (1, env-capped at 2) |
+| BUG-9 no pagination | I9 | shared `components/ui/Pager` wired into Users, Queue and Audit pages; filters reset to page 1 | `tests/pager.test.tsx` (3) |
+| BUG-10 dead pool client | I1 | removed from the bulk route; per-flag independent commits are the documented semantics | existing bulk tests |
+| BUG-11 no-op audits | I4/I5 | same-role assignment → 409 `USER-005`; same-value settings PUT/toggle → 409 `SETTING-003`; no write, no audit | `users-role.test.ts` (1), `settings-noop.test.ts` (4), `users.test.ts` lifecycle updated to assert the guard |
+| BUG-12 stale JWT claims | I6 | the token carries only `sub` + `email`; role/permissions remain DB-derived per request; UsersPage text corrected to "takes effect on the operator's next request" | `server/tests/session-claims.test.ts` (2) |
+| BUG-13 CSV Date quoting | I7 | `csvCell` renders `Date` via `toISOString()`; objects still JSON-stringify (RFC 4180-escaped) | `server/tests/csv-date.test.ts` (4) |
+| BUG-14 comment/code mismatches | I5/I10 | settings comment now says update-only (404 on unknown keys); ConsoleLayout badge comment corrected | comment-only, no test |
+
+### 8.2 Why there is no new migration
+
+No schema change was needed: every fix is a statement-level guard or client-side
+contract. A database trigger enforcing the flag/account state machines was
+considered and deliberately rejected: the documented test-fixture strategy resets
+decided flags and banned accounts by direct SQL (`moderation.test.ts` beforeAll,
+`ensurePendingFlag`/`ensureEscalatedFlag`, `users.test.ts:164`, D-064), so a trigger
+outlawing those transitions would break the documented suites and the seed's upsert
+path. If below-the-application enforcement is wanted later, the path is a trigger
+plus an explicit fixture-reset escape hatch — a larger refactor than this round
+allowed. The conditional UPDATEs give the same guarantee for everything the API can
+do, which is where every confirmed bug lived.
+
+### 8.3 Suspected items left alone
+
+- BUG-15a single-role UNIQUE constraint — the API path now cannot produce duplicates
+  (one-client transaction + PK conflict no-op), but the schema still allows a direct
+  writer to create two role rows.
+- BUG-15b role-less users (COALESCE display vs filter mismatch) — no API path creates
+  role-less users.
+- BUG-15c three-place permission matrix — the client mirror still can drift silently.
+- BUG-15d state-commits-before-audit window — needs fault injection to observe.
+- BUG-16 client session ignores mid-session revocation.
+- BUG-17 audited suggestion is decision-time, not display-time — re-classified as
+  **by design, documented**: deriving the suggestion server-side at decision time is
+  what keeps the audit trail trustworthy; recording a client-supplied "what the
+  operator saw" would put untrusted input into the immutable ledger. The residual
+  drift (display vs decision suggestion) is bounded by the model's determinism.
+- BUG-18 documented items (in-memory rate limiter; hard-deleted owner edge).
+
+### 8.4 Evidence (failing first → passing)
+
+Each new suite was run before its fix and after it; representative summaries (all
+commands run on Node v22.23.5 via the Node 22 shim, local PostgreSQL 18 on 5433):
+
+```text
+I1 npx jest tests/moderation-races.test.ts        pre-fix: Tests: 6 failed, 6 total → post-fix: 6 passed (×2 consecutive)
+I2 npx jest tests/users-status.test.ts            pre-fix: 2 failed, 2 passed, 4 total → post-fix: 4 passed
+I3 npx jest tests/lockout-race.test.ts            pre-fix: 1 failed (lockedUntil null)  → post-fix: 1 passed (+ lockout.test.ts 15)
+I4 npx jest tests/role-transaction.test.ts        pre-fix: 2 failed (3 clients used)    → post-fix: 3 passed (pure, no DB)
+I4 npx jest tests/users-role.test.ts              pre-fix: 2 failed                     → post-fix: 2 passed
+I5 npx jest tests/settings-noop.test.ts           pre-fix: 2 failed, 2 passed           → post-fix: 4 passed
+I6 npx jest tests/session-claims.test.ts          pre-fix: 1 failed (JWT had role)      → post-fix: 2 passed
+I7 vitest tests/audit-export.test.tsx             pre-fix: href '/api/v1/audit?/export.csv' → post-fix: 2 passed
+I7 npx jest tests/csv-date.test.ts                pre-fix: 3 failed                     → post-fix: 4 passed
+I8 npx jest tests/audit-export-truncation.test.ts pre-fix: 1 failed (no header/marker)  → post-fix: 1 passed
+I9 vitest tests/pager.test.tsx                    pre-fix: 3 failed (no pager)          → post-fix: 3 passed
+```
+
+Two existing tests were updated to the corrected contracts, both with comments:
+`users.test.ts`'s lifecycle test (its same-role assignment is now the refused no-op)
+and nothing else. One new defect was found BY the new tests and fixed in the same
+issue: the single-client role transaction exposed a `user_roles_pkey` duplicate-key
+500 when two identical assignments raced — closed with `ON CONFLICT DO NOTHING` plus
+an `inserted` return so nothing is audited when nothing changed.
+
+### 8.5 Guarantees re-check and final verification
+
+**audit_log grants after all changes** (queried as `kaziforce_app` on the local 5433
+cluster; command: `information_schema.role_table_grants` + `has_table_privilege`):
+
+```text
+kaziforce_app privileges on audit_log: ["INSERT","SELECT"]
+{"upd":false,"del":false,"trunc":false,"sel":true,"ins":true}
+```
+
+**Full-suite verification** (Node v22.23.5, commands quoted, run after the final
+commit `2fe1c57`):
+
+```text
+npx --yes pnpm@10.34.3 typecheck   → tsc --noEmit, exit 0
+npx --yes pnpm@10.34.3 test       → Test Files  4 passed (4) / Tests  12 passed (12)
+npx --yes pnpm@10.34.3 build      → ✓ built in 735ms (JS 387.98 kB / 117.16 kB gzip)
+cd server && npm test             → Test Suites: 17 passed, 17 total
+                                    Tests:       112 passed, 112 total
+```
+
+The 112 server tests are the original 86 plus 26 new regression tests across nine
+new suites; every pre-existing test still passes unchanged (two assertions in
+`users.test.ts`'s lifecycle test were updated to the corrected no-op contract,
+commented in the file). The Jest open-handles warning after the run is the
+pre-existing pool behaviour noted in earlier sessions, not a failure.

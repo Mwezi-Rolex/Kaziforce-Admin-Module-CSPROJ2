@@ -160,6 +160,16 @@ Not started (only if the user asks).
 
 ---
 
+## State-machine remediation (2026-11-22, branch `fix/state-machine-bugs`)
+
+**Done:** every CONFIRMED finding from `docs/SEMANTIC_MODEL.md` §5 fixed test-first — ten issues, one commit each (`49f72b1`…`568d128`): guarded flag UPDATEs (BUG-2), uphold resolves to Rejected with a single ban event (BUG-7), account transition table in `mutateStatus` (BUG-3), atomic failed-login increment/lock (BUG-6), one-client role transaction + `ON CONFLICT DO NOTHING` (BUG-5, second defect found by the new tests), same-role/same-value no-ops refused 409 (BUG-11), JWT carries sub+email only (BUG-12), export href fix + ISO Date CSV cells (BUG-1/13), self-disclosing export cap (BUG-8), Pager on all three lists (BUG-9), escalation-lane bulk bar removed (BUG-4), comment corrections (BUG-14). `docs/SEMANTIC_MODEL.md` gained §8 (remediation record); DECISIONS D-073…D-081; no migration (rationale in D-074/D-081). Suspected items (BUG-15/16/18) untouched; BUG-17 re-classified by-design (D-080).
+
+**Next:** maintainer runs the browser checklist against the changed screens (export button, pagers, escalation lane without checkboxes); optional follow-up: DB trigger + fixture-GUC if below-app enforcement is wanted (see §8.2).
+
+**Blockers:** none.
+
+---
+
 ## Semantic-model audit (2026-11-22, branch `audit/semantic-model`)
 
 **Done:** recovered the program's minimal semantic model into `docs/SEMANTIC_MODEL.md` (state inventory S1–S15, state machines M1–M7 with transition tables and audit side effects, transition algebra, effect dependencies) and recorded 18 findings with file:line evidence, ranked by impact. High-impact items confirmed live against a scratch API on 3123 + the local 5433 cluster (Node 22): the audit-export UI href can never reach `/export.csv` (JSON or 422 downloads); 9/10 concurrent decision pairs both apply and both write audit rows; a Moderator can flip Terminated→Suspended (un-ban); the escalation-lane bulk bar resolves only `selected[0]`; the role-assignment "transaction" spans pool clients; the lockout counter lost 6 of 8 concurrent updates; uphold leaves the flag Escalated and Uphold→Overrule leaves the owner banned. Demo data re-seeded and locks reset afterwards; no application code changed; Azure VM untouched.
