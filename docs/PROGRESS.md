@@ -299,3 +299,13 @@ Not started (only if the user asks).
 **Next:** a person opens the file in Word and runs TOC → Update Field (the placeholder page numbers are approximate); fills the [reference needed] entries and the Turn-It-In appendix; retakes any screenshots they want replaced.
 
 **Blockers:** none.
+
+---
+
+## Prose revision of the final documentation (2026-11-23, branch `feat/dashboard-analytics`)
+
+**Done:** the user's writing-improvement request applied to `docs/draft/Chapter 5 Update - Final Documentation.docx` (D-100). All Chapters 1–6, the abstract and the appendix introductions rewritten against the Orwell (1946) rules + ASD-STE100 at the source modules, then rebuilt through the docx-skill pipeline (docx-js → add_toc_placeholders exit 0 → footer PAGE field patch roman/arabic → postcheck.py **0 errors / 2 accepted warnings** → LibreOffice render → **72 pages**, down from 75). Rule-7 grep review clean: no utilize/in order to/prior to/de facto/demonstrate/load-bearing/smoothed-over/comprehensive/necessitate remain; "very" hits were all substrings of "every"; the residual passive constructions are declaration boilerplate, table cells and deliberate rule-6 keeps. Technical terms, statuses, citations, figures, tables and every number untouched (rule 9). Spot-checked rendered pages: abstract, abbreviations, Chapter Two opening, defects table, accessibility section — all clean.
+
+**Next:** the person-side actions from the previous entry stand (Update Field in Word, reference entries, Turn-It-In appendix).
+
+**Blockers:** none.
