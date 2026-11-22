@@ -68,8 +68,6 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
    second column empty at wide widths. Written for the structure the page
    actually renders; minmax(0, …) lets the table shrink instead of clipping. */
 .account-record { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(320px, 1fr); column-gap: 48px; align-items: start; }
-.account-record > :nth-child(1) { grid-column: 1; grid-row: 1; }
-.account-record > :nth-child(2) { grid-column: 2; grid-row: 1; }
 
 .font-serif { font-family: 'Newsreader', Georgia, serif; }
 .font-mono, .mono { font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: -.015em; }
@@ -135,7 +133,6 @@ table { width:100%; border-collapse:collapse; text-align:left; } th { background
   .login-shell { grid-template-columns: 1fr; }
   .login-aside { display: none; }
   .account-record { grid-template-columns: 1fr; }
-  .account-record > * { grid-column: 1 !important; grid-row: auto !important; }
   .account-record > :nth-child(2) { margin-top: 20px; border-top: 1px solid #d3d5cb; padding-top: 16px; }
   .grid-cols-\[1\.3fr_\.7fr\], .grid-cols-\[minmax\(0\,1fr\)_320px\] { grid-template-columns: 1fr; }
   .table-scroll, .panel-scroll { max-height: 420px; }
@@ -455,4 +452,21 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 @media (max-width: 900px) {
   .kz-control-cards, .kz-dash-grid { grid-template-columns: 1fr; }
   .kz-dash-hero img { width: 100%; }
+}
+
+/* ---- Users: full-width table + horizontal record band (RESTYLE_GUIDE §5.3) - */
+.account-record { display: grid; grid-template-columns: 1fr; gap: 20px; }
+.account-band {
+  border: 1px solid #e3e8e1; background: #fff; border-radius: 10px;
+  padding: 22px clamp(18px, 2.4vw, 32px) 26px;
+}
+.record-band { display: grid; grid-template-columns: minmax(280px, .9fr) minmax(340px, 1.1fr); border-top: 1px solid #e3e8e1; }
+.record-band-col { padding: 18px 20px 8px; }
+.record-band-col + .record-band-col { border-left: 1px solid #e3e8e1; }
+.record-band .panel-scroll { max-height: 240px; }
+.kz-band-label { display: inline-flex; align-items: center; gap: 8px; font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 1.4px; text-transform: uppercase; color: #739055; }
+.kz-band-label > span { width: 6px; height: 6px; border-radius: 999px; background: #739055; }
+@media (max-width: 900px) {
+  .record-band { grid-template-columns: 1fr; }
+  .record-band-col + .record-band-col { border-left: 0; border-top: 1px solid #e3e8e1; }
 }

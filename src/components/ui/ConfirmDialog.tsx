@@ -14,20 +14,25 @@ export type ConfirmAction = {
   onCancel: () => void
 }
 
-// Two-step destructive-action confirmation (Ch5 §3.4.6 wireframes: bans and
-// feature toggles are gated behind confirmation modals). Focus is moved into
-// the dialog; Escape cancels.
+// Two-step confirmation (Ch5 §3.4.6 wireframes; RESTYLE_GUIDE §5.4 extends the
+// gate to every decision). Focus moves into the dialog, Escape cancels, and
+// focus returns to the element that opened the dialog when it closes.
 export function ConfirmDialog({ title, detail, target, confirmLabel, destructive = false, onConfirm, onCancel }: ConfirmAction) {
   const [step, setStep] = useState<1 | 2>(1)
   const dialogRef = useRef<HTMLDivElement>(null)
+  const openerRef = useRef<Element | null>(null)
 
   useEffect(() => {
+    openerRef.current = document.activeElement
     dialogRef.current?.focus()
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onCancel()
     }
     window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      if (openerRef.current instanceof HTMLElement) openerRef.current.focus()
+    }
   }, [onCancel])
 
   return (

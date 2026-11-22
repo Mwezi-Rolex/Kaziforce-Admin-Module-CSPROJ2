@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useSession } from '../../app/SessionContext'
 import { Pager } from '../../components/ui/Pager'
+import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
 import { Notice } from '../../components/ui/Notice'
 import { Button, EmptyState, ErrorState, Loading, PageTitle, Pill } from '../../components/ui/primitives'
 import { Toolbar } from '../../components/ui/Toolbar'
@@ -136,29 +137,70 @@ export function QueuePage() {
     }
   }
 
-  const decide = (id: string, decision: 'approve' | 'reject' | 'escalate') =>
-    run(async () => {
-      await api(`/api/v1/moderation/flags/${id}/decision`, { method: 'POST', body: JSON.stringify({ decision }) })
-      return `Decision recorded. Immutable audit event created.`
-    }, 'Decision failed')
+  // RESTYLE_GUIDE §5.4: every decision passes through the two-step dialog.
+  // pending holds what the operator asked for; ConfirmDialog's onConfirm runs it.
+  const [pending, setPending] = useState<null | {
+    title: string
+    target: string
+    detail: string
+    confirmLabel: string
+    destructive?: boolean
+    run: () => Promise<string>
+  }>(null)
 
-  const bulk = (decision: 'approve' | 'reject' | 'escalate') =>
-    run(async () => {
-      const { data } = await api<{ applied: string[]; failed: Array<{ id: string }> }>('/api/v1/moderation/bulk', {
-        method: 'POST',
-        body: JSON.stringify({ flagIds: selected, decision }),
-      })
-      const failedNote = data.failed.length ? ` (${data.failed.length} skipped — already decided)` : ''
-      return `Bulk ${decision} applied to ${data.applied.length} item${data.applied.length === 1 ? '' : 's'}. Immutable audit events created.${failedNote}`
-    }, 'Bulk decision failed')
+  const decide = (id: string, decision: 'approve' | 'reject' | 'escalate') => {
+    const flag = flags.find((f) => f.id === id)
+    setPending({
+      title:
+        decision === 'approve' ? 'Approve this content?' : decision === 'reject' ? 'Reject this content?' : 'Escalate to Super Admin?',
+      target: (flag ? flag.contentType + ' · ' : '') + id.slice(0, 8),
+      detail: 'This is recorded in the immutable audit log.',
+      confirmLabel: decision === 'approve' ? 'Approve content' : decision === 'reject' ? 'Reject content' : 'Escalate',
+      destructive: decision === 'reject',
+      run: async () => {
+        await api(`/api/v1/moderation/flags/${id}/decision`, { method: 'POST', body: JSON.stringify({ decision }) })
+        return `Decision recorded. Immutable audit event created.`
+      },
+    })
+  }
 
-  const escalate = (id: string, resolution: 'overrule' | 'uphold') =>
-    run(async () => {
-      await api(`/api/v1/moderation/flags/${id}/escalation`, { method: 'POST', body: JSON.stringify({ resolution }) })
-      return resolution === 'overrule'
-        ? 'Flag overruled to approved. Immutable audit event created.'
-        : 'Escalation upheld — content owner terminated. Immutable audit events created.'
-    }, 'Escalation resolution failed')
+  const bulk = (decision: 'approve' | 'reject' | 'escalate') => {
+    if (!selected.length) return
+    setPending({
+      title: decision === 'approve' ? 'Bulk approve?' : decision === 'reject' ? 'Bulk reject?' : 'Bulk escalate?',
+      target: `${selected.length} selected item${selected.length === 1 ? '' : 's'}`,
+      detail: 'Each item gets its own immutable audit event.',
+      confirmLabel: decision === 'approve' ? 'Approve content' : decision === 'reject' ? 'Reject content' : 'Escalate',
+      destructive: decision === 'reject',
+      run: async () => {
+        const { data } = await api<{ applied: string[]; failed: Array<{ id: string }> }>('/api/v1/moderation/bulk', {
+          method: 'POST',
+          body: JSON.stringify({ flagIds: selected, decision }),
+        })
+        const failedNote = data.failed.length ? ` (${data.failed.length} skipped — already decided)` : ''
+        return `Bulk ${decision} applied to ${data.applied.length} item${data.applied.length === 1 ? '' : 's'}. Immutable audit events created.${failedNote}`
+      },
+    })
+  }
+
+  const escalate = (id: string, resolution: 'overrule' | 'uphold') => {
+    setPending({
+      title: resolution === 'overrule' ? 'Overrule this escalation?' : 'Uphold and ban?',
+      target: id.slice(0, 8),
+      detail:
+        resolution === 'overrule'
+          ? 'The flag is approved. This is recorded in the immutable audit log.'
+          : 'The content owner is terminated. This is recorded in the immutable audit log.',
+      confirmLabel: resolution === 'overrule' ? 'Overrule' : 'Uphold and ban',
+      destructive: resolution === 'uphold',
+      run: async () => {
+        await api(`/api/v1/moderation/flags/${id}/escalation`, { method: 'POST', body: JSON.stringify({ resolution }) })
+        return resolution === 'overrule'
+          ? 'Flag overruled to approved. Immutable audit event created.'
+          : 'Escalation upheld — content owner terminated. Immutable audit events created.'
+      },
+    })
+  }
 
   return (
     <>
@@ -370,6 +412,21 @@ export function QueuePage() {
         )}
       </div>
       {notice && <Notice message={notice} onDone={() => setNotice('')} />}
+      {pending && (
+        <ConfirmDialog
+          title={pending.title}
+          detail={pending.detail}
+          target={pending.target}
+          confirmLabel={pending.confirmLabel}
+          destructive={pending.destructive}
+          onConfirm={() => {
+            const task = pending
+            setPending(null)
+            void run(() => task.run(), 'Decision failed')
+          }}
+          onCancel={() => setPending(null)}
+        />
+      )}
       <Pager page={page} size={20} total={meta?.total ?? 0} onPage={setPage} />
     </>
   )

@@ -45,6 +45,9 @@ export function UsersPage() {
   }, [searchParams, setSearchParams])
   const [notice, setNotice] = useState('')
   const [banTarget, setBanTarget] = useState<Account | null>(null)
+  // RESTYLE_GUIDE §5.4: suspend, unlock and role changes confirm through the
+  // two-step dialog (ban already did). pending holds the whole action.
+  const [pending, setPending] = useState<null | { title: string; target: string; detail: string; confirmLabel: string; run: () => Promise<string> }>(null)
   const [acting, setActing] = useState(false)
   const [actionError, setActionError] = useState<string | null>(null)
   const [page, setPage] = useState(1)
@@ -94,10 +97,34 @@ export function UsersPage() {
     }
   }
 
+  const runPending = (task: { run: () => Promise<string> }) => {
+    setPending(null)
+    setActing(true)
+    setActionError(null)
+    void (async () => {
+      try {
+        setNotice(await task.run())
+        list.reload()
+        detail.reload()
+      } catch (err) {
+        setActionError(err instanceof Error ? err.message : 'Action failed')
+      } finally {
+        setActing(false)
+      }
+    })()
+  }
+
   const suspend = (account: Account) =>
-    act(async () => {
-      await api(`/api/v1/users/${account.id}/suspend`, { method: 'POST', body: JSON.stringify({}) })
-    }, `Account ${account.email} suspended. Immutable audit event created.`)
+    setPending({
+      title: 'Suspend this account?',
+      target: account.email,
+      detail: 'Sign-in is refused while suspended. This is recorded in the immutable audit log.',
+      confirmLabel: 'Suspend account',
+      run: async () => {
+        await api(`/api/v1/users/${account.id}/suspend`, { method: 'POST', body: JSON.stringify({}) })
+        return `Account ${account.email} suspended. Immutable audit event created.`
+      },
+    })
 
   const ban = (account: Account) =>
     act(async () => {
@@ -106,14 +133,28 @@ export function UsersPage() {
     }, `Permanent ban applied to ${account.email}. Immutable audit event created.`)
 
   const unlock = (account: Account) =>
-    act(async () => {
-      await api(`/api/v1/users/${account.id}/unlock`, { method: 'POST', body: JSON.stringify({}) })
-    }, `Lockout cleared for ${account.email}. Recorded in the audit log.`)
+    setPending({
+      title: 'Clear this login lockout?',
+      target: account.email,
+      detail: 'The failure counter resets and the account can sign in again. This is recorded in the audit log.',
+      confirmLabel: 'Clear lockout',
+      run: async () => {
+        await api(`/api/v1/users/${account.id}/unlock`, { method: 'POST', body: JSON.stringify({}) })
+        return `Lockout cleared for ${account.email}. Recorded in the audit log.`
+      },
+    })
 
   const assignRole = (account: Account, role: string) =>
-    act(async () => {
-      await api(`/api/v1/users/${account.id}/role`, { method: 'POST', body: JSON.stringify({ role }) })
-    }, `Role assignment for ${account.email} recorded in audit log.`)
+    setPending({
+      title: `Assign the ${role} role?`,
+      target: account.email,
+      detail: "Access changes take effect on the operator's next request. This is recorded in the audit log.",
+      confirmLabel: 'Assign role',
+      run: async () => {
+        await api(`/api/v1/users/${account.id}/role`, { method: 'POST', body: JSON.stringify({ role }) })
+        return `Role assignment for ${account.email} recorded in audit log.`
+      },
+    })
 
   const selected = detail.data
 
@@ -226,7 +267,7 @@ export function UsersPage() {
           )}
         </div>
 
-        <aside className="border border-[#d8d9cf] bg-[#eeece4] p-5">
+        <aside className="account-band">
           {detail.loading ? (
             <Loading label="Loading account record…" />
           ) : detail.error ? (
@@ -240,6 +281,9 @@ export function UsersPage() {
                 </button>
               </div>
               <h2 className="mt-4 break-all font-serif text-2xl leading-tight">{selected.email}</h2>
+              <div className="record-band">
+              <div className="record-band-col">
+              <p className="kz-band-label"><span /> Account details</p>
               <dl className="detail-list">
                 <div>
                   <dt>Account ID</dt>
@@ -273,7 +317,10 @@ export function UsersPage() {
                 )}
               </dl>
 
-              {/* CON-USR-006 / CON-UI-001: lists scroll inside the panel */}
+              </div>
+              <div className="record-band-col">
+              <p className="kz-band-label"><span /> Relationship history</p>
+              {/* CON-USR-006 / CON-UI-001: lists scroll inside the panel (240px) */}
               <div className="history-block panel-scroll">
                 <p className="eyebrow">Flags reported · {selected.flagsReported.length}</p>
                 {selected.flagsReported.length ? (
@@ -301,7 +348,9 @@ export function UsersPage() {
                 )}
               </div>
 
-              <div className="mt-6 border-t border-[#d3d5cb] pt-5">
+              </div>
+              </div>
+              <div className="mt-2 border-t border-[#d3d5cb] pt-5 px-1">
                 {canUnlock && isLocked(selected) && (
                   <Button variant="minor" className="w-full" disabled={acting} onClick={() => unlock(selected)}>
                     Clear login lockout
@@ -367,6 +416,16 @@ export function UsersPage() {
         <p className="mt-4 text-xs text-[#656b66]">Role assignment and permanent bans are not available to this operator role.</p>
       )}
 
+      {pending && (
+        <ConfirmDialog
+          title={pending.title}
+          detail={pending.detail}
+          target={pending.target}
+          confirmLabel={pending.confirmLabel}
+          onConfirm={() => runPending(pending)}
+          onCancel={() => setPending(null)}
+        />
+      )}
       {banTarget && (
         <ConfirmDialog
           title="Permanent account ban?"
