@@ -23,6 +23,9 @@ type Suggestion = { available: true; severity: Severity; action: string; confide
 
 const SEVERITY_ORDER: Record<Severity, number> = { High: 3, Medium: 2, Low: 1 }
 
+// Shape of the queue listing's meta block (page/size/total from the API).
+type QueueMeta = { page: number; size: number; total: number }
+
 // Suggestion-only display. Never a decision: the moderator approves, rejects or
 // escalates. When the model service is unavailable this shows the fail-safe text
 // and the queue is unaffected (CON-ML-A-001).
@@ -76,6 +79,7 @@ export function QueuePage() {
   )
   const list = useApi<Flag[]>(listPath)
   const flags = list.data ?? []
+  const meta = list.meta as QueueMeta | undefined
 
   // Fetch suggestion-only predictions for the visible flags. Fail-safe: if the
   // model service is unreachable the response is available:false per flag and
@@ -365,7 +369,7 @@ export function QueuePage() {
         )}
       </div>
       {notice && <Notice message={notice} onDone={() => setNotice('')} />}
-      <Pager page={page} size={20} total={list.meta?.total ?? 0} onPage={setPage} />
+      <Pager page={page} size={20} total={meta?.total ?? 0} onPage={setPage} />
     </>
   )
 }

@@ -16,6 +16,9 @@ type AccountDetail = Account & {
   contentOwned: Array<{ id: string; contentType: string; createdAt: string }>
 }
 
+// Shape of the user listing's meta block (page/size/total from the API).
+type UsersMeta = { page: number; size: number; total: number }
+
 const STATUS_TONE: Record<AccountStatus, 'active' | 'suspended' | 'neutral'> = {
   Active: 'active',
   Suspended: 'suspended',
@@ -64,6 +67,7 @@ export function UsersPage() {
   )
   const list = useApi<Account[]>(listPath)
   const detail = useApi<AccountDetail>(selectedId ? `/api/v1/users/${selectedId}` : null)
+  const listMeta = list.meta as UsersMeta | undefined
 
   const canSuspend = can(user?.permissions, PERMISSIONS.usersSuspend)
   const canBan = can(user?.permissions, PERMISSIONS.usersBan)
@@ -373,7 +377,7 @@ export function UsersPage() {
           onCancel={() => setBanTarget(null)}
         />
       )}
-      <Pager page={page} size={20} total={list.meta?.total ?? 0} onPage={setPage} />
+      <Pager page={page} size={20} total={listMeta?.total ?? 0} onPage={setPage} />
       {notice && <Notice message={notice} onDone={() => setNotice('')} />}
     </>
   )
