@@ -160,6 +160,16 @@ Not started (only if the user asks).
 
 ---
 
+## Open-defect fixes (2026-11-22, branch `fix/open-defects`)
+
+**Done:** DISCREPANCIES rows 18/19 addressed on this workspace. Row 18: the Date→ISO `csvCell` fix was already landed with the state-machine branch (commit 5670566); this round added the missing export-level test (a Moderator export contains no `"""` and bare ISO createdAt cells), a column-by-column check (createdAt is the only Date column; metadata stays JSON + RFC 4180 by design), and the requested spreadsheet formula-injection guard — `csvCell` prefixes `'` on cells starting with `= + - @` tab or CR, proven by 9 new unit tests and an end-to-end test that inserts a probe row with `correlation_id = '=-HYPERLINK(…)'` and exports it (cell arrives prefixed, RFC-escaped). Row 19: no restyle branch exists in this repo and the restyle working copy (`Kaziforce-restyle`, currently serving 8443) restructures the record panel entirely, so the defect applies to this code — `.account-record` was rewritten for the two-child DOM the page actually renders (the old grid addressed a five-child shape, which is what stacked both panels in one ~420px column); confirmed in a real browser (this workspace, Vite 8453 + API 3000) at 1440 px (two columns 652/408, same top), 1200 px (500/320, side-by-side) and 900 px (stacked, record below the table), and the rules are present in the built CSS (`minmax(0,1.6fr)`).
+
+**Next:** a person applies the closing text for rows 18/19 to `docs/draft/DISCREPANCIES.md` (drafted in the session report; the report directory is not edited by the agent). The probe audit rows from the tests stay in the ledger (append-only).
+
+**Blockers:** none.
+
+---
+
 ## State-machine remediation (2026-11-22, branch `fix/state-machine-bugs`)
 
 **Done:** every CONFIRMED finding from `docs/SEMANTIC_MODEL.md` §5 fixed test-first — ten issues, one commit each (`49f72b1`…`568d128`): guarded flag UPDATEs (BUG-2), uphold resolves to Rejected with a single ban event (BUG-7), account transition table in `mutateStatus` (BUG-3), atomic failed-login increment/lock (BUG-6), one-client role transaction + `ON CONFLICT DO NOTHING` (BUG-5, second defect found by the new tests), same-role/same-value no-ops refused 409 (BUG-11), JWT carries sub+email only (BUG-12), export href fix + ISO Date CSV cells (BUG-1/13), self-disclosing export cap (BUG-8), Pager on all three lists (BUG-9), escalation-lane bulk bar removed (BUG-4), comment corrections (BUG-14). `docs/SEMANTIC_MODEL.md` gained §8 (remediation record); DECISIONS D-073…D-081; no migration (rationale in D-074/D-081). Suspected items (BUG-15/16/18) untouched; BUG-17 re-classified by-design (D-080).

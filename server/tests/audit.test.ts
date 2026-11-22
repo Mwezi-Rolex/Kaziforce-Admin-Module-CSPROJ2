@@ -108,6 +108,37 @@ d('GET /api/v1/audit/export.csv (audit.export — Moderator+ only, CON-AUD-003)'
     const cookie = await loginAs('superadmin@kaziforce.local', 'SuperDemo!2026')
     await request(app).get('/api/v1/audit/export.csv').set('Cookie', cookie).expect(200)
   })
+
+  it('writes createdAt as a clean ISO cell with no quote marks (DISCREPANCIES row 18)', async () => {
+    const cookie = await loginAs('moderator@kaziforce.local', 'ModeratorDemo!2026')
+    const res = await request(app).get('/api/v1/audit/export.csv').set('Cookie', cookie).expect(200)
+    // The old defect (JSON.stringify on a Date) wrapped every createdAt in
+    // triple-quote sequences. An ISO timestamp carries no CSV-special
+    // characters, so each createdAt cell must be bare.
+    expect(res.text).not.toContain('"""')
+    expect(res.text).toMatch(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/)
+  })
+
+  it('prefixes a correlation id that would execute as a spreadsheet formula', async () => {
+    const probe = `Formula Probe ${Date.now()}`
+    await pool.query(
+      `INSERT INTO audit_log (operator_id, action_type, target_entity_type, target_entity_id, outcome, correlation_id, metadata)
+       VALUES (NULL, $1, 'audit_probe', NULL, 'Success', $2, '{}')`,
+      [probe, '=-HYPERLINK("https://evil.example")'],
+    )
+    const cookie = await loginAs('moderator@kaziforce.local', 'ModeratorDemo!2026')
+    const res = await request(app)
+      .get(`/api/v1/audit/export.csv?action=${encodeURIComponent(probe)}`)
+      .set('Cookie', cookie)
+      .expect(200)
+    const dataLine = res.text.split('\r\n').find((l) => l.includes(probe))
+    expect(dataLine).toBeDefined()
+    // The cell must not begin with "=" — the guard prefix makes the
+    // spreadsheet treat it as text. Quotes are RFC 4180-escaped after the
+    // prefix, and the field is wrapped because it contains double quotes.
+    expect(dataLine).not.toMatch(/,(=-)/)
+    expect(dataLine).toContain('"\'=-HYPERLINK(""https://evil.example"")"')
+  })
 })
 
 d('authorization denials are audited (SEC-AUD-002)', () => {

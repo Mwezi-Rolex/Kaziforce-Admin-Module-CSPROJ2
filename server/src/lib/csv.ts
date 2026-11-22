@@ -6,7 +6,7 @@
 
 /** Quote a field when it contains a comma, quote, CR or LF; double any quote. */
 export function csvCell(value: unknown): string {
-  const s =
+  let s =
     value === null || value === undefined
       ? ''
       : value instanceof Date
@@ -16,6 +16,13 @@ export function csvCell(value: unknown): string {
         : typeof value === 'object'
           ? JSON.stringify(value)
           : String(value)
+  // Spreadsheet formula-injection guard (DISCREPANCIES row 18 follow-up): a
+  // cell that begins with = + - @, a tab or a CR could execute as a formula or
+  // control the parser when opened in Excel/LibreOffice/Sheets. Prefixing a
+  // single quote makes the cell inert text. The audit export's free-form-ish
+  // columns (client-supplied correlation id, operator email) are where this
+  // matters; UUIDs, ISO timestamps and JSON metadata never start with these.
+  if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`
   return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
 }
 

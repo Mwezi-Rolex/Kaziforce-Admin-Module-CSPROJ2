@@ -21,11 +21,15 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 .user-table-scroll::-webkit-scrollbar-track { background: #e6e5dc; }
 .user-table-scroll::-webkit-scrollbar-thumb { border: 3px solid #e6e5dc; border-radius: 99px; background: #718078; }
 
-.account-record { display: grid; grid-template-columns: minmax(280px, .8fr) minmax(420px, 1.2fr); column-gap: 48px; align-items: start; }
-.account-record > :nth-child(1), .account-record > :nth-child(2), .account-record > :nth-child(3) { grid-column: 1; }
-.account-record > :nth-child(4), .account-record > :nth-child(5) { grid-column: 2; }
-.account-record > :nth-child(1) { grid-row: 1; }.account-record > :nth-child(2) { grid-row: 2; }.account-record > :nth-child(3) { grid-row: 3; }
-.account-record > :nth-child(4) { grid-row: 1 / span 3; margin-top: 0; border-top: 0; padding-top: 0; }.account-record > :nth-child(5) { grid-row: 4; margin-top: 12px; }
+/* Account record layout (DISCREPANCIES row 19, fixed): the grid previously
+   addressed a five-child shape (children 1-3 left, 4-5 right), but the page
+   renders TWO children — the account table (1st) and the record panel (2nd) —
+   so the panel landed in column 1 and both stacked in a ~420px column with the
+   second column empty at wide widths. Written for the structure the page
+   actually renders; minmax(0, …) lets the table shrink instead of clipping. */
+.account-record { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(320px, 1fr); column-gap: 48px; align-items: start; }
+.account-record > :nth-child(1) { grid-column: 1; grid-row: 1; }
+.account-record > :nth-child(2) { grid-column: 2; grid-row: 1; }
 
 .font-serif { font-family: 'Newsreader', Georgia, serif; }
 .font-mono, .mono { font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: -.015em; }
@@ -92,7 +96,7 @@ table { width:100%; border-collapse:collapse; text-align:left; } th { background
   .login-aside { display: none; }
   .account-record { grid-template-columns: 1fr; }
   .account-record > * { grid-column: 1 !important; grid-row: auto !important; }
-  .account-record > :nth-child(4) { margin-top: 20px; border-top: 1px solid #d3d5cb; padding-top: 16px; }
+  .account-record > :nth-child(2) { margin-top: 20px; border-top: 1px solid #d3d5cb; padding-top: 16px; }
   .grid-cols-\[1\.3fr_\.7fr\], .grid-cols-\[minmax\(0\,1fr\)_320px\] { grid-template-columns: 1fr; }
   .table-scroll, .panel-scroll { max-height: 420px; }
   .modal-backdrop { padding: 12px; }
