@@ -156,11 +156,12 @@ d('suspended operator lifecycle (CON-AUTH-003, BR-USR-005)', () => {
       .send({ email: 'viewer@kaziforce.local', password: 'ViewerDemo!2026' })
       .expect(403)
     expect(denied.body.error.code).toBe('AUTH-003')
-    await request(app)
-      .post(`/api/v1/users/${id}/role`)
-      .set('Cookie', admin)
-      .send({ role: 'viewer' })
-      .expect(200)
+    // BUG-11 fix: assigning the role the account already holds is the refused
+    // no-op (409 USER-005), so re-assert the guard here instead of expecting
+    // the old rewrite-and-audit behaviour.
+    const noop = await request(app).post(`/api/v1/users/${id}/role`).set('Cookie', admin).send({ role: 'viewer' })
+    expect(noop.status).toBe(409)
+    expect(noop.body.error.code).toBe('USER-005')
     await pool.query(`UPDATE users SET status = 'Active' WHERE id = $1`, [id])
     await request(app)
       .post('/api/v1/auth/login')

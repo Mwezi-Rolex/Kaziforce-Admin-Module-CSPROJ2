@@ -6,6 +6,7 @@ import { requirePermission } from '../middleware/requirePermission'
 import { ApiError } from '../middleware/errors'
 import { writeEvent, auditContext } from '../services/auditLogger'
 import { unlockAccount } from '../services/authService'
+import { assignRoleTransaction } from '../services/roleService'
 
 // User Control Centre API (CON-USR-001…005; Ch5 §3.6.3).
 // Accounts are viewed/suspended/banned/role-assigned — never created or
@@ -183,16 +184,25 @@ usersRouter.post('/:id/role', requirePermission('users.assign_role'), async (req
     if (!parsed.success) throw new ApiError(422, 'VALIDATION', 'Role must be viewer, moderator, or super_admin')
     if (id === req.user!.id) throw new ApiError(422, 'USER-004', 'You cannot change your own role')
     const target = await loadAccount(id)
+    // No-op guard (SEMANTIC_MODEL.md BUG-11, fixed): assigning the role the
+    // account already holds is refused instead of rewriting the row and
+    // writing a from==to audit event.
+    if (target.role === parsed.data.role) {
+      throw new ApiError(409, 'USER-005', `Account already has the ${parsed.data.role} role`)
+    }
     const { rows: roleRows } = await pool.query(`SELECT id FROM roles WHERE name = $1`, [parsed.data.role])
     if (!roleRows[0]) throw new ApiError(404, 'ROLE-001', 'Role not found')
-    await pool.query('BEGIN')
-    try {
-      await pool.query('DELETE FROM user_roles WHERE user_id = $1', [id])
-      await pool.query('INSERT INTO user_roles (user_id, role_id) VALUES ($1, $2)', [id, roleRows[0].id])
-      await pool.query('COMMIT')
-    } catch (e) {
-      await pool.query('ROLLBACK')
-      throw e
+    // The DELETE + INSERT run atomically on one client (SEMANTIC_MODEL.md
+    // BUG-5, fixed): pool.query would check out a different client per call.
+    // A concurrent identical assignment no-ops the INSERT; nothing changed, so
+    // nothing is audited.
+    const inserted = await assignRoleTransaction(pool, id, roleRows[0].id)
+    if (!inserted) {
+      return res.json({
+        success: true,
+        data: { id, role: parsed.data.role },
+        timestamp: new Date().toISOString(),
+      })
     }
     await writeEvent({
       operatorId: req.user!.id,
