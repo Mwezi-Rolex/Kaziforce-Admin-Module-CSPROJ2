@@ -160,6 +160,16 @@ Not started (only if the user asks).
 
 ---
 
+## Security audit (2026-11-22, branch `security/audit`)
+
+**Done:** full checklist audit per the `security-audit` skill (guidance mode) recorded in `docs/SECURITY_AUDIT.md`: no critical or high finding. Two medium findings measured live against a scratch API — the login timing oracle (unknown 2 ms vs known 252 ms → email enumeration; locked 2 ms vs active 261 ms → lock-state/expiry disclosure) and the password-spraying gap (global 600/5-min per-IP bucket, no login-specific throttle; per-account lockout bounds only single-account guessing). One low Nginx finding (add_header inheritance drops security headers from /api/ and /assets/ responses). Dependencies: root clean, server 4 moderate (dev-only jest chains), ml pip-audit clean (run from a throwaway venv). Secrets: git ls-files clean; owner role never on a runtime path; audit_log grants re-verified (INSERT+SELECT only, no schema CREATE). Per the session rule, nothing was fixed (no critical/high); recommended fixes are inline in the report. Two needs-validation items for the VM (live response headers; NODE_ENV/Secure flag).
+
+**Next:** a person validates NV-1/NV-2 on the VM (curl header check; production-password check) and decides whether to apply the three recommended medium fixes.
+
+**Blockers:** none.
+
+---
+
 ## Open-defect fixes (2026-11-22, branch `fix/open-defects`)
 
 **Done:** DISCREPANCIES rows 18/19 addressed on this workspace. Row 18: the Date→ISO `csvCell` fix was already landed with the state-machine branch (commit 5670566); this round added the missing export-level test (a Moderator export contains no `"""` and bare ISO createdAt cells), a column-by-column check (createdAt is the only Date column; metadata stays JSON + RFC 4180 by design), and the requested spreadsheet formula-injection guard — `csvCell` prefixes `'` on cells starting with `= + - @` tab or CR, proven by 9 new unit tests and an end-to-end test that inserts a probe row with `correlation_id = '=-HYPERLINK(…)'` and exports it (cell arrives prefixed, RFC-escaped). Row 19: no restyle branch exists in this repo and the restyle working copy (`Kaziforce-restyle`, currently serving 8443) restructures the record panel entirely, so the defect applies to this code — `.account-record` was rewritten for the two-child DOM the page actually renders (the old grid addressed a five-child shape, which is what stacked both panels in one ~420px column); confirmed in a real browser (this workspace, Vite 8453 + API 3000) at 1440 px (two columns 652/408, same top), 1200 px (500/320, side-by-side) and 900 px (stacked, record below the table), and the rules are present in the built CSS (`minmax(0,1.6fr)`).
