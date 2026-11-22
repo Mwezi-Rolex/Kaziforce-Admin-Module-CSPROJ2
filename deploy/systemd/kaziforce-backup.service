@@ -1,0 +1,33 @@
+# Kaziforce nightly database backup — oneshot unit driven by kaziforce-backup.timer.
+#
+# Install (on the VM):
+#   sudo cp deploy/systemd/kaziforce-backup.service deploy/systemd/kaziforce-backup.timer /etc/systemd/system/
+#   sudo install -d -o postgres -g postgres /var/backups/kaziforce
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now kaziforce-backup.timer
+#   systemctl list-timers kaziforce-backup.timer
+#   sudo journalctl -u kaziforce-backup.service -n 20 --no-pager   # last run
+#
+# Runs as the postgres user: pg_dump then authenticates over the local Unix
+# socket with peer auth — no database password appears in any unit file.
+
+[Unit]
+Description=Kaziforce database backup (pg_dump, custom format)
+After=postgresql.service
+Wants=postgresql.service
+ConditionPathExists=/opt/kaziforce/deploy/scripts/backup-database.sh
+
+[Service]
+Type=oneshot
+User=postgres
+Group=postgres
+ExecStart=/opt/kaziforce/deploy/scripts/backup-database.sh
+UMask=0027
+NoNewPrivileges=true
+PrivateTmp=true
+
+# The dump target must exist and be writable by the postgres user; the runbook
+# creates /var/backups/kaziforce with `install -d -o postgres -g postgres`.
+ReadWritePaths=/var/backups/kaziforce
+ProtectSystem=strict
+ProtectHome=true

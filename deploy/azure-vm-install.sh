@@ -40,12 +40,17 @@ die() { printf '\033[31mERROR:\033[0m %s\n' "$*" >&2; exit 1; }
 [ -f "$SRC/dist/index.html" ] || die "dist/index.html not found under $SRC (unpack the frontend bundle into $SRC/dist)"
 
 # ---------------------------------------------------------------------------
-step "1/11 System packages, Node.js 22, pnpm"
+step "1/11 System packages, Node.js 22, pnpm, automatic security updates, fail2ban"
 # ---------------------------------------------------------------------------
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -y
 apt-get install -y curl ca-certificates gnupg git nginx postgresql postgresql-contrib \
-  ufw python3 python3-venv python3-pip rsync openssl
+  ufw python3 python3-venv python3-pip rsync openssl \
+  unattended-upgrades fail2ban
+# Automatic security updates; fail2ban's default jail covers sshd
+# (docs/OPERATIONS.md §Security).
+systemctl enable --now unattended-upgrades
+systemctl enable --now fail2ban
 if ! command -v node >/dev/null 2>&1 || ! node --version | grep -q '^v22\.'; then
   curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
   apt-get install -y nodejs
@@ -134,6 +139,8 @@ step "5/11 PostgreSQL: database and the two roles"
 systemctl enable --now postgresql
 sed -e "s/CHANGE_ME_OWNER_PASSWORD/${OWNER_PW}/g" -e "s/CHANGE_ME_APP_PASSWORD/${APP_PW}/g" \
   "$SRC/deploy/sql/01_roles_database.sql" | sudo -u postgres psql -v ON_ERROR_STOP=1 -q
+# Backup target (the nightly pg_dump timer writes here; see docs/OPERATIONS.md).
+install -d -o postgres -g postgres -m 0750 /var/backups/kaziforce
 
 # ---------------------------------------------------------------------------
 step "6/11 Application code and built frontend"
@@ -190,19 +197,28 @@ step "10/11 systemd services"
 # ---------------------------------------------------------------------------
 cp "$APP/deploy/systemd/kaziforce-api.service" /etc/systemd/system/
 cp "$APP/deploy/systemd/kaziforce-model.service" /etc/systemd/system/
+cp "$APP/deploy/systemd/kaziforce-backup.service" /etc/systemd/system/
+cp "$APP/deploy/systemd/kaziforce-backup.timer" /etc/systemd/system/
+# journald retention: cap the journal at 200 MB / 30 days (docs/OPERATIONS.md).
+mkdir -p /etc/systemd/journald.conf.d
+cp "$APP/deploy/systemd/journald-retention.conf" /etc/systemd/journald.conf.d/kaziforce.conf
+systemctl restart systemd-journald
 systemctl daemon-reload
-systemctl enable kaziforce-model kaziforce-api >/dev/null
+systemctl enable kaziforce-model kaziforce-api kaziforce-backup.timer >/dev/null
 systemctl restart kaziforce-model
 systemctl restart kaziforce-api
+systemctl enable --now kaziforce-backup.timer
 
 # ---------------------------------------------------------------------------
 step "11/11 Nginx site for ${DOMAIN}"
 # ---------------------------------------------------------------------------
 if [ -f /etc/nginx/sites-available/kaziforce ] && grep -q 'managed by Certbot' /etc/nginx/sites-available/kaziforce; then
   echo "site already carries certbot's HTTPS blocks; left unchanged"
+  echo "NOTE: re-apply the security-header include and limit_req edits by hand (docs/OPERATIONS.md §Abuse)."
 else
   sed "s/server_name _;/server_name ${DOMAIN};/" "$APP/deploy/nginx/kaziforce.conf" > /etc/nginx/sites-available/kaziforce
 fi
+cp "$APP/deploy/nginx/kaziforce-headers.conf" /etc/nginx/kaziforce-headers.conf
 ln -sf /etc/nginx/sites-available/kaziforce /etc/nginx/sites-enabled/kaziforce
 rm -f /etc/nginx/sites-enabled/default
 nginx -t

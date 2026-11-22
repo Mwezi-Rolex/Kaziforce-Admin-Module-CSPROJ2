@@ -160,6 +160,16 @@ Not started (only if the user asks).
 
 ---
 
+## Production-readiness runbook (2026-11-22, branch `ops/production-readiness`)
+
+**Done:** deploy/ + docs/ only. New: `deploy/scripts/backup-database.sh` (custom-format pg_dump, integrity check, 7-day prune), `deploy/scripts/restore-database.sh` (verification restore into a throwaway DB — cannot touch the live one), `deploy/systemd/kaziforce-backup.{service,timer}` (02:15 UTC nightly, runs as postgres over peer auth), `deploy/systemd/journald-retention.conf` (200 MB / 30 days), `deploy/nginx/kaziforce-headers.conf` (fixes the add_header inheritance defect from SECURITY_AUDIT F-04 by including the five security headers in every location), both Nginx confs rewritten (JSON access log with correlation id + latency, `limit_req` zones on sign-in 10/min and CSV export 6/min answering 429, header include), `deploy/azure-vm-install.sh` (unattended-upgrades + fail2ban enabled, backup dir/units/journald/headers installed). `docs/OPERATIONS.md` runbook: observability (JSON request log, journald retention, /health polling, 5xx/p95/disk/memory derivations), reliability (nightly timer, tested restore, RPO ≤ 24 h, RTO minutes for DB-only [locally measured] / 20–40 min full VM [UNVERIFIED]), SLO proposal, security rotations, abuse limits + Cloudflare option, rollback ≈ 5–10 min [UNVERIFIED], 10×/100× citing PERFORMANCE.md. Verified locally: bash -n ×3; nginx -t in a real nginx:1.27-alpine container (HTTP + HTTPS with dummy certs); a full backup→restore cycle on the disposable 50k-row cluster (3.3 MB dump; identical row counts; 3.9 s restore).
+
+**Next:** the operator applies §1.2/§2.1/§4 of OPERATIONS.md to the existing VM (the fresh-install path gets it automatically) and runs `certbot renew --dry-run`.
+
+**Blockers:** none.
+
+---
+
 ## Test-behaviour review (2026-11-22, branch `test/behaviour`)
 
 **Done:** every test across server/tests (18 suites, 130 tests), tests/ (12) and ml/tests (7) catalogued with a one-sentence behavioural claim and audience in the new `docs/TEST_CLAIMS.md` (149 claims). Implementation-detail tests flagged and resolved: `role-transaction.test.ts` (fake-client internals) removed and replaced by a DB-observable connection-hygiene test (`pg_stat_activity` shows zero idle-in-transaction backends after concurrent role assignments) in `users-role.test.ts`. Missing claims added: expired-session 401 (M4 expiry), logout cookie-clear + audit row, per-IP rate-limiter 429 contract (`RATE_LIMIT_MAX=3` per-suite env), suggestions fail-safe over HTTP (model down → 200 `available:false`), connection hygiene. **The Jest open handle is fixed**: the cause was every suite's `createApp` import leaving the module-level pg pool open — `db/pool.ts` now sets `allowExitOnIdle` when `NODE_ENV=test`; full runs exit cleanly (warning gone, verified). First coverage figure (server, `npx jest --coverage`, commit a846228): **90.14 % statements / 74.39 % branches / 91.93 % functions / 94.04 % lines**. Frontend coverage **not measured**: `@vitest/coverage-v8` could not be installed (pnpm store-version guard + npm arborist crash — three attempts documented).

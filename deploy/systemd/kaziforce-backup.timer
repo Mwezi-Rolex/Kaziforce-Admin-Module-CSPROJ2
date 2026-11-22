@@ -1,0 +1,16 @@
+# Kaziforce nightly backup timer — 02:15 UTC nightly (Azure VMs run UTC by
+# default; the demo hours are late evening CET, so this is off-hours).
+#
+# Persistent=true: if the VM was off at 02:15, the backup runs at the next boot.
+# RandomizedDelaySec spreads the load if several VMs share a storage window.
+
+[Unit]
+Description=Run the Kaziforce database backup nightly
+
+[Timer]
+OnCalendar=*-*-* 02:15:00 UTC
+Persistent=true
+RandomizedDelaySec=300
+
+[Install]
+WantedBy=timers.target
