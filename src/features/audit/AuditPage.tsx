@@ -42,6 +42,21 @@ export function AuditPage() {
     return `/api/v1/audit?${params.toString()}`
   }, [from, to, actor, action, outcome])
 
+  // The export href must keep /export.csv on the PATH: appending it to
+  // listPath (which already contains '?') put it inside the query string, so
+  // the browser fetched the JSON listing — or a 422 with a filter set — and
+  // never the CSV (SEMANTIC_MODEL.md BUG-1, fixed).
+  const exportHref = useMemo(() => {
+    const params = new URLSearchParams()
+    if (from) params.set('from', from)
+    if (to) params.set('to', to)
+    if (actor.trim()) params.set('actor', actor.trim())
+    if (action) params.set('action', action)
+    if (outcome) params.set('outcome', outcome)
+    const query = params.toString()
+    return `/api/v1/audit/export.csv${query ? `?${query}` : ''}`
+  }, [from, to, actor, action, outcome])
+
   const list = useApi<AuditEvent[]>(listPath)
   const events = list.data ?? []
   const meta = list.meta as AuditMeta | undefined
@@ -50,7 +65,7 @@ export function AuditPage() {
     <>
       <PageTitle kicker="Immutable record" title="Audit log explorer">
         {canExport ? (
-          <a className="primary-button" href={`${listPath}/export.csv`} download>
+          <a className="primary-button" href={exportHref} download>
             Export CSV <span aria-hidden="true">↓</span>
           </a>
         ) : (

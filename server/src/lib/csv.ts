@@ -9,9 +9,13 @@ export function csvCell(value: unknown): string {
   const s =
     value === null || value === undefined
       ? ''
-      : typeof value === 'object'
-        ? JSON.stringify(value)
-        : String(value)
+      : value instanceof Date
+        ? // ISO-8601, not JSON: a JSON.stringify'd Date carries literal quote
+          // marks that then get CSV-escaped (SEMANTIC_MODEL.md BUG-13, fixed).
+          value.toISOString()
+        : typeof value === 'object'
+          ? JSON.stringify(value)
+          : String(value)
   return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
 }
 
