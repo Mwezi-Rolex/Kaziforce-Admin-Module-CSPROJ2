@@ -160,6 +160,16 @@ Not started (only if the user asks).
 
 ---
 
+## Test-behaviour review (2026-11-22, branch `test/behaviour`)
+
+**Done:** every test across server/tests (18 suites, 130 tests), tests/ (12) and ml/tests (7) catalogued with a one-sentence behavioural claim and audience in the new `docs/TEST_CLAIMS.md` (149 claims). Implementation-detail tests flagged and resolved: `role-transaction.test.ts` (fake-client internals) removed and replaced by a DB-observable connection-hygiene test (`pg_stat_activity` shows zero idle-in-transaction backends after concurrent role assignments) in `users-role.test.ts`. Missing claims added: expired-session 401 (M4 expiry), logout cookie-clear + audit row, per-IP rate-limiter 429 contract (`RATE_LIMIT_MAX=3` per-suite env), suggestions fail-safe over HTTP (model down → 200 `available:false`), connection hygiene. **The Jest open handle is fixed**: the cause was every suite's `createApp` import leaving the module-level pg pool open — `db/pool.ts` now sets `allowExitOnIdle` when `NODE_ENV=test`; full runs exit cleanly (warning gone, verified). First coverage figure (server, `npx jest --coverage`, commit a846228): **90.14 % statements / 74.39 % branches / 91.93 % functions / 94.04 % lines**. Frontend coverage **not measured**: `@vitest/coverage-v8` could not be installed (pnpm store-version guard + npm arborist crash — three attempts documented).
+
+**Next:** a person may add the coverage provider as a devDependency (one line, rule 4) for the frontend figure; consider pytest-coverage for ml.
+
+**Blockers:** none.
+
+---
+
 ## Module deepening refactor (2026-11-22, branch `refactor/deepen-modules`)
 
 **Done:** length guard `scripts/check-file-length.mjs` + `npm run lint:lengths` (gate 1000 lines, report at 400 — **no file exceeds 400: max is UsersPage.tsx at 385**); `server/src/lib/vocabulary.ts` now single-sources permission keys, role names, account/flag status vocabularies, severities, moderation decisions, audit action names, ledger outcomes and error codes (refactored call sites: all five route files, authService, all four middleware files, seed.ts); `server/src/lib/params.ts` single-sources the UUID path-parameter schema (was ×6 with differing messages); authService's dead re-export shim removed (nothing imported from it); `mutateStatus` deepened (returns the row; routes own the response); client `src/lib/format.ts` replaces six inline `toLocaleString()` calls across four pages. Trust-me item (seed writing the vocabulary to the DB) made provable by the new `vocabulary.test.ts` (permissions/roles/outcomes ↔ DB). oxlint NOT installed (would add two dev dependencies; rule 4) — the anti-slop rule catalog was used as review lenses instead (D-086). LOC: src 2,260→2,278, server/src 2,012→2,147 (new modules), server/tests 2,279→2,326 (new guard), ml unchanged. Suites: server **18 suites / 127 tests** (3 new), Vitest 12, typecheck+build clean.
