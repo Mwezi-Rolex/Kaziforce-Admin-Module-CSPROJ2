@@ -326,9 +326,16 @@ new value.
 The keys are named `sample.*`. The source documentation defines the settings
 interface but names no concrete keys or toggles, so the interface is demonstrated
 with clearly-labelled sample configuration rather than invented platform
-settings. The same restraint applies to the dashboard, whose analytical area is
-left unpopulated because no KPI set is defined in any source document
-(Figure 5.9).
+settings. The dashboard originally followed the same restraint, with its analytical
+area left unpopulated because no source document defined a KPI set. On
+2026-11-23 the project owner asked for the dashboard analytics to be added
+(decision D-098), so the area now shows live counts computed directly from the
+platform database: account totals by status, pending and escalated flags,
+operator decisions over the last seven days, audit-trail totals, and a
+fourteen-day audit-event trend (Figure 5.9). Every card is a raw aggregate
+served by `GET /api/v1/analytics/dashboard`; no derived, projected or
+hard-coded figures are displayed, and when the endpoint is unavailable the
+area shows an error state instead of stale or invented numbers.
 
 ![Figure 5.7: System settings as a Super Admin, with the sample keys and the feature toggle](screenshots/08-settings-superadmin.png)
 
@@ -374,7 +381,7 @@ roles (compare Figures 5.9 and 5.7).
 
 ![Figure 5.8: Public landing page](screenshots/01-landing.png)
 
-![Figure 5.9: Dashboard as a Viewer; the analytics area is deliberately unpopulated](screenshots/03-dashboard-viewer.png)
+![Figure 5.9: Dashboard as a Viewer; the analytics cards show live database counts (decision D-098)](screenshots/03-dashboard-viewer.png)
 
 ![Figure 5.10: Not-found page for an unknown route](screenshots/10-not-found.png)
 

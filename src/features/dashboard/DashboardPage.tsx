@@ -1,17 +1,20 @@
 import { Link } from 'react-router-dom'
 import { useSession } from '../../app/SessionContext'
 import { useApi } from '../../lib/useApi'
-import { can, PERMISSIONS, ROLE_LABEL } from '../../lib/permissions'
-import type { AuditEvent } from '../../lib/types'
+import { can, PERMISSIONS } from '../../lib/permissions'
+import { EmptyState, ErrorState } from '../../components/ui/primitives'
+import type { AuditEvent, DashboardAnalytics } from '../../lib/types'
 
-// Dashboard (CON-DASH-001): the documents define no KPI set, so analytics stay
-// deliberately unpopulated (OQ-2). The restyle adds the F-layout bands — hero,
-// control-centre links, analytics placeholder and a read-only recent-audit
-// card fed by the same permission-gated /audit endpoint every tier can read.
-// No invented metrics: "Meaningful measures come first." stays the rule.
+// Dashboard (CON-DASH-001): the analytics cell shows live counts served by
+// GET /api/v1/analytics/dashboard — raw aggregates over the platform's own
+// tables, never derived, projected or hard-coded figures (D-098; Chapter 5
+// Figure 4.6 "summary metric cards"). The restyle bands — hero, control-centre
+// links and a read-only recent-audit card fed by the same permission-gated
+// /audit endpoint every tier can read — are unchanged.
 export function DashboardPage() {
   const { user } = useSession()
   const recent = useApi<AuditEvent[]>('/api/v1/audit?size=4')
+  const analytics = useApi<DashboardAnalytics>('/api/v1/analytics/dashboard')
   const firstName = user?.fullName.split(' ')[0] ?? 'operator'
   const today = new Date().toLocaleDateString('en-GB', {
     weekday: 'long',
@@ -19,6 +22,10 @@ export function DashboardPage() {
     month: 'long',
     year: 'numeric',
   })
+  const a = analytics.data
+  const maxEvents = a ? Math.max(...a.trend.map((p) => p.events), 1) : 1
+  const decided7d =
+    a ? a.decisions7d.approved + a.decisions7d.rejected + a.decisions7d.escalated : 0
 
   return (
     <div className="kz-dashboard">
@@ -107,25 +114,97 @@ export function DashboardPage() {
           ))}
       </div>
 
-      {/* Analytics placeholder + recent audit */}
+      {/* Live analytics + recent audit */}
       <div className="kz-dash-grid mt-6">
         <div className="kz-card kz-dash-cell">
           <div className="flex items-center justify-between border-b border-[#e3e8e1] px-6 py-4">
-            <h3 className="text-sm font-medium">Dashboard analytics</h3>
-            <span className="kz-notconfigured">Not configured</span>
-          </div>
-          <div className="grid min-h-[280px] place-items-center px-8 text-center">
             <div>
-              <p className="kz-serif-lg">Meaningful measures come first.</p>
-              <p className="mx-auto mt-3 max-w-xs text-xs leading-5 text-[#7a847e]">
-                Analytics will appear here once the project's KPI definitions have been approved.
-              </p>
-              <p className="mt-4 font-mono text-[9px] uppercase tracking-[1.4px] text-[#739055]">
-                <span className="mr-2 inline-block h-1.5 w-1.5 rounded-full bg-[#d1f77b] align-middle" aria-hidden="true" />
-                No unverified metrics displayed
-              </p>
+              <h3 className="text-sm font-medium">Dashboard analytics</h3>
+              <p className="mt-1 text-xs text-[#7a847e]">Live counts from the platform database.</p>
             </div>
+            {a && <span className="kz-livepill">Live data</span>}
           </div>
+          {analytics.loading && !a ? (
+            <div className="px-6 py-6" aria-hidden="true">
+              <div className="kz-kpi-grid">
+                {[0, 1, 2, 3].map((i) => (
+                  <div key={i} className="kz-kpi">
+                    <span className="kz-skeleton kz-sk-label" />
+                    <span className="kz-skeleton kz-sk-num" />
+                    <span className="kz-skeleton kz-sk-sub" />
+                  </div>
+                ))}
+              </div>
+              <div className="kz-skeleton kz-sk-trend mt-3" />
+            </div>
+          ) : analytics.error ? (
+            <div className="px-6 py-8">
+              <ErrorState message={analytics.error} hint="Counts come from the live database. Retry shortly." />
+            </div>
+          ) : a ? (
+            <>
+              <div className="kz-kpi-grid px-6 pt-6">
+                {[
+                  {
+                    label: 'Accounts',
+                    num: a.accounts.total,
+                    sub: `${a.accounts.active} active · ${a.accounts.suspended} suspended · ${a.accounts.terminated} terminated`,
+                  },
+                  {
+                    label: 'Moderation queue',
+                    num: a.queue.pending,
+                    sub: `${a.queue.escalated} escalated · ${a.queue.highSeverityPending} high-severity · ${a.queue.resolved} resolved`,
+                  },
+                  {
+                    label: 'Operator decisions · 7 days',
+                    num: decided7d,
+                    sub: `${a.decisions7d.approved} approved · ${a.decisions7d.rejected} rejected · ${a.decisions7d.escalated} escalated`,
+                  },
+                  {
+                    label: 'Audit trail',
+                    num: a.audit.total,
+                    sub: `${a.audit.last24h} in 24 h · ${a.audit.last7d} in 7 days`,
+                  },
+                ].map((k) => (
+                  <div key={k.label} className="kz-kpi">
+                    <p className="kz-kpi-label">{k.label}</p>
+                    <p className="kz-kpi-num">{k.num}</p>
+                    <p className="kz-kpi-sub">{k.sub}</p>
+                  </div>
+                ))}
+              </div>
+              <div className="px-6 pt-3">
+                {a.trend.every((p) => p.events === 0) ? (
+                  <EmptyState
+                    title="No audit events in the last 14 days."
+                    hint="Activity appears here as operators use the console."
+                  />
+                ) : (
+                  <figure className="kz-trend">
+                    <div className="kz-trend-bars" aria-hidden="true">
+                      {a.trend.map((p) => (
+                        <span key={p.day} className="kz-trend-bar" title={`${p.day}: ${p.events}`}>
+                          <span
+                            className="kz-trend-fill"
+                            style={{ height: `${Math.max((p.events / maxEvents) * 100, p.events > 0 ? 10 : 3)}%` }}
+                          />
+                        </span>
+                      ))}
+                    </div>
+                    <figcaption className="kz-trend-cap">Audit events · last 14 days</figcaption>
+                  </figure>
+                )}
+                <p className="sr-only">
+                  Audit events per day over the last 14 days:{' '}
+                  {a.trend.map((p) => `${p.day}: ${p.events}`).join(', ')}.
+                </p>
+              </div>
+            </>
+          ) : null}
+          <p className="kz-analytics-foot">
+            <span aria-hidden="true">◉</span> Live counts · computed from the database · no derived or projected
+            figures
+          </p>
         </div>
 
         <div className="kz-card kz-dash-cell">

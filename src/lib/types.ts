@@ -74,3 +74,12 @@ export type Page<T> = {
   size: number
   total: number
 }
+
+/** GET /api/v1/analytics/dashboard (CON-DASH-001; D-098) — live DB counts. */
+export type DashboardAnalytics = {
+  accounts: { total: number; active: number; suspended: number; terminated: number }
+  queue: { pending: number; escalated: number; highSeverityPending: number; resolved: number }
+  decisions7d: { approved: number; rejected: number; escalated: number }
+  audit: { total: number; last24h: number; last7d: number }
+  trend: Array<{ day: string; events: number }>
+}

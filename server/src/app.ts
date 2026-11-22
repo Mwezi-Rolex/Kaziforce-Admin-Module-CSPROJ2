@@ -7,6 +7,7 @@ import { usersRouter } from './routes/users'
 import { moderationRouter } from './routes/moderation'
 import { auditRouter } from './routes/audit'
 import { settingsRouter } from './routes/settings'
+import { analyticsRouter } from './routes/analytics'
 import { errorHandler, notFound } from './middleware/errors'
 import { rateLimit } from './middleware/rateLimit'
 import { correlation } from './middleware/correlation'
@@ -32,6 +33,7 @@ export function createApp() {
   app.use('/api/v1/users', usersRouter)
   app.use('/api/v1/moderation', moderationRouter)
   app.use('/api/v1/audit', auditRouter)
+  app.use('/api/v1/analytics', analyticsRouter)
   app.use('/api/v1/settings', settingsRouter)
   app.use('/api/v1', healthRouter)
 

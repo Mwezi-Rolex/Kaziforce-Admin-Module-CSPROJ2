@@ -2068,7 +2068,7 @@ The export is a console for the Admin & Moderation subsystem only; entire SRS mo
 | Figma screen | SRS coverage |
 |---|---|
 | **Moderation Queue** (flag review; approve / reject / escalate; bulk decisions; Super Admin escalation lane) | **None.** No SRS requirement defines a content moderation queue. It exists only in the proposal (Ch. 1 §1.5.1), `chapter 5 update` and the use-case diagrams (Note 8). → OQ-1 |
-| Dashboard — analytics content | Only the container (`FR-ADM-008/046`); the export deliberately shows no KPIs because no SRS requirement defines dashboard metrics. → OQ-2 |
+| Dashboard — analytics content | The Figma export names no KPI set; the console shows live counts computed from the platform tables instead (`FR-ADM-008/046`; user decision D-098 supersedes the OQ-2 "unpopulated" default and matches the Chapter 5 Figure 4.6 wireframe). |
 | User Control Centre — permanent ban | No explicit SRS requirement for operator-initiated permanent bans of user accounts (`FR-ADM-002` covers tenants; `BR-USR-005` assumes suspension exists). Ban/suspend operators appear only in the proposal and diagrams. → OQ-1 |
 | System Settings — concrete keys/toggles | The SRS defines the settings/feature-flag *capability* (`FR-ADM-004/019/020/026–031`) but names no keys; the export marks them "[Key not specified]". → OQ-2 |
 

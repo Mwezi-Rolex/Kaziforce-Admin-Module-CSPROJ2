@@ -30,7 +30,7 @@ Generated 2026-10-29 by `docs/traceability-gen.mjs` (rerun: `node docs/traceabil
 | CON-AUD-005 | Audit records carry provenance: source address, outcome (Success/Failure/Blocked) and a correlation id that ties the row to the API response; refusals recorded as Blocked | BED §6.15; DDD §28.2 (Phase 0 digest hard constraint 7) | Audit Explorer | frontend + backend + database | done (2026-11-12) — migration 009 adds actor_ip, outcome and correlation_id; per-request x-correlation-id echoed in the error envelope; outcome filter in the explorer; 5 Jest tests |
 | CON-SET-001 | Settings panel Super Admin only; key/value config + feature toggle; changes audited | Ch5 §3.6.6 (cf. FR-ADM-004/019/026) | System Settings | frontend + backend + database | done (Phase 4) — Super Admin only; key/value + toggle; all changes audited (Jest: Viewer and Moderator both 403) |
 | CON-SET-002 | Settings keys and toggles stay named placeholders until the user supplies them | OQ-2 default confirmed in BRIEF | System Settings | frontend | done (Phase 4) — keys are labelled sample.* and presented as demonstration config (OQ-2) |
-| CON-DASH-001 | Dashboard shell present; analytics deliberately unpopulated ("Metric definitions pending") | BRIEF/OQ-2 (cf. FR-ADM-008/046) | Dashboard | frontend | done (Phase 4) — shell + real role-scope panel; analytics deliberately unpopulated (OQ-2) |
+| CON-DASH-001 | Dashboard shell with live analytics: summary metric cards (accounts, queue, 7-day decisions, audit trail) + 14-day event trend, all raw DB aggregates | Ch5 Figure 4.6 wireframe; BED §4.33.7; D-098 (cf. FR-ADM-008/046) | Dashboard | frontend + backend | done (D-098, 2026-11-23) — GET /api/v1/analytics/dashboard serves raw DB aggregates; dashboard renders 4 KPI cards + 14-day trend with loading/error/empty states |
 | CON-WEB-001 | Landing page: minimal, reuses export tokens only; product name Kaziforce (replaces "Tendaji") | BRIEF 2026-10-29 | Landing | frontend | done (slice 0) |
 | CON-WEB-002 | 404 page for unknown routes | BRIEF 2026-10-29 | 404 | frontend | done (slice 0) |
 | CON-UI-001 | Every panel listing report content or options scrolls inside its container instead of clipping | BRIEF 2026-10-29 | All screens | frontend | done (Phase 4) — .table-scroll on all four tables, .panel-scroll on the account record, .console-sidebar on the rail |
@@ -46,7 +46,7 @@ Generated 2026-10-29 by `docs/traceability-gen.mjs` (rerun: `node docs/traceabil
 | FR-ADM-001 | The system shall provide a centralized platform administration console. | All screens | frontend + backend + database | done — the console is the centralised administration interface |
 | FR-ADM-003 | The system shall manage platform-wide roles and administrative permissions. | User Control Centre | frontend + backend + database | done — roles and permissions managed (3 tiers, seeded matrix, role assignment) |
 | FR-ADM-004 | The system shall manage global platform settings. | System Settings | frontend + backend + database | done — global settings editable via the settings slice |
-| FR-ADM-008 | The system shall display platform-wide operational dashboards. | Dashboard | frontend + backend | partial — dashboard shell renders; no platform-wide operational metrics exist to display (OQ-2) |
+| FR-ADM-008 | The system shall display platform-wide operational dashboards. | Dashboard | frontend + backend | done (D-098) — platform-wide operational counts served by GET /api/v1/analytics/dashboard and rendered as the dashboard analytics cards (raw DB aggregates, no derived figures) |
 | FR-ADM-019 | The system shall support configurable application settings. | System Settings | frontend + backend + database | done — configurable application settings (key/value, validated, audited) |
 | FR-ADM-020 | The system shall support configurable business rules. | System Settings | frontend + backend + database | partial — configurable values exist (e.g. queue threshold); no general business-rule engine (OQ-6) |
 | FR-ADM-026 | The system shall support enabling and disabling features using feature flags. | System Settings | frontend + backend + database | done — feature flags toggle without redeployment, audited |
@@ -61,7 +61,7 @@ Generated 2026-10-29 by `docs/traceability-gen.mjs` (rerun: `node docs/traceabil
 | FR-ADM-037 | The system shall support export of audit records subject to authorization. | Audit Explorer | frontend + backend | done — CSV export gated on audit.export (Moderator+); Viewer 403 |
 | FR-ADM-038 | The system shall protect audit logs against unauthorized modification or deletion. | Audit Explorer | backend + database | done — database refuses UPDATE/DELETE/TRUNCATE for the application role |
 | FR-ADM-039 | The system shall support configurable audit retention periods. | Audit Explorer | backend + database | out of scope — no retention-period configuration; retention policy needs an operational decision (OQ-9) |
-| FR-ADM-046 | The system shall provide operational dashboards for administrators. | Dashboard | frontend + backend | partial — same as FR-ADM-008: shell without an agreed metric set (OQ-2) |
+| FR-ADM-046 | The system shall provide operational dashboards for administrators. | Dashboard | frontend + backend | done (D-098) — same endpoint as FR-ADM-008; all operator tiers may read it (Ch5 §3.6.1 Viewer tier) |
 | BR-USR-005 | Suspended or deactivated users shall not authenticate or perform business operations. | Login, User Control Centre | backend + database | done — suspended operator refused at login and on every request (Jest-verified) |
 | BR-USR-008 | All user lifecycle events shall be recorded in the audit log. | Audit Explorer | backend + database | done — suspend, ban, role assignment and settings changes all audited |
 | NFR-PRT-003 | The system shall support modern web browsers. | All screens | frontend | partial — modern-browser support designed in; manual browser confirmation pending (docs/BROWSER_CHECKLIST.md) |
@@ -103,8 +103,8 @@ Generated 2026-10-29 by `docs/traceability-gen.mjs` (rerun: `node docs/traceabil
 
 | Bucket | Count |
 |---|---|
-| In-scope SRS IDs: done | 33 |
-| In-scope SRS IDs: partial (gap named, tracked in OPEN_QUESTIONS.md) | 10 |
+| In-scope SRS IDs: done | 35 |
+| In-scope SRS IDs: partial (gap named, tracked in OPEN_QUESTIONS.md) | 8 |
 | In-scope SRS IDs: out of scope (reason given, tracked) | 12 |
 | In-scope SRS IDs: “not started” | 0 |
 

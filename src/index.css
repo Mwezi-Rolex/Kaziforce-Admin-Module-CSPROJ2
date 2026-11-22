@@ -448,10 +448,31 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 .kz-control-link { display: inline-flex; align-items: center; gap: 6px; margin-top: 14px; font-size: 12px; color: #103e32; font-weight: 500; }
 .kz-dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(14px, 1.6vw, 24px); }
 .kz-dash-cell { min-height: 320px; }
-.kz-notconfigured { border: 1px solid #e8d398; background: #fdf4dc; color: #89651d; border-radius: 999px; padding: 3px 11px; font-size: 11px; }
+/* Live analytics (CON-DASH-001, D-098): counts come from /api/v1/analytics. */
+.kz-livepill { border: 1px solid #bfd9ac; background: #eef5e6; color: #44663b; border-radius: 999px; padding: 3px 11px; font-size: 11px; white-space: nowrap; }
+.kz-kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.kz-kpi { border: 1px solid #e3e8e1; border-radius: 10px; background: #fcfdf8; padding: 14px 16px; min-width: 0; }
+.kz-kpi-label { font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 1.2px; text-transform: uppercase; color: #739055; }
+.kz-kpi-num { margin-top: 8px; font-family: 'Newsreader', Georgia, serif; font-size: 30px; line-height: 1; color: #103e32; }
+.kz-kpi-sub { margin-top: 8px; font-size: 11px; line-height: 1.5; color: #7a847e; }
+.kz-trend { margin: 0; border: 1px solid #e3e8e1; border-radius: 10px; padding: 14px 16px 10px; background: #fff; }
+.kz-trend-bars { display: flex; align-items: flex-end; gap: 6px; height: 72px; }
+.kz-trend-bar { flex: 1 1 0; height: 100%; display: flex; align-items: flex-end; }
+.kz-trend-fill { width: 100%; background: linear-gradient(180deg, #103e32, #739055); border-radius: 3px 3px 0 0; min-height: 2px; }
+.kz-trend-cap { margin-top: 10px; font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 1.2px; text-transform: uppercase; color: #7a847e; }
+.kz-analytics-foot { display: flex; align-items: center; gap: 8px; margin-top: 14px; border-top: 1px solid #e3e8e1; padding: 12px 24px; font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 1.2px; text-transform: uppercase; color: #7a847e; }
+.kz-skeleton { display: block; border-radius: 6px; background: linear-gradient(90deg, #eef2ec 25%, #f6f8f4 45%, #eef2ec 65%); background-size: 200% 100%; animation: kz-shimmer 1.4s ease infinite; }
+.kz-sk-label { height: 9px; width: 55%; }
+.kz-sk-num { height: 30px; width: 40%; margin-top: 8px; }
+.kz-sk-sub { height: 9px; width: 90%; margin-top: 8px; }
+.kz-sk-trend { height: 112px; width: 100%; }
+@keyframes kz-shimmer { to { background-position: -200% 0; } }
+@media (prefers-reduced-motion: reduce) { .kz-skeleton { animation: none; } }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 @media (max-width: 900px) {
   .kz-control-cards, .kz-dash-grid { grid-template-columns: 1fr; }
   .kz-dash-hero img { width: 100%; }
+  .kz-kpi-grid { grid-template-columns: repeat(2, 1fr); }
 }
 
 /* ---- Users: full-width table + horizontal record band (RESTYLE_GUIDE §5.3) - */

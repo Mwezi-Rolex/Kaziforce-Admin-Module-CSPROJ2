@@ -277,3 +277,15 @@ Not started (only if the user asks).
 **Next:** operator signs in once in a browser on the deployed site; optional `sudo certbot renew --dry-run`; keep the VM running (auto-shutdown at 23:00) for 23–27 Nov.
 
 **Blockers:** none.
+
+---
+
+## Dashboard analytics (2026-11-23, branch `feat/dashboard-analytics`)
+
+**Done:** the user's request "add the dashboard analytics" implemented as D-098, superseding OQ-2's "unpopulated" default. **API:** `GET /api/v1/analytics/dashboard` (`server/src/routes/analytics.ts`, registered in `app.ts`) — requireAuth, all three tiers per Ch5 §3.6.1; raw DB aggregates only (accounts by status, flags by status + high-severity pending, audit totals 24 h/7 d, 7-day decision counts from the ledger action vocabulary, 14-day trend via SQL `generate_series` so zero days and "today" come from the DB clock). **UI:** the dashboard's "Meaningful measures come first" placeholder replaced by four KPI cards + a 14-day trend strip (restyle tokens, DM Mono labels / Newsreader numerals), with FWED-mandated loading (skeleton, reduced-motion aware), error (ErrorState) and empty (EmptyState) states, an sr-only trend summary and the honesty footer "no derived or projected figures". **Tests:** `server/tests/analytics.test.ts` (401 unauth; Viewer 200; every figure equals direct SQL counts over the same tables; trend sums to the window; last day equals the DB's `current_date`) and `tests/dashboard-analytics.test.tsx` (KPI render, fail-safe error without invented numbers, zero-window empty state). Fixed a stray NUL byte in `docs/DECISIONS.md` (one `0` of `009_audit_provenance.sql` was written as 0x00, which made the file binary to readers) — content unchanged. Traceability rows CON-DASH-001 / FR-ADM-008 / FR-ADM-046 moved to done via `docs/traceability-gen.mjs` and regenerated; OQ-2 half-superseded.
+
+**Commands run (2026-11-23):** server `tsc --noEmit` exit 0; frontend `tsc --noEmit` exit 0; `npx jest --runInBand` → **19 suites, 133 passed** (incl. 3 new); `npx vitest run` → **15 passed** (incl. 3 new); `npx pnpm@10.34.3 build` ok (DashboardPage chunk 7.89 kB / 2.52 kB gzip, index JS 364.07 kB / 112.37 kB gzip). Live check: API on 3100 (the stale old-code API still occupies 3000 — untouched), curl login → analytics payload matches the DB; in-browser at 1440 px the analytics band renders all four cards and the trend (audit trail ticked 1368→1369 from the session's own login — live, not static).
+
+**Next:** operator review of the dashboard visuals (screenshots for the report are a person's retake); note the stale process on port 3000 serves old code and should be restarted from this workspace before any demo.
+
+**Blockers:** none.

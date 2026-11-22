@@ -275,7 +275,7 @@ md.push('')
 md.push('| Figma screen | SRS coverage |')
 md.push('|---|---|')
 md.push('| **Moderation Queue** (flag review; approve / reject / escalate; bulk decisions; Super Admin escalation lane) | **None.** No SRS requirement defines a content moderation queue. It exists only in the proposal (Ch. 1 §1.5.1), `chapter 5 update` and the use-case diagrams (Note 8). → OQ-1 |')
-md.push('| Dashboard — analytics content | Only the container (`FR-ADM-008/046`); the export deliberately shows no KPIs because no SRS requirement defines dashboard metrics. → OQ-2 |')
+md.push('| Dashboard — analytics content | The Figma export names no KPI set; the console shows live counts computed from the platform tables instead (`FR-ADM-008/046`; user decision D-098 supersedes the OQ-2 "unpopulated" default and matches the Chapter 5 Figure 4.6 wireframe). |')
 md.push('| User Control Centre — permanent ban | No explicit SRS requirement for operator-initiated permanent bans of user accounts (`FR-ADM-002` covers tenants; `BR-USR-005` assumes suspension exists). Ban/suspend operators appear only in the proposal and diagrams. → OQ-1 |')
 md.push('| System Settings — concrete keys/toggles | The SRS defines the settings/feature-flag *capability* (`FR-ADM-004/019/020/026–031`) but names no keys; the export marks them "[Key not specified]". → OQ-2 |')
 md.push('')
@@ -313,7 +313,7 @@ const CON_ROWS = [
   ['CON-AUD-005', 'Audit records carry provenance: source address, outcome (Success/Failure/Blocked) and a correlation id that ties the row to the API response; refusals recorded as Blocked', 'BED §6.15; DDD §28.2 (Phase 0 digest hard constraint 7)', AUDIT, 'frontend + backend + database'],
   ['CON-SET-001', 'Settings panel Super Admin only; key/value config + feature toggle; changes audited', 'Ch5 §3.6.6 (cf. FR-ADM-004/019/026)', SETTINGS, 'frontend + backend + database'],
   ['CON-SET-002', 'Settings keys and toggles stay named placeholders until the user supplies them', 'OQ-2 default confirmed in BRIEF', SETTINGS, 'frontend'],
-  ['CON-DASH-001', 'Dashboard shell present; analytics deliberately unpopulated ("Metric definitions pending")', 'BRIEF/OQ-2 (cf. FR-ADM-008/046)', DASH, 'frontend'],
+  ['CON-DASH-001', 'Dashboard shell with live analytics: summary metric cards (accounts, queue, 7-day decisions, audit trail) + 14-day event trend, all raw DB aggregates', 'Ch5 Figure 4.6 wireframe; BED §4.33.7; D-098 (cf. FR-ADM-008/046)', DASH, 'frontend + backend'],
   ['CON-WEB-001', 'Landing page: minimal, reuses export tokens only; product name Kaziforce (replaces "Tendaji")', 'BRIEF 2026-10-29', 'Landing', 'frontend'],
   ['CON-WEB-002', '404 page for unknown routes', 'BRIEF 2026-10-29', '404', 'frontend'],
   ['CON-UI-001', 'Every panel listing report content or options scrolls inside its container instead of clipping', 'BRIEF 2026-10-29', ALL, 'frontend'],
@@ -349,7 +349,7 @@ const CON_STATUS = {
   'CON-DEP-001': 'done (slice 10) — deploy/ artifacts + docs/DEPLOY.md; smoke test verified locally (12/0/1); VPS run pending operator',
   'CON-SET-001': 'done (Phase 4) — Super Admin only; key/value + toggle; all changes audited (Jest: Viewer and Moderator both 403)',
   'CON-SET-002': 'done (Phase 4) — keys are labelled sample.* and presented as demonstration config (OQ-2)',
-  'CON-DASH-001': 'done (Phase 4) — shell + real role-scope panel; analytics deliberately unpopulated (OQ-2)',
+  'CON-DASH-001': 'done (D-098, 2026-11-23) — GET /api/v1/analytics/dashboard serves raw DB aggregates; dashboard renders 4 KPI cards + 14-day trend with loading/error/empty states',
   'CON-UI-001': 'done (Phase 4) — .table-scroll on all four tables, .panel-scroll on the account record, .console-sidebar on the rail',
   'CON-AUD-004': 'done (Phase 4) — UPDATE/DELETE/TRUNCATE all refused 42501 in Jest and in deploy/smoke-test.sh',
   'CON-AUD-005': 'done (2026-11-12) — migration 009 adds actor_ip, outcome and correlation_id; per-request x-correlation-id echoed in the error envelope; outcome filter in the explorer; 5 Jest tests',
@@ -364,7 +364,7 @@ const SRS_STATUS = {
   'FR-ADM-001': 'done — the console is the centralised administration interface',
   'FR-ADM-003': 'done — roles and permissions managed (3 tiers, seeded matrix, role assignment)',
   'FR-ADM-004': 'done — global settings editable via the settings slice',
-  'FR-ADM-008': 'partial — dashboard shell renders; no platform-wide operational metrics exist to display (OQ-2)',
+  'FR-ADM-008': 'done (D-098) — platform-wide operational counts served by GET /api/v1/analytics/dashboard and rendered as the dashboard analytics cards (raw DB aggregates, no derived figures)',
   'FR-ADM-019': 'done — configurable application settings (key/value, validated, audited)',
   'FR-ADM-020': 'partial — configurable values exist (e.g. queue threshold); no general business-rule engine (OQ-6)',
   'FR-ADM-026': 'done — feature flags toggle without redeployment, audited',
@@ -379,7 +379,7 @@ const SRS_STATUS = {
   'FR-ADM-037': 'done — CSV export gated on audit.export (Moderator+); Viewer 403',
   'FR-ADM-038': 'done — database refuses UPDATE/DELETE/TRUNCATE for the application role',
   'FR-ADM-039': 'out of scope — no retention-period configuration; retention policy needs an operational decision (OQ-9)',
-  'FR-ADM-046': 'partial — same as FR-ADM-008: shell without an agreed metric set (OQ-2)',
+  'FR-ADM-046': 'done (D-098) — same endpoint as FR-ADM-008; all operator tiers may read it (Ch5 §3.6.1 Viewer tier)',
   // --- Business rules ---
   'BR-USR-005': 'done — suspended operator refused at login and on every request (Jest-verified)',
   'BR-USR-008': 'done — suspend, ban, role assignment and settings changes all audited',
