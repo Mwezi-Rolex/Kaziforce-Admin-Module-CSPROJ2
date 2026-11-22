@@ -25,11 +25,11 @@ authRouter.post('/login', async (req, res, next) => {
     }
     const account = await authenticate(parsed.data.email, parsed.data.password, auditContext(req))
     const ttlHours = Number(process.env.JWT_TTL_HOURS || 8)
+    // Subject and email only (SEMANTIC_MODEL.md BUG-12, fixed): role and
+    // permissions live in the database and are re-read on every request.
     const token = signSessionToken({
       sub: account.id,
       email: account.email,
-      role: account.role,
-      permissions: account.permissions,
     })
     res.cookie(SESSION_COOKIE, token, sessionCookieOptions(ttlHours * 3600_000))
     await writeEvent({

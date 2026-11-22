@@ -16,7 +16,7 @@ export type SessionUser = {
 
 export type AuthedRequest = Request & { user?: SessionUser }
 
-export function signSessionToken(payload: { sub: string; email: string; role: string; permissions: string[] }) {
+export function signSessionToken(payload: { sub: string; email: string }) {
   return jwt.sign(payload, env.JWT_SECRET, {
     expiresIn: `${env.JWT_TTL_HOURS}h`,
     issuer: 'kaziforce-auth',
@@ -26,11 +26,15 @@ export function signSessionToken(payload: { sub: string; email: string; role: st
 
 // Every protected request: verify the signed JWT, then re-check the account
 // state so suspension/termination takes effect immediately (CON-AUTH-003).
+//
+// The token carries only the subject and email (SEMANTIC_MODEL.md BUG-12,
+// fixed): role and permissions are re-derived from the database on every
+// request, so a snapshot in the cookie can never drift from the live matrix.
 export async function requireAuth(req: AuthedRequest, _res: Response, next: NextFunction) {
   try {
     const token = req.cookies?.[SESSION_COOKIE]
     if (!token) throw new ApiError(401, 'AUTH-002', 'Authentication required')
-    let claims: { sub: string; role: string; permissions: string[] }
+    let claims: { sub: string }
     try {
       claims = jwt.verify(token, env.JWT_SECRET, {
         issuer: 'kaziforce-auth',

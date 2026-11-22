@@ -314,7 +314,7 @@ export function UsersPage() {
                             <option value="super_admin">Super Admin</option>
                           </select>
                         </label>
-                        <p className="mt-2 text-xs text-[#656d66]">Assignment is audited and takes effect on next sign-in.</p>
+                        <p className="mt-2 text-xs text-[#656d66]">Assignment is audited and takes effect on the operator's next request.</p>
                       </>
                     )}
                     {canBan && selected.status !== 'Terminated' && (
