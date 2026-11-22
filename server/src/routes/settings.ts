@@ -8,14 +8,17 @@ import { writeEvent, auditContext } from '../services/auditLogger'
 
 // System settings API (CON-SET-001/002; Ch5 §3.6.6).
 //
-// Super Admin only (`settings.manage`). Every change is audited, which also
-// satisfies FR-ADM-034 (configuration changes recorded) and SEC-AUD-005
-// (security configuration changes logged).
+// Super Admin only (`settings.manage`). Every ACTUAL change is audited, which
+// also satisfies FR-ADM-034 (configuration changes recorded) and SEC-AUD-005
+// (security configuration changes logged). A write whose value is already in
+// force is refused as a no-op (409 SETTING-003) and writes no audit event
+// (SEMANTIC_MODEL.md BUG-11, fixed).
 //
 // Keys are NOT invented: the documents name no concrete settings keys (OQ-2),
 // so the seed inserts clearly-labelled `sample.*` keys and the UI presents them
-// as sample configuration. New keys are allowed — this is a key/value store —
-// but nothing here pretends to be a real platform setting.
+// as sample configuration. This endpoint UPDATES existing keys only — an
+// unknown key is a 404; the interface never pretends to be a real platform
+// setting.
 
 export const settingsRouter = Router()
 settingsRouter.use(requireAuth)
@@ -59,6 +62,9 @@ settingsRouter.put(
 
       const existing = await pool.query(`SELECT value FROM system_settings WHERE key = $1`, [key])
       if (!existing.rows[0]) throw new ApiError(404, 'SETTING-001', 'No such configuration key')
+      if (existing.rows[0].value === parsed.data.value) {
+        throw new ApiError(409, 'SETTING-003', 'Configuration already has this value')
+      }
 
       const { rows } = await pool.query(
         `UPDATE system_settings SET value = $2, updated_at = now(), updated_by = $3
@@ -103,8 +109,11 @@ settingsRouter.post(
       if (!existing.rows[0].isFeatureToggle) {
         throw new ApiError(409, 'SETTING-002', 'This key is a configuration value, not a feature toggle')
       }
-
       const nextValue = parsed.data.enabled ? 'true' : 'false'
+      if (existing.rows[0].value === nextValue) {
+        throw new ApiError(409, 'SETTING-003', 'Feature is already in the requested state')
+      }
+
       const { rows } = await pool.query(
         `UPDATE system_settings SET value = $2, updated_at = now(), updated_by = $3
          WHERE key = $1
