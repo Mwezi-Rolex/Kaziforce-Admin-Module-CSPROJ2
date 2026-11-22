@@ -9,6 +9,8 @@ import { createPool, hasDb as envHasDb } from './helpers/db'
 
 // A database is required for this suite. When one is not configured the suite
 // SKIPS with a readable reason instead of failing at import time.
+process.env.MODEL_SERVICE_URL = 'http://127.0.0.1:9'
+
 const hasDb = envHasDb
 const d = hasDb ? describe : describe.skip
 
