@@ -1,12 +1,52 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Work+Sans:wght@400;500;600;700&display=swap');
 @import 'tailwindcss';
 
-/* Kaziforce governance console — design tokens from the Figma export.
-   Rewritten for Phase 2: duplicate blocks merged (see docs/FIGMA_AUDIT.md #5),
-   .role-select removed with the wireframe role switcher (CON-AUTH-002),
-   scroll containers added for the BRIEF scroll requirement (CON-UI-001). */
+/* Kaziforce governance console — design tokens.
+   Fonts are SELF-HOSTED (public/fonts/, SIL OFL — see public/fonts/OFL-*.txt),
+   matching the Figma Make design (CS Project II v3). The Google Fonts import
+   was replaced by these faces so the demo renders offline. */
 
-:root { font-family: 'Work Sans', sans-serif; color: #17332f; background: #f7f5ef; }
+@font-face {
+  font-family: 'DM Sans';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('/fonts/dm-sans-latin.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'DM Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/dm-mono-400-latin.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'DM Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/dm-mono-500-latin.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Newsreader';
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+  src: url('/fonts/newsreader-normal-latin.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Newsreader';
+  font-style: italic;
+  font-weight: 400 600;
+  font-display: swap;
+  src: url('/fonts/newsreader-italic-latin.woff2') format('woff2');
+}
+
+/* Palette follows the Figma Make design (CS Project II v3 styles.css). */
+:root { font-family: 'DM Sans', sans-serif; color: #183b32; background: #f7f9f6; }
 body { margin: 0; }
 button, input, select { font: inherit; }
 button { cursor: pointer; }
@@ -59,7 +99,7 @@ table { width:100%; border-collapse:collapse; text-align:left; } th { background
 .escalation-note { margin-bottom:12px; border-left:3px solid #c99434; background:#fff7df; padding:10px 12px; font-size:12px; color:#66552b; }
 
 .login-shell { display:grid; min-height:100vh; grid-template-columns:minmax(0,1.08fr) minmax(400px,.92fr); background:#f8f6ef; }.login-card { width:min(460px, calc(100% - 80px)); align-self:center; justify-self:center; padding:56px 0; }.login-aside { display:flex; flex-direction:column; justify-content:space-between; background:#183a35; padding:64px clamp(40px, 8vw, 120px); color:#f5f3eb; }.login-rule { position:fixed; top:0; left:0; height:7px; width:43%; background:#c99434; }
-.field-label { display:block; font-family:'DM Mono'; font-size:10px; text-transform:uppercase; letter-spacing:.13em; color: #626e66; }.field-label input, .field-label select { display:block; box-sizing:border-box; width:100%; margin-top:7px; border:1px solid #d4d7ce; border-radius:2px; background:#fffefa; padding:12px; font-family:'Work Sans'; font-size:14px; letter-spacing:normal; text-transform:none; outline:none; }
+.field-label { display:block; font-family:'DM Mono'; font-size:10px; text-transform:uppercase; letter-spacing:.13em; color: #626e66; }.field-label input, .field-label select { display:block; box-sizing:border-box; width:100%; margin-top:7px; border:1px solid #d4d7ce; border-radius:2px; background:#fffefa; padding:12px; font-family:'DM Sans'; font-size:14px; letter-spacing:normal; text-transform:none; outline:none; }
 .detail-list { margin-top:22px; }.detail-list > div { display:flex; justify-content:space-between; gap:12px; border-top:1px solid #d8dad1; padding:10px 0; }.detail-list dt { font-family:'DM Mono'; font-size:10px; text-transform:uppercase; letter-spacing:.08em; color: #616e67; }.detail-list dd { margin:0; text-align:right; font-size:12px; color:#33473f; }
 .history-block { margin-top:20px; border-top:1px solid #d3d5cb; padding-top:16px; }.history-item { display:flex; align-items:center; justify-content:space-between; gap:8px; margin:8px 0; font-size:11px; }.history-empty { margin:8px 0; color: #656d66; font-size:11px; }
 
@@ -108,3 +148,106 @@ table { width:100%; border-collapse:collapse; text-align:left; } th { background
   .login-aside { display:none; }
   .account-record { grid-template-columns:1fr; }
 }
+
+
+/* ============================================================================
+   PUBLIC PAGES — image-heavy landing + login story shell
+   Adapted from the project owner's Figma Make design (CS Project II v3,
+   styles.css: login-shell / login-story / story-kicker / story-copy).
+   Palette: forest #103e32 · ink #173e32 · muted #7a847e · line #e3e8e1 ·
+   lime #d1f77b · page #f7f9f6 · cream text #fffef1 · olive accents
+   #edf4e0 / #739055 / #44663b. Type: DM Sans body, Newsreader display.
+   ============================================================================ */
+
+.kz-public { background: #f7f9f6; color: #183b32; }
+.kz-kicker {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 1.4px;
+  text-transform: uppercase;
+}
+.kz-kicker > span { width: 6px; height: 6px; border-radius: 999px; background: #d1f77b; }
+.kz-serif-xl {
+  font-family: 'Newsreader', Georgia, serif; font-weight: 400;
+  font-size: clamp(44px, 5.2vw, 72px); line-height: .98; letter-spacing: -1.5px;
+}
+.kz-serif-xl em { font-style: italic; }
+.kz-serif-lg { font-family: 'Newsreader', Georgia, serif; font-weight: 400; font-size: clamp(26px, 2.6vw, 34px); line-height: 1.08; letter-spacing: -.5px; }
+.kz-serif-lg em, .kz-serif-xl em { color: inherit; }
+
+/* Split hero: copy left, full-bleed photo right (login-shell geometry). */
+.kz-hero { display: grid; grid-template-columns: 1fr 1.02fr; min-height: calc(100vh - 64px); background: #fcfdf8; }
+.kz-hero-copy { display: flex; flex-direction: column; justify-content: center; padding: clamp(32px, 6vw, 96px); }
+.kz-hero-story { position: relative; overflow: hidden; background: var(--kz-forest, #103e32); }
+.kz-hero-story img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 100% center; filter: saturate(.65); }
+.kz-hero-story-overlay { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(16,62,50,.38) 0%, rgba(16,62,50,.62) 100%); }
+.kz-hero-story-copy { position: absolute; left: clamp(24px, 3.4vw, 44px); right: clamp(24px, 3.4vw, 44px); bottom: clamp(24px, 3.4vw, 44px); }
+.kz-hero-story-copy h2 { font-family: 'Newsreader', Georgia, serif; font-weight: 400; font-size: clamp(34px, 3.4vw, 52px); line-height: .98; letter-spacing: -1.2px; color: #fffef1; }
+.kz-hero-story-copy h2 em { font-style: italic; }
+.kz-hero-story-copy p { margin-top: 14px; font-size: 13px; line-height: 1.6; color: #e7efe2; }
+.kz-hero-story .kz-kicker { position: absolute; top: 28px; left: clamp(24px, 3.4vw, 44px); color: #fffef1; }
+
+.kz-cta {
+  display: inline-flex; align-items: center; gap: 10px;
+  background: #103e32; color: #fcfef6; border: 0; border-radius: 999px;
+  padding: 12px 18px; font-size: 13px; font-weight: 500; cursor: pointer;
+  text-decoration: none; transition: background .16s ease;
+}
+.kz-cta:hover { background: #175043; }
+.kz-cta.lime { background: #d1f77b; color: #173e32; font-weight: 600; }
+.kz-cta.lime:hover { background: #c3ef67; }
+.kz-cta.ghost { background: transparent; color: #173e32; border: 1px solid #c9d4c4; }
+.kz-cta.ghost:hover { border-color: #103e32; }
+
+.kz-band { border-top: 1px solid #e3e8e1; background: #ffffff; }
+.kz-band-inner { max-width: 1240px; margin: 0 auto; padding: clamp(40px, 5vw, 72px) clamp(24px, 4vw, 48px); }
+.kz-band-label { font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 1.4px; text-transform: uppercase; color: #739055; display: inline-flex; align-items: center; gap: 8px; }
+.kz-band-label > span { width: 6px; height: 6px; border-radius: 999px; background: #739055; }
+.kz-h2 { font-family: 'Newsreader', Georgia, serif; font-weight: 400; font-size: clamp(30px, 3vw, 44px); line-height: 1.05; letter-spacing: -.8px; color: #173e32; }
+.kz-h2 em { font-style: italic; color: #44663b; }
+
+.kz-facts { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(16px, 2vw, 32px); }
+.kz-fact { border-top: 1px solid #173e32; padding-top: 14px; }
+.kz-fact dt { font-family: 'Newsreader', Georgia, serif; font-size: 22px; color: #173e32; }
+.kz-fact dd { margin-top: 6px; font-size: 12px; line-height: 1.6; color: #7a847e; }
+
+.kz-steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(16px, 2vw, 24px); }
+.kz-step-card { border: 1px solid #e3e8e1; background: #fff; border-radius: 10px; overflow: hidden; }
+.kz-step-card img { width: 100%; height: 220px; object-fit: cover; }
+.kz-step-card-body { padding: 18px; }
+.kz-step-card-body h3 { font-family: 'Newsreader', Georgia, serif; font-size: 21px; color: #173e32; }
+.kz-step-card-body p { margin-top: 8px; font-size: 12px; line-height: 1.6; color: #7a847e; }
+.kz-step-no { font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 1.4px; color: #739055; }
+
+.kz-story-band { position: relative; overflow: hidden; border-radius: 12px; background: #103e32; }
+.kz-story-band img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; filter: saturate(.65); }
+.kz-story-band-overlay { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(16,62,50,.72) 0%, rgba(16,62,50,.28) 100%); }
+.kz-story-band-copy { position: relative; padding: clamp(40px, 6vw, 88px) clamp(24px, 4vw, 64px); max-width: 640px; }
+.kz-story-band-copy h2 { font-family: 'Newsreader', Georgia, serif; font-weight: 400; font-size: clamp(30px, 3.4vw, 48px); line-height: 1.02; letter-spacing: -1px; color: #fffef1; }
+.kz-story-band-copy p { margin-top: 14px; font-size: 13px; line-height: 1.65; color: #e7efe2; }
+
+.kz-people { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(16px, 2vw, 24px); }
+.kz-person { position: relative; border-radius: 10px; overflow: hidden; background: #103e32; }
+.kz-person img { width: 100%; height: 340px; object-fit: cover; filter: saturate(.85); transition: transform .3s ease; }
+.kz-person:hover img { transform: scale(1.02); }
+.kz-person-caption { position: absolute; inset: auto 0 0 0; padding: 14px 16px; background: linear-gradient(180deg, transparent, rgba(16,62,50,.85) 60%); color: #fffef1; }
+.kz-person-caption h3 { font-family: 'Newsreader', Georgia, serif; font-size: 18px; font-weight: 400; }
+.kz-person-caption p { font-size: 11px; color: #d7e4d2; margin-top: 2px; }
+
+.kz-cta-band { display: flex; align-items: center; justify-content: space-between; gap: 24px; border-radius: 12px; background: #103e32; padding: clamp(28px, 4vw, 48px) clamp(24px, 4vw, 56px); color: #fffef1; }
+.kz-cta-band h2 { font-family: 'Newsreader', Georgia, serif; font-weight: 400; font-size: clamp(24px, 2.6vw, 36px); line-height: 1.05; }
+.kz-cta-band p { margin-top: 8px; font-size: 13px; color: #d7e4d2; }
+
+@media (max-width: 900px) {
+  .kz-hero { grid-template-columns: 1fr; }
+  .kz-hero-story { min-height: 420px; }
+  .kz-facts, .kz-steps, .kz-people { grid-template-columns: 1fr; }
+  .kz-person img { height: 260px; }
+}
+
+.kz-field {
+  display: block; box-sizing: border-box; width: 100%;
+  border: 1px solid #cdd6c8; border-radius: 8px; background: #ffffff;
+  padding: 12px 14px; font-family: 'DM Sans', sans-serif; font-size: 14px;
+  color: #173e32; outline: none; transition: border-color .15s ease, box-shadow .15s ease;
+}
+.kz-field:focus { border-color: #103e32; box-shadow: 0 0 0 3px rgba(16,62,50,.14); }

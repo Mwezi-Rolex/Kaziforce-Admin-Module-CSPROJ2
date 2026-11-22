@@ -160,6 +160,16 @@ Not started (only if the user asks).
 
 ---
 
+## Image-heavy public pages (2026-11-22, branch `restyle/image-heavy`)
+
+**Done:** the public pages rebuilt to the owner's Figma Make design (CS Project II v3 — the split hero shell, Newsreader display type, forest/lime palette, self-hosted OFL fonts copied from the Figma export so the demo renders offline). `LandingPage` is now image-heavy: split hero with the workforce-studio photo panel (owner's Figma asset), a facts band stating only real product facts, three photographed steps (report → human review → immutable record), a story band, an operator-tier people strip (portraits labelled as illustrative tiers), and a CTA band. `LoginPage` ports the Figma v3 PublicScreen login variant 1:1 (form logic unchanged). 7 photographs sourced from Pexels (CDN direct download; search pages are Cloudflare-blocked — noted), credited with photographer and page URL in `public/images/CREDITS.md`; Freepik not used (account-gated downloads). Design tokens moved to self-hosted fonts and the v3 palette (`--forest #103e32`, lime `#d1f77b`). Verified in-browser at 1440px with screenshots (hero, steps, people strip, CTA, login). Console screens untouched.
+
+**Next:** a person reviews the pages in a browser (screenshots quoted in the session) and decides whether the console screens get the same treatment (the restyle guide's scope).
+
+**Blockers:** none.
+
+---
+
 ## Production-readiness runbook (2026-11-22, branch `ops/production-readiness`)
 
 **Done:** deploy/ + docs/ only. New: `deploy/scripts/backup-database.sh` (custom-format pg_dump, integrity check, 7-day prune), `deploy/scripts/restore-database.sh` (verification restore into a throwaway DB — cannot touch the live one), `deploy/systemd/kaziforce-backup.{service,timer}` (02:15 UTC nightly, runs as postgres over peer auth), `deploy/systemd/journald-retention.conf` (200 MB / 30 days), `deploy/nginx/kaziforce-headers.conf` (fixes the add_header inheritance defect from SECURITY_AUDIT F-04 by including the five security headers in every location), both Nginx confs rewritten (JSON access log with correlation id + latency, `limit_req` zones on sign-in 10/min and CSV export 6/min answering 429, header include), `deploy/azure-vm-install.sh` (unattended-upgrades + fail2ban enabled, backup dir/units/journald/headers installed). `docs/OPERATIONS.md` runbook: observability (JSON request log, journald retention, /health polling, 5xx/p95/disk/memory derivations), reliability (nightly timer, tested restore, RPO ≤ 24 h, RTO minutes for DB-only [locally measured] / 20–40 min full VM [UNVERIFIED]), SLO proposal, security rotations, abuse limits + Cloudflare option, rollback ≈ 5–10 min [UNVERIFIED], 10×/100× citing PERFORMANCE.md. Verified locally: bash -n ×3; nginx -t in a real nginx:1.27-alpine container (HTTP + HTTPS with dummy certs); a full backup→restore cycle on the disposable 50k-row cluster (3.3 MB dump; identical row counts; 3.9 s restore).
