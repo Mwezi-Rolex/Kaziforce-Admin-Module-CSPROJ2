@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { z } from 'zod'
 import { pool } from '../db/pool'
+import { env } from '../config/env'
 import { requireAuth, type AuthedRequest } from '../middleware/auth'
 import { requirePermission } from '../middleware/requirePermission'
 import { ApiError } from '../middleware/errors'
@@ -106,15 +107,43 @@ auditRouter.get('/', requirePermission('audit.view'), async (req: AuthedRequest,
 
 // CSV download — Moderator and Super Admin only (BRIEF override of Ch5 §3.6.5;
 // tracked as CON-AUD-003). A Viewer is refused with 403 before any query runs.
+//
+// The export is capped at AUDIT_EXPORT_MAX_ROWS (default 10000). A silent cap
+// would let an auditor treat a truncated file as complete (SEMANTIC_MODEL.md
+// BUG-8, fixed), so a capped export announces itself: the X-Total-Matching-Rows
+// header carries the true total and the CSV ends with an explicit
+// 'Export Truncated' marker row carrying both totals.
 auditRouter.get('/export.csv', requirePermission('audit.export'), async (req: AuthedRequest, res, next) => {
   try {
     const f = parseFilters(req)
     const { where, params } = buildWhere(f)
-    const { rows } = await pool.query(
-      `${SELECT_EVENTS} ${where} ORDER BY a.created_at DESC, a.id DESC LIMIT 10000`,
+    const maxRows = env.AUDIT_EXPORT_MAX_ROWS
+    const count = await pool.query<{ total: string }>(
+      `SELECT count(*) AS total FROM audit_log a LEFT JOIN users op ON op.id = a.operator_id ${where}`,
       params,
     )
-    const csv = toCsv(rows as Array<Record<string, unknown>>, [
+    const total = Number(count.rows[0].total)
+    const { rows } = await pool.query(
+      `${SELECT_EVENTS} ${where} ORDER BY a.created_at DESC, a.id DESC LIMIT ${maxRows}`,
+      params,
+    )
+    const exportRows: Array<Record<string, unknown>> = rows as Array<Record<string, unknown>>
+    if (total > maxRows) {
+      exportRows.push({
+        id: '',
+        createdAt: '',
+        operatorId: '',
+        operatorEmail: '',
+        actionType: 'Export Truncated',
+        targetEntityType: 'audit_export',
+        targetEntityId: '',
+        outcome: 'Failure',
+        actorIp: '',
+        correlationId: '',
+        metadata: { totalMatching: total, returned: exportRows.length, maxRows },
+      })
+    }
+    const csv = toCsv(exportRows, [
       'id',
       'createdAt',
       'operatorId',
@@ -128,6 +157,7 @@ auditRouter.get('/export.csv', requirePermission('audit.export'), async (req: Au
       'metadata',
     ])
     const stamp = new Date().toISOString().slice(0, 10)
+    res.setHeader('X-Total-Matching-Rows', String(total))
     res.setHeader('Content-Type', 'text/csv; charset=utf-8')
     res.setHeader('Content-Disposition', `attachment; filename="kaziforce-audit-${stamp}.csv"`)
     res.send(csv)

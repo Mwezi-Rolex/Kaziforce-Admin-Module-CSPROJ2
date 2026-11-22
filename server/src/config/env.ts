@@ -10,6 +10,10 @@ const schema = z.object({
   JWT_TTL_HOURS: z.coerce.number().int().positive().default(8),
   RATE_LIMIT_MAX: z.coerce.number().int().positive().default(600),
   RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(300_000),
+  // Cap on one audit CSV export. When a filter matches more rows than this,
+  // the export ends with an explicit 'Export Truncated' marker row and an
+  // X-Total-Matching-Rows response header (SEMANTIC_MODEL.md BUG-8, fixed).
+  AUDIT_EXPORT_MAX_ROWS: z.coerce.number().int().positive().default(10_000),
 })
 
 const parsed = schema.safeParse(process.env)
