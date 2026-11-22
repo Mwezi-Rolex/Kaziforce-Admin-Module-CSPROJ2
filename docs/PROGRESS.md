@@ -160,6 +160,16 @@ Not started (only if the user asks).
 
 ---
 
+## Full performance baseline (2026-11-22, branch `perf/baseline`)
+
+**Done:** the complete measurement pass on the isolated 50k-row perf database (audit_log 50,001 / flags 5,004, stated counts): bundle visualiser via npx (react-dom 524 KB = 59 % of rendered JS, zod 143 KB, react-router 93 KB, app code 91 KB); autocannon 30-second windows at 10/50 connections for health, users, queue, audit, CSV export plus POST /suggestions with the model up (p50 3,028 ms — the 20-flag batch serialises 20 scikit-learn predicts) and down (128 ms, zero non-2xx — fail-safe holds); model /predict cold 235 ms, warm p50 85 ms; EXPLAIN per audit filter (actor filter is the slowest path at 28.6–48.3 ms — `::text` cast + ILIKE). Bottlenecks at 10×/100× recorded in §7, each tied to a measurement. One measurement defect found and corrected mid-run: a Node spawnSync(shell:true) battery dropped the Cookie header (unquoted space under cmd.exe) and measured 401s — replaced with a bash-driven battery; the perf/fixes 10 s HTTP table is superseded. No application code changed; `docs/PERFORMANCE.md` rewritten as the authoritative baseline.
+
+**Next:** none committed — the report's levers (CSV streaming, batched predictions, single auth query, actor-filter index) are options for a future round, each with a measured justification.
+
+**Blockers:** none.
+
+---
+
 ## Performance baseline and fixes (2026-11-22, branch `perf/fixes`)
 
 **Done:** `docs/PERFORMANCE.md` did not exist (the earlier perf session was interrupted), so the baseline was produced here first: disposable PostgreSQL cluster in %TEMP% (port 5434, D-068 pattern) with database `kaziforce_perf`, migrations+grants+seed, bulk data (audit_log 50,000 rows, flags 5,004, content_items 1,504, VACUUM ANALYZE), then an EXPLAIN ANALYZE battery, an autocannon battery (10/50 connections × 10 s × 5 endpoints) and the bundle size. Three changes applied against measured numbers: migration `010_perf_indexes.sql` (flags severity-rank expression index: queue list 5.256→0.332 ms; audit_log outcome+order index: filtered count 15.842→1.343 ms), audit count join elision (filtered count 13.511→0.552 ms using the existing migration-004 index; no-filter 3.428→3.004 ms), and route-level code splitting (initial JS 387.98→357.71 kB, −7.8 % raw; pages lazy-loaded). A composite (action_type, created_at, id) index was measured as a non-mover and reverted — never committed. HTTP rps at ~50 k rows stayed within noise (~2.6–3.0 k, ceiling is per-request session overhead — recorded honestly in §4). Grants re-checked after migrating; full suites green.
