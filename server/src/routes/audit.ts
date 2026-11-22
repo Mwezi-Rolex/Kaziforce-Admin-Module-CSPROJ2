@@ -77,8 +77,14 @@ auditRouter.get('/', requirePermission('audit.view'), async (req: AuthedRequest,
   try {
     const f = parseFilters(req)
     const { where, params } = buildWhere(f)
+    // The users join exists only for the actor filter (op.email ILIKE); when
+    // no actor filter is set, counting without it avoids a 50k-row join on
+    // every page view (docs/PERFORMANCE.md, measured 3.58 -> 3.00 ms
+    // unfiltered and 13.51 -> 0.55 ms action-filtered with the migration-004
+    // index).
+    const needsJoin = Boolean(f.actor)
     const count = await pool.query<{ total: string }>(
-      `SELECT count(*) AS total FROM audit_log a LEFT JOIN users op ON op.id = a.operator_id ${where}`,
+      `SELECT count(*) AS total FROM audit_log a${needsJoin ? ' LEFT JOIN users op ON op.id = a.operator_id' : ''} ${where}`,
       params,
     )
     params.push(f.size, (f.page - 1) * f.size)

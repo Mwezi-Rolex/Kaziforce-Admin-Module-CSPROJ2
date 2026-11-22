@@ -160,6 +160,16 @@ Not started (only if the user asks).
 
 ---
 
+## Performance baseline and fixes (2026-11-22, branch `perf/fixes`)
+
+**Done:** `docs/PERFORMANCE.md` did not exist (the earlier perf session was interrupted), so the baseline was produced here first: disposable PostgreSQL cluster in %TEMP% (port 5434, D-068 pattern) with database `kaziforce_perf`, migrations+grants+seed, bulk data (audit_log 50,000 rows, flags 5,004, content_items 1,504, VACUUM ANALYZE), then an EXPLAIN ANALYZE battery, an autocannon battery (10/50 connections × 10 s × 5 endpoints) and the bundle size. Three changes applied against measured numbers: migration `010_perf_indexes.sql` (flags severity-rank expression index: queue list 5.256→0.332 ms; audit_log outcome+order index: filtered count 15.842→1.343 ms), audit count join elision (filtered count 13.511→0.552 ms using the existing migration-004 index; no-filter 3.428→3.004 ms), and route-level code splitting (initial JS 387.98→357.71 kB, −7.8 % raw; pages lazy-loaded). A composite (action_type, created_at, id) index was measured as a non-mover and reverted — never committed. HTTP rps at ~50 k rows stayed within noise (~2.6–3.0 k, ceiling is per-request session overhead — recorded honestly in §4). Grants re-checked after migrating; full suites green.
+
+**Next:** operator re-runs `npm run migrate` on any real deployment to pick up 010; a future round could collapse requireAuth's two per-request queries (the measured HTTP ceiling) — deliberately not done here (auth middleware).
+
+**Blockers:** none.
+
+---
+
 ## Security audit (2026-11-22, branch `security/audit`)
 
 **Done:** full checklist audit per the `security-audit` skill (guidance mode) recorded in `docs/SECURITY_AUDIT.md`: no critical or high finding. Two medium findings measured live against a scratch API — the login timing oracle (unknown 2 ms vs known 252 ms → email enumeration; locked 2 ms vs active 261 ms → lock-state/expiry disclosure) and the password-spraying gap (global 600/5-min per-IP bucket, no login-specific throttle; per-account lockout bounds only single-account guessing). One low Nginx finding (add_header inheritance drops security headers from /api/ and /assets/ responses). Dependencies: root clean, server 4 moderate (dev-only jest chains), ml pip-audit clean (run from a throwaway venv). Secrets: git ls-files clean; owner role never on a runtime path; audit_log grants re-verified (INSERT+SELECT only, no schema CREATE). Per the session rule, nothing was fixed (no critical/high); recommended fixes are inline in the report. Two needs-validation items for the VM (live response headers; NODE_ENV/Secure flag).
