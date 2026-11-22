@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useSession } from '../../app/SessionContext'
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
+import { Pager } from '../../components/ui/Pager'
 import { Notice } from '../../components/ui/Notice'
 import { Button, EmptyState, ErrorState, Loading, PageTitle, Panel, Pill } from '../../components/ui/primitives'
 import { Toolbar } from '../../components/ui/Toolbar'
@@ -42,15 +43,24 @@ export function UsersPage() {
   const [banTarget, setBanTarget] = useState<Account | null>(null)
   const [acting, setActing] = useState(false)
   const [actionError, setActionError] = useState<string | null>(null)
+  const [page, setPage] = useState(1)
 
   useEffect(() => {
     const t = window.setTimeout(() => setDebounced(query.trim()), 300)
     return () => window.clearTimeout(t)
   }, [query])
 
+  // A filter or search change resets to the first page.
+  useEffect(() => {
+    setPage(1)
+  }, [debounced, status, role])
+
   const listPath = useMemo(
-    () => `/api/v1/users?query=${encodeURIComponent(debounced)}&status=${encodeURIComponent(status)}&role=${encodeURIComponent(role)}`,
-    [debounced, status, role],
+    () =>
+      `/api/v1/users?query=${encodeURIComponent(debounced)}&status=${encodeURIComponent(status)}&role=${encodeURIComponent(
+        role,
+      )}&page=${page}&size=20`,
+    [debounced, status, role, page],
   )
   const list = useApi<Account[]>(listPath)
   const detail = useApi<AccountDetail>(selectedId ? `/api/v1/users/${selectedId}` : null)
@@ -363,6 +373,7 @@ export function UsersPage() {
           onCancel={() => setBanTarget(null)}
         />
       )}
+      <Pager page={page} size={20} total={list.meta?.total ?? 0} onPage={setPage} />
       {notice && <Notice message={notice} onDone={() => setNotice('')} />}
     </>
   )

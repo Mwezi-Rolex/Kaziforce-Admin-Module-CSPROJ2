@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useSession } from '../../app/SessionContext'
+import { Pager } from '../../components/ui/Pager'
 import { Notice } from '../../components/ui/Notice'
 import { Button, EmptyState, ErrorState, Loading, PageTitle, Pill } from '../../components/ui/primitives'
 import { Toolbar } from '../../components/ui/Toolbar'
@@ -58,14 +59,20 @@ export function QueuePage() {
   const [acting, setActing] = useState(false)
   const [suggestions, setSuggestions] = useState<Record<string, Suggestion>>({})
   const [sortByPredicted, setSortByPredicted] = useState(false)
+  const [page, setPage] = useState(1)
 
   const canDecide = can(user?.permissions, PERMISSIONS.moderationDecide)
   const canEscalate = can(user?.permissions, PERMISSIONS.moderationEscalate)
   const effectiveStatus = lane === 'escalated' ? 'Escalated' : status
 
+  // A filter or lane change resets to the first page.
+  useEffect(() => {
+    setPage(1)
+  }, [severity, status, lane])
+
   const listPath = useMemo(
-    () => `/api/v1/moderation/queue?severity=${severity}&status=${effectiveStatus}`,
-    [severity, effectiveStatus],
+    () => `/api/v1/moderation/queue?severity=${severity}&status=${effectiveStatus}&page=${page}&size=20`,
+    [severity, effectiveStatus, page],
   )
   const list = useApi<Flag[]>(listPath)
   const flags = list.data ?? []
@@ -358,6 +365,7 @@ export function QueuePage() {
         )}
       </div>
       {notice && <Notice message={notice} onDone={() => setNotice('')} />}
+      <Pager page={page} size={20} total={list.meta?.total ?? 0} onPage={setPage} />
     </>
   )
 }

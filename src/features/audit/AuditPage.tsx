@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useSession } from '../../app/SessionContext'
+import { Pager } from '../../components/ui/Pager'
 import { Button, EmptyState, ErrorState, Loading, PageTitle, Pill } from '../../components/ui/primitives'
 import { Toolbar } from '../../components/ui/Toolbar'
 import { PERMISSIONS, can } from '../../lib/permissions'
@@ -29,33 +30,41 @@ export function AuditPage() {
   const [actor, setActor] = useState('')
   const [action, setAction] = useState('')
   const [outcome, setOutcome] = useState<'' | AuditOutcome>('')
+  const [page, setPage] = useState(1)
 
   const canExport = can(user?.permissions, PERMISSIONS.auditExport)
 
-  const listPath = useMemo(() => {
+  const filterParams = useMemo(() => {
     const params = new URLSearchParams()
     if (from) params.set('from', from)
     if (to) params.set('to', to)
     if (actor.trim()) params.set('actor', actor.trim())
     if (action) params.set('action', action)
     if (outcome) params.set('outcome', outcome)
-    return `/api/v1/audit?${params.toString()}`
+    return params
   }, [from, to, actor, action, outcome])
+
+  // Any filter change resets to the first page (a filter can invalidate a
+  // later page number).
+  useEffect(() => {
+    setPage(1)
+  }, [filterParams])
+
+  const listPath = useMemo(() => {
+    const params = new URLSearchParams(filterParams)
+    params.set('page', String(page))
+    params.set('size', '25')
+    return `/api/v1/audit?${params.toString()}`
+  }, [filterParams, page])
 
   // The export href must keep /export.csv on the PATH: appending it to
   // listPath (which already contains '?') put it inside the query string, so
   // the browser fetched the JSON listing — or a 422 with a filter set — and
   // never the CSV (SEMANTIC_MODEL.md BUG-1, fixed).
   const exportHref = useMemo(() => {
-    const params = new URLSearchParams()
-    if (from) params.set('from', from)
-    if (to) params.set('to', to)
-    if (actor.trim()) params.set('actor', actor.trim())
-    if (action) params.set('action', action)
-    if (outcome) params.set('outcome', outcome)
-    const query = params.toString()
+    const query = filterParams.toString()
     return `/api/v1/audit/export.csv${query ? `?${query}` : ''}`
-  }, [from, to, actor, action, outcome])
+  }, [filterParams])
 
   const list = useApi<AuditEvent[]>(listPath)
   const events = list.data ?? []
@@ -170,6 +179,8 @@ export function AuditPage() {
           only by hiding the control.
         </p>
       )}
+
+      <Pager page={page} size={meta?.size ?? 25} total={meta?.total ?? 0} onPage={setPage} />
     </>
   )
 }
