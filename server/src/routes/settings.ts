@@ -4,6 +4,7 @@ import { pool } from '../db/pool'
 import { requireAuth, type AuthedRequest } from '../middleware/auth'
 import { requirePermission } from '../middleware/requirePermission'
 import { ApiError } from '../middleware/errors'
+import { AUDIT_ACTIONS, ERROR_CODES, PERMISSION_KEYS } from '../lib/vocabulary'
 import { writeEvent, auditContext } from '../services/auditLogger'
 
 // System settings API (CON-SET-001/002; Ch5 §3.6.6).
@@ -53,17 +54,17 @@ const valueSchema = z.object({ value: z.string().max(1000, 'Value is too long') 
 // settings, FR-ADM-020 configurable business rules).
 settingsRouter.put(
   '/:key',
-  requirePermission('settings.manage'),
+  requirePermission(PERMISSION_KEYS.settingsManage),
   async (req: AuthedRequest, res, next) => {
     try {
       const key = keySchema.parse(req.params.key)
       const parsed = valueSchema.safeParse(req.body)
-      if (!parsed.success) throw new ApiError(422, 'VALIDATION', parsed.error.issues[0]?.message ?? 'Invalid value')
+      if (!parsed.success) throw new ApiError(422, ERROR_CODES.validation, parsed.error.issues[0]?.message ?? 'Invalid value')
 
       const existing = await pool.query(`SELECT value FROM system_settings WHERE key = $1`, [key])
-      if (!existing.rows[0]) throw new ApiError(404, 'SETTING-001', 'No such configuration key')
+      if (!existing.rows[0]) throw new ApiError(404, ERROR_CODES.settingNotFound, 'No such configuration key')
       if (existing.rows[0].value === parsed.data.value) {
-        throw new ApiError(409, 'SETTING-003', 'Configuration already has this value')
+        throw new ApiError(409, ERROR_CODES.settingNoop, 'Configuration already has this value')
       }
 
       const { rows } = await pool.query(
@@ -74,7 +75,7 @@ settingsRouter.put(
       )
       await writeEvent({
         operatorId: req.user!.id,
-        actionType: 'Configuration Updated',
+        actionType: AUDIT_ACTIONS.configurationUpdated,
         targetEntityType: 'system_setting',
         targetEntityId: null,
         outcome: 'Success',
@@ -94,24 +95,24 @@ const toggleSchema = z.object({ enabled: z.boolean() })
 // without redeployment — flipping the flag back is the rollback).
 settingsRouter.post(
   '/:key/toggle',
-  requirePermission('settings.manage'),
+  requirePermission(PERMISSION_KEYS.settingsManage),
   async (req: AuthedRequest, res, next) => {
     try {
       const key = keySchema.parse(req.params.key)
       const parsed = toggleSchema.safeParse(req.body)
-      if (!parsed.success) throw new ApiError(422, 'VALIDATION', 'enabled must be a boolean')
+      if (!parsed.success) throw new ApiError(422, ERROR_CODES.validation, 'enabled must be a boolean')
 
       const existing = await pool.query(
         `SELECT value, is_feature_toggle AS "isFeatureToggle" FROM system_settings WHERE key = $1`,
         [key],
       )
-      if (!existing.rows[0]) throw new ApiError(404, 'SETTING-001', 'No such configuration key')
+      if (!existing.rows[0]) throw new ApiError(404, ERROR_CODES.settingNotFound, 'No such configuration key')
       if (!existing.rows[0].isFeatureToggle) {
-        throw new ApiError(409, 'SETTING-002', 'This key is a configuration value, not a feature toggle')
+        throw new ApiError(409, ERROR_CODES.settingNotToggle, 'This key is a configuration value, not a feature toggle')
       }
       const nextValue = parsed.data.enabled ? 'true' : 'false'
       if (existing.rows[0].value === nextValue) {
-        throw new ApiError(409, 'SETTING-003', 'Feature is already in the requested state')
+        throw new ApiError(409, ERROR_CODES.settingNoop, 'Feature is already in the requested state')
       }
 
       const { rows } = await pool.query(
@@ -122,7 +123,7 @@ settingsRouter.post(
       )
       await writeEvent({
         operatorId: req.user!.id,
-        actionType: 'Feature Toggle Changed',
+        actionType: AUDIT_ACTIONS.featureToggleChanged,
         targetEntityType: 'system_setting',
         targetEntityId: null,
         outcome: 'Success',

@@ -9,6 +9,7 @@ import { api } from '../../lib/api'
 import { PERMISSIONS, can } from '../../lib/permissions'
 import type { Flag, FlagStatus, Severity } from '../../lib/types'
 import { useApi } from '../../lib/useApi'
+import { formatDateTime } from '../../lib/format'
 
 const SEVERITY_TONE: Record<Severity, 'high' | 'medium' | 'low'> = { High: 'high', Medium: 'medium', Low: 'low' }
 const STATUS_TONE: Partial<Record<FlagStatus, 'neutral' | 'active' | 'suspended'>> = {
@@ -330,7 +331,7 @@ export function QueuePage() {
                     <td>
                       <Pill tone={STATUS_TONE[f.flagStatus] ?? 'neutral'}>{f.flagStatus}</Pill>
                     </td>
-                    <td className="text-[#626c66]">{new Date(f.createdAt).toLocaleString()}</td>
+                    <td className="text-[#626c66]">{formatDateTime(f.createdAt)}</td>
                     <td>
                       <div className="flex justify-end gap-2">
                         {lane === 'queue' && canDecide && f.flagStatus === 'Pending' && (

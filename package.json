@@ -10,7 +10,8 @@
     "format": "oxfmt",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "dev:all": "node scripts/dev-all.mjs"
+    "dev:all": "node scripts/dev-all.mjs",
+    "lint:lengths": "node scripts/check-file-length.mjs"
   },
   "dependencies": {
     "react": "^19.0.0",

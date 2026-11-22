@@ -10,6 +10,7 @@ import { api } from '../../lib/api'
 import { PERMISSIONS, ROLE_LABEL, can } from '../../lib/permissions'
 import type { Account, AccountStatus, FlagStatus, Severity } from '../../lib/types'
 import { useApi } from '../../lib/useApi'
+import { formatDateTime, formatTime } from '../../lib/format'
 
 type AccountDetail = Account & {
   flagsReported: Array<{ id: string; severity: Severity; flagStatus: FlagStatus; reason: string; createdAt: string; contentType: string }>
@@ -201,7 +202,7 @@ export function UsersPage() {
                           </span>
                         )}
                       </td>
-                      <td className="text-[#626c66]">{new Date(u.createdAt).toLocaleString()}</td>
+                      <td className="text-[#626c66]">{formatDateTime(u.createdAt)}</td>
                       <td>
                         <div className="flex justify-end gap-2">
                           {canUnlock && isLocked(u) && (
@@ -258,14 +259,14 @@ export function UsersPage() {
                 </div>
                 <div>
                   <dt>Created</dt>
-                  <dd>{new Date(selected.createdAt).toLocaleString()}</dd>
+                  <dd>{formatDateTime(selected.createdAt)}</dd>
                 </div>
                 {isLocked(selected) && (
                   <div>
                     <dt>Login lock</dt>
                     <dd>
                       <Pill tone="suspended">
-                        until {new Date(selected.lockedUntil as string).toLocaleTimeString()}
+                        until {formatTime(selected.lockedUntil as string)}
                       </Pill>
                     </dd>
                   </div>

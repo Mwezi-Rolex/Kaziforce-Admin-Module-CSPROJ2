@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken'
 import { env } from '../config/env'
 import { pool } from '../db/pool'
 import { ApiError } from './errors'
+import { ERROR_CODES } from '../lib/vocabulary'
 
 export const SESSION_COOKIE = 'kz_session'
 
@@ -33,7 +34,7 @@ export function signSessionToken(payload: { sub: string; email: string }) {
 export async function requireAuth(req: AuthedRequest, _res: Response, next: NextFunction) {
   try {
     const token = req.cookies?.[SESSION_COOKIE]
-    if (!token) throw new ApiError(401, 'AUTH-002', 'Authentication required')
+    if (!token) throw new ApiError(401, ERROR_CODES.authRequired, 'Authentication required')
     let claims: { sub: string }
     try {
       claims = jwt.verify(token, env.JWT_SECRET, {
@@ -41,7 +42,7 @@ export async function requireAuth(req: AuthedRequest, _res: Response, next: Next
         audience: 'kaziforce-api',
       }) as typeof claims
     } catch {
-      throw new ApiError(401, 'AUTH-002', 'Session invalid or expired')
+      throw new ApiError(401, ERROR_CODES.authRequired, 'Session invalid or expired')
     }
     const { rows } = await pool.query(
       `SELECT u.id, u.email, u.full_name, u.status, u.is_deleted, r.name AS role
@@ -52,8 +53,8 @@ export async function requireAuth(req: AuthedRequest, _res: Response, next: Next
       [claims.sub],
     )
     const row = rows[0]
-    if (!row || row.is_deleted) throw new ApiError(401, 'AUTH-002', 'Session invalid or expired')
-    if (row.status !== 'Active') throw new ApiError(403, 'AUTH-003', 'Account is not active; access revoked')
+    if (!row || row.is_deleted) throw new ApiError(401, ERROR_CODES.authRequired, 'Session invalid or expired')
+    if (row.status !== 'Active') throw new ApiError(403, ERROR_CODES.authNotActive, 'Account is not active; access revoked')
     const perms = await pool.query<{ key: string }>(
       `SELECT DISTINCT p.key
        FROM role_permissions rp

@@ -6,6 +6,17 @@ import { requirePermission } from '../middleware/requirePermission'
 import { ApiError } from '../middleware/errors'
 import { writeEvent, auditContext, type AuditContext } from '../services/auditLogger'
 import { createModelClient, type PredictInput, type SuggestionResult } from '../services/modelClient'
+import { uuidParamSchema } from '../lib/params'
+import {
+  ACCOUNT_STATUS,
+  AUDIT_ACTIONS,
+  ERROR_CODES,
+  FLAG_SEVERITY_FILTERS,
+  FLAG_STATUS,
+  FLAG_STATUS_FILTERS,
+  MODERATION_DECISIONS,
+  PERMISSION_KEYS,
+} from '../lib/vocabulary'
 
 const modelClient = createModelClient()
 
@@ -29,8 +40,8 @@ const FLAG_SELECT = `
 const SEVERITY_RANK = `CASE f.severity WHEN 'High' THEN 3 WHEN 'Medium' THEN 2 ELSE 1 END`
 
 const listSchema = z.object({
-  severity: z.enum(['All', 'High', 'Medium', 'Low']).optional().default('All'),
-  status: z.enum(['All', 'Pending', 'Approved', 'Rejected', 'Escalated']).optional().default('All'),
+  severity: z.enum(FLAG_SEVERITY_FILTERS).optional().default('All'),
+  status: z.enum(FLAG_STATUS_FILTERS).optional().default('All'),
   page: z.coerce.number().int().min(1).optional().default(1),
   size: z.coerce.number().int().min(1).max(100).optional().default(20),
 })
@@ -40,7 +51,7 @@ const listSchema = z.object({
 moderationRouter.get('/queue', async (req: AuthedRequest, res, next) => {
   try {
     const parsed = listSchema.safeParse(req.query)
-    if (!parsed.success) throw new ApiError(422, 'VALIDATION', parsed.error.issues[0]?.message ?? 'Invalid query')
+    if (!parsed.success) throw new ApiError(422, ERROR_CODES.validation, parsed.error.issues[0]?.message ?? 'Invalid query')
     const { severity, status, page, size } = parsed.data
     const filters: string[] = []
     const params: unknown[] = []
@@ -73,14 +84,14 @@ moderationRouter.get('/queue', async (req: AuthedRequest, res, next) => {
 })
 
 const DECISION_TO_STATUS: Record<string, string> = {
-  approve: 'Approved',
-  reject: 'Rejected',
-  escalate: 'Escalated',
+  approve: FLAG_STATUS.Approved,
+  reject: FLAG_STATUS.Rejected,
+  escalate: FLAG_STATUS.Escalated,
 }
 const DECISION_TO_AUDIT: Record<string, string> = {
-  approve: 'Content Approved',
-  reject: 'Content Rejected',
-  escalate: 'Content Escalated',
+  approve: AUDIT_ACTIONS.contentApproved,
+  reject: AUDIT_ACTIONS.contentRejected,
+  escalate: AUDIT_ACTIONS.contentEscalated,
 }
 
 // Build the feature payload the model service expects (ml/generate_data.py
@@ -119,9 +130,9 @@ async function buildPredictionInput(flagId: string): Promise<PredictInput | null
 // GET a suggestion for one flag (fail-safe: unavailable on any model error).
 moderationRouter.get('/flags/:id/suggestion', async (req: AuthedRequest, res, next) => {
   try {
-    const flagId = z.string().uuid('Flag ID must be a UUID').parse(req.params.id)
+    const flagId = uuidParamSchema('Flag ID').parse(req.params.id)
     const input = await buildPredictionInput(flagId)
-    if (!input) throw new ApiError(404, 'FLAG-001', 'Flag not found')
+    if (!input) throw new ApiError(404, ERROR_CODES.flagNotFound, 'Flag not found')
     const suggestion = await modelClient.predict(input)
     res.json({ success: true, data: suggestion, timestamp: new Date().toISOString() })
   } catch (err) {
@@ -129,14 +140,14 @@ moderationRouter.get('/flags/:id/suggestion', async (req: AuthedRequest, res, ne
   }
 })
 
-const suggestionsSchema = z.object({ flagIds: z.array(z.string().uuid()).min(1).max(100) })
+const suggestionsSchema = z.object({ flagIds: z.array(uuidParamSchema('Flag ID')).min(1).max(100) })
 
 // Batch suggestions for the queue view. Each flag resolves independently and
 // fails safe, so one model failure never blocks the moderation workflow.
 moderationRouter.post('/suggestions', async (req: AuthedRequest, res, next) => {
   try {
     const parsed = suggestionsSchema.safeParse(req.body)
-    if (!parsed.success) throw new ApiError(422, 'VALIDATION', 'flagIds must be a non-empty array of UUIDs')
+    if (!parsed.success) throw new ApiError(422, ERROR_CODES.validation, 'flagIds must be a non-empty array of UUIDs')
     const entries = await Promise.all(
       parsed.data.flagIds.map(async (id) => {
         const input = await buildPredictionInput(id)
@@ -166,18 +177,18 @@ async function decideFlag(
   // row and is refused with 409 (SEMANTIC_MODEL.md BUG-2, fixed).
   const { rows } = await pool.query(
     `UPDATE flags f SET flag_status = $2, decided_by = $3, decided_at = now()
-     WHERE f.id = $1 AND f.flag_status = 'Pending'
+     WHERE f.id = $1 AND f.flag_status = $4
      RETURNING f.content_item_id AS "contentItemId",
                (SELECT c.owner_id FROM content_items c WHERE c.id = f.content_item_id) AS "ownerId"`,
-    [flagId, DECISION_TO_STATUS[decision], actorId],
+    [flagId, DECISION_TO_STATUS[decision], actorId, FLAG_STATUS.Pending],
   )
   const flag = rows[0]
   if (!flag) {
     const existing = await pool.query(`SELECT flag_status FROM flags WHERE id = $1`, [flagId])
-    if (!existing.rows[0]) throw new ApiError(404, 'FLAG-001', 'Flag not found')
+    if (!existing.rows[0]) throw new ApiError(404, ERROR_CODES.flagNotFound, 'Flag not found')
     throw new ApiError(
       409,
-      'FLAG-002',
+      ERROR_CODES.flagAlreadyDecided,
       `Flag is already ${existing.rows[0].flag_status}; only Pending flags can be decided`,
     )
   }
@@ -207,16 +218,16 @@ async function decideFlag(
   })
 }
 
-const decisionSchema = z.object({ decision: z.enum(['approve', 'reject', 'escalate']) })
+const decisionSchema = z.object({ decision: z.enum(MODERATION_DECISIONS) })
 
 moderationRouter.post(
   '/flags/:id/decision',
-  requirePermission('moderation.decide'),
+  requirePermission(PERMISSION_KEYS.moderationDecide),
   async (req: AuthedRequest, res, next) => {
     try {
-      const flagId = z.string().uuid('Flag ID must be a UUID').parse(req.params.id)
+      const flagId = uuidParamSchema('Flag ID').parse(req.params.id)
       const parsed = decisionSchema.safeParse(req.body)
-      if (!parsed.success) throw new ApiError(422, 'VALIDATION', 'Decision must be approve, reject, or escalate')
+      if (!parsed.success) throw new ApiError(422, ERROR_CODES.validation, 'Decision must be approve, reject, or escalate')
       await decideFlag(req.user!.id, flagId, parsed.data.decision, auditContext(req))
       res.json({ success: true, data: { id: flagId, status: DECISION_TO_STATUS[parsed.data.decision] }, timestamp: new Date().toISOString() })
     } catch (err) {
@@ -226,8 +237,8 @@ moderationRouter.post(
 )
 
 const bulkSchema = z.object({
-  flagIds: z.array(z.string().uuid()).min(1).max(100),
-  decision: z.enum(['approve', 'reject', 'escalate']),
+  flagIds: z.array(uuidParamSchema('Flag ID')).min(1).max(100),
+  decision: z.enum(MODERATION_DECISIONS),
 })
 
 // Bulk approve/reject/escalate (CON-MOD-003). Each state change gets its own
@@ -235,10 +246,10 @@ const bulkSchema = z.object({
 // each flag commits independently: applied/failed are reported per flag. There
 // is deliberately no wrapping transaction — the per-flag guard inside
 // decideFlag is what keeps concurrent bulks honest.
-moderationRouter.post('/bulk', requirePermission('moderation.decide'), async (req: AuthedRequest, res, next) => {
+moderationRouter.post('/bulk', requirePermission(PERMISSION_KEYS.moderationDecide), async (req: AuthedRequest, res, next) => {
   try {
     const parsed = bulkSchema.safeParse(req.body)
-    if (!parsed.success) throw new ApiError(422, 'VALIDATION', parsed.error.issues[0]?.message ?? 'Invalid bulk request')
+    if (!parsed.success) throw new ApiError(422, ERROR_CODES.validation, parsed.error.issues[0]?.message ?? 'Invalid bulk request')
     const { flagIds, decision } = parsed.data
     const applied: string[] = []
     const failed: Array<{ id: string; reason: string }> = []
@@ -270,68 +281,68 @@ const escalationSchema = z.object({ resolution: z.enum(['overrule', 'uphold']) }
 
 moderationRouter.post(
   '/flags/:id/escalation',
-  requirePermission('moderation.escalation'),
+  requirePermission(PERMISSION_KEYS.moderationEscalation),
   async (req: AuthedRequest, res, next) => {
     try {
-      const flagId = z.string().uuid('Flag ID must be a UUID').parse(req.params.id)
+      const flagId = uuidParamSchema('Flag ID').parse(req.params.id)
       const parsed = escalationSchema.safeParse(req.body)
-      if (!parsed.success) throw new ApiError(422, 'VALIDATION', 'Resolution must be overrule or uphold')
+      if (!parsed.success) throw new ApiError(422, ERROR_CODES.validation, 'Resolution must be overrule or uphold')
       const { resolution } = parsed.data
 
       if (resolution === 'overrule') {
         const { rows } = await pool.query(
-          `UPDATE flags SET flag_status = 'Approved', decided_by = $2, decided_at = now()
-           WHERE id = $1 AND flag_status = 'Escalated'
+          `UPDATE flags SET flag_status = $2, decided_by = $3, decided_at = now()
+           WHERE id = $1 AND flag_status = $4
            RETURNING content_item_id AS "contentItemId"`,
-          [flagId, req.user!.id],
+          [flagId, FLAG_STATUS.Approved, req.user!.id, FLAG_STATUS.Escalated],
         )
         if (!rows[0]) {
           const existing = await pool.query(`SELECT flag_status FROM flags WHERE id = $1`, [flagId])
-          if (!existing.rows[0]) throw new ApiError(404, 'FLAG-001', 'Flag not found')
-          throw new ApiError(409, 'FLAG-003', 'Only escalated flags can be resolved in the escalation lane')
+          if (!existing.rows[0]) throw new ApiError(404, ERROR_CODES.flagNotFound, 'Flag not found')
+          throw new ApiError(409, ERROR_CODES.flagNotEscalated, 'Only escalated flags can be resolved in the escalation lane')
         }
         await writeEvent({
           operatorId: req.user!.id,
-          actionType: 'Flag Overruled',
+          actionType: AUDIT_ACTIONS.flagOverruled,
           targetEntityType: 'flag',
           targetEntityId: flagId,
           outcome: 'Success',
           ...auditContext(req),
           metadata: { resolution: 'overrule', contentItemId: rows[0].contentItemId },
         })
-        return res.json({ success: true, data: { id: flagId, status: 'Approved' }, timestamp: new Date().toISOString() })
+        return res.json({ success: true, data: { id: flagId, status: FLAG_STATUS.Approved }, timestamp: new Date().toISOString() })
       }
 
       // uphold: resolve the flag to Rejected and ban the content owner
       // (Set User: Terminated in the activity diagram).
       const { rows: claimed } = await pool.query(
-        `UPDATE flags SET flag_status = 'Rejected', decided_by = $2, decided_at = now()
-         WHERE id = $1 AND flag_status = 'Escalated'
+        `UPDATE flags SET flag_status = $2, decided_by = $3, decided_at = now()
+         WHERE id = $1 AND flag_status = $4
          RETURNING content_item_id AS "contentItemId",
                    (SELECT c.owner_id FROM content_items c WHERE c.id = flags.content_item_id) AS "ownerId"`,
-        [flagId, req.user!.id],
+        [flagId, FLAG_STATUS.Rejected, req.user!.id, FLAG_STATUS.Escalated],
       )
       const flag = claimed[0]
       if (!flag) {
         const existing = await pool.query(`SELECT flag_status FROM flags WHERE id = $1`, [flagId])
-        if (!existing.rows[0]) throw new ApiError(404, 'FLAG-001', 'Flag not found')
-        throw new ApiError(409, 'FLAG-003', 'Only escalated flags can be resolved in the escalation lane')
+        if (!existing.rows[0]) throw new ApiError(404, ERROR_CODES.flagNotFound, 'Flag not found')
+        throw new ApiError(409, ERROR_CODES.flagNotEscalated, 'Only escalated flags can be resolved in the escalation lane')
       }
-      if (!flag.ownerId) throw new ApiError(409, 'FLAG-004', 'Flagged content has no owner to ban')
+      if (!flag.ownerId) throw new ApiError(409, ERROR_CODES.flagNoOwner, 'Flagged content has no owner to ban')
       const { rows: owner } = await pool.query(`SELECT status FROM users WHERE id = $1`, [flag.ownerId])
-      if (!owner[0]) throw new ApiError(404, 'USER-001', 'Content owner not found')
+      if (!owner[0]) throw new ApiError(404, ERROR_CODES.userNotFound, 'Content owner not found')
 
       // Guarded ban: if another uphold already terminated this owner, the
       // UPDATE matches no row — the resolution still completes, but the ban is
       // audited exactly once (by whichever uphold applied it).
       const { rows: banned } = await pool.query(
-        `UPDATE users SET status = 'Terminated' WHERE id = $1 AND status <> 'Terminated' RETURNING id`,
-        [flag.ownerId],
+        `UPDATE users SET status = $2 WHERE id = $1 AND status <> $2 RETURNING id`,
+        [flag.ownerId, ACCOUNT_STATUS.Terminated],
       )
       if (banned[0]) {
         await writeEvent({
           operatorId: req.user!.id,
-          actionType: 'Account Terminated',
+          actionType: AUDIT_ACTIONS.accountTerminated,
           targetEntityType: 'user',
           targetEntityId: flag.ownerId,
           outcome: 'Success',
@@ -341,14 +352,14 @@ moderationRouter.post(
       }
       await writeEvent({
         operatorId: req.user!.id,
-        actionType: 'Escalation Upheld',
+        actionType: AUDIT_ACTIONS.escalationUpheld,
         targetEntityType: 'flag',
         targetEntityId: flagId,
         outcome: 'Success',
         ...auditContext(req),
         metadata: { bannedUserId: flag.ownerId, ownerWasAlreadyTerminated: !banned[0] },
       })
-      res.json({ success: true, data: { id: flagId, status: 'Rejected', ownerBanned: true }, timestamp: new Date().toISOString() })
+      res.json({ success: true, data: { id: flagId, status: FLAG_STATUS.Rejected, ownerBanned: true }, timestamp: new Date().toISOString() })
     } catch (err) {
       next(err)
     }

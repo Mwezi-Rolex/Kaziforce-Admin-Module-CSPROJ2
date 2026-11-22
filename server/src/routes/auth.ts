@@ -2,6 +2,7 @@ import { Router } from 'express'
 import { z } from 'zod'
 import { SESSION_COOKIE, requireAuth, signSessionToken, type AuthedRequest } from '../middleware/auth'
 import { ApiError } from '../middleware/errors'
+import { AUDIT_ACTIONS, ERROR_CODES } from '../lib/vocabulary'
 import { writeEvent, auditContext } from '../services/auditLogger'
 import { authenticate } from '../services/authService'
 
@@ -21,7 +22,7 @@ authRouter.post('/login', async (req, res, next) => {
   try {
     const parsed = loginSchema.safeParse(req.body)
     if (!parsed.success) {
-      throw new ApiError(422, 'VALIDATION', parsed.error.issues[0]?.message ?? 'Invalid input')
+      throw new ApiError(422, ERROR_CODES.validation, parsed.error.issues[0]?.message ?? 'Invalid input')
     }
     const account = await authenticate(parsed.data.email, parsed.data.password, auditContext(req))
     const ttlHours = Number(process.env.JWT_TTL_HOURS || 8)
@@ -34,7 +35,7 @@ authRouter.post('/login', async (req, res, next) => {
     res.cookie(SESSION_COOKIE, token, sessionCookieOptions(ttlHours * 3600_000))
     await writeEvent({
       operatorId: account.id,
-      actionType: 'Operator Login',
+      actionType: AUDIT_ACTIONS.operatorLogin,
       targetEntityType: 'operator',
       targetEntityId: account.id,
       outcome: 'Success',
@@ -55,7 +56,7 @@ authRouter.post('/logout', requireAuth, async (req: AuthedRequest, res, next) =>
   try {
     await writeEvent({
       operatorId: req.user!.id,
-      actionType: 'Operator Logout',
+      actionType: AUDIT_ACTIONS.operatorLogout,
       targetEntityType: 'operator',
       targetEntityId: req.user!.id,
       outcome: 'Success',

@@ -7,6 +7,7 @@ import { api } from '../../lib/api'
 import { PERMISSIONS, can } from '../../lib/permissions'
 import type { SystemSetting } from '../../lib/types'
 import { useApi } from '../../lib/useApi'
+import { formatDateTime } from '../../lib/format'
 
 // System Settings (CON-SET-001/002; Ch5 §3.6.6; FR-ADM-004/019/020/026/027/029/031).
 //
@@ -117,7 +118,7 @@ export function SettingsPage() {
                       )}
                     </td>
                     <td className="text-[#656c65]">
-                      {new Date(s.updatedAt).toLocaleString()}
+                      {formatDateTime(s.updatedAt)}
                       {s.updatedByEmail ? ` · ${s.updatedByEmail}` : ''}
                     </td>
                     <td className="text-right">

@@ -5,6 +5,7 @@ import { env } from '../config/env'
 import { requireAuth, type AuthedRequest } from '../middleware/auth'
 import { requirePermission } from '../middleware/requirePermission'
 import { ApiError } from '../middleware/errors'
+import { AUDIT_ACTIONS, AUDIT_OUTCOMES, ERROR_CODES, PERMISSION_KEYS } from '../lib/vocabulary'
 import { toCsv } from '../lib/csv'
 
 // Audit Explorer API (CON-AUD-002/003; Ch5 §3.6.5).
@@ -68,12 +69,12 @@ const SELECT_EVENTS = `
 
 function parseFilters(req: AuthedRequest): Filters {
   const parsed = filterSchema.safeParse(req.query)
-  if (!parsed.success) throw new ApiError(422, 'VALIDATION', parsed.error.issues[0]?.message ?? 'Invalid filter')
+  if (!parsed.success) throw new ApiError(422, ERROR_CODES.validation, parsed.error.issues[0]?.message ?? 'Invalid filter')
   return parsed.data
 }
 
 // Read-only listing (audit.view — all operator tiers).
-auditRouter.get('/', requirePermission('audit.view'), async (req: AuthedRequest, res, next) => {
+auditRouter.get('/', requirePermission(PERMISSION_KEYS.auditView), async (req: AuthedRequest, res, next) => {
   try {
     const f = parseFilters(req)
     const { where, params } = buildWhere(f)
@@ -119,7 +120,7 @@ auditRouter.get('/', requirePermission('audit.view'), async (req: AuthedRequest,
 // BUG-8, fixed), so a capped export announces itself: the X-Total-Matching-Rows
 // header carries the true total and the CSV ends with an explicit
 // 'Export Truncated' marker row carrying both totals.
-auditRouter.get('/export.csv', requirePermission('audit.export'), async (req: AuthedRequest, res, next) => {
+auditRouter.get('/export.csv', requirePermission(PERMISSION_KEYS.auditExport), async (req: AuthedRequest, res, next) => {
   try {
     const f = parseFilters(req)
     const { where, params } = buildWhere(f)
@@ -140,7 +141,7 @@ auditRouter.get('/export.csv', requirePermission('audit.export'), async (req: Au
         createdAt: '',
         operatorId: '',
         operatorEmail: '',
-        actionType: 'Export Truncated',
+        actionType: AUDIT_ACTIONS.exportTruncated,
         targetEntityType: 'audit_export',
         targetEntityId: '',
         outcome: 'Failure',

@@ -1,5 +1,6 @@
 import type { NextFunction, Request, Response } from 'express'
 import { ZodError } from 'zod'
+import { ERROR_CODES } from '../lib/vocabulary'
 
 // BED §6 conventions: uniform envelope, standard status codes, no stack traces to clients.
 export class ApiError extends Error {
@@ -15,7 +16,7 @@ export class ApiError extends Error {
 export const notFound = (req: Request, res: Response) => {
   res.status(404).json({
     success: false,
-    error: { code: 'NOT_FOUND', message: `No route for ${req.method} ${req.path}` },
+    error: { code: ERROR_CODES.notFound, message: `No route for ${req.method} ${req.path}` },
     timestamp: new Date().toISOString(),
   })
 }
@@ -38,7 +39,7 @@ export function errorHandler(err: unknown, req: Request, res: Response, _next: N
   if (err instanceof ZodError) {
     res.status(422).json({
       success: false,
-      error: { code: 'VALIDATION', message: err.issues[0]?.message ?? 'Invalid input', traceId },
+      error: { code: ERROR_CODES.validation, message: err.issues[0]?.message ?? 'Invalid input', traceId },
       timestamp: new Date().toISOString(),
     })
     return
@@ -46,7 +47,7 @@ export function errorHandler(err: unknown, req: Request, res: Response, _next: N
   console.error('[unhandled]', err) // full context server-side only (FR-ERR-003)
   res.status(500).json({
     success: false,
-    error: { code: 'SYSTEM-001', message: 'Internal server error', traceId },
+    error: { code: ERROR_CODES.system, message: 'Internal server error', traceId },
     timestamp: new Date().toISOString(),
   })
 }

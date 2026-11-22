@@ -160,6 +160,16 @@ Not started (only if the user asks).
 
 ---
 
+## Module deepening refactor (2026-11-22, branch `refactor/deepen-modules`)
+
+**Done:** length guard `scripts/check-file-length.mjs` + `npm run lint:lengths` (gate 1000 lines, report at 400 — **no file exceeds 400: max is UsersPage.tsx at 385**); `server/src/lib/vocabulary.ts` now single-sources permission keys, role names, account/flag status vocabularies, severities, moderation decisions, audit action names, ledger outcomes and error codes (refactored call sites: all five route files, authService, all four middleware files, seed.ts); `server/src/lib/params.ts` single-sources the UUID path-parameter schema (was ×6 with differing messages); authService's dead re-export shim removed (nothing imported from it); `mutateStatus` deepened (returns the row; routes own the response); client `src/lib/format.ts` replaces six inline `toLocaleString()` calls across four pages. Trust-me item (seed writing the vocabulary to the DB) made provable by the new `vocabulary.test.ts` (permissions/roles/outcomes ↔ DB). oxlint NOT installed (would add two dev dependencies; rule 4) — the anti-slop rule catalog was used as review lenses instead (D-086). LOC: src 2,260→2,278, server/src 2,012→2,147 (new modules), server/tests 2,279→2,326 (new guard), ml unchanged. Suites: server **18 suites / 127 tests** (3 new), Vitest 12, typecheck+build clean.
+
+**Next:** the >400-line list is empty; the gate now fails any future breach. Candidate follow-up: collapse `requireAuth`'s two per-request queries (the measured HTTP ceiling from PERFORMANCE.md §4) — deliberately not in this refactor (it changes auth middleware, not vocabulary).
+
+**Blockers:** none.
+
+---
+
 ## Full performance baseline (2026-11-22, branch `perf/baseline`)
 
 **Done:** the complete measurement pass on the isolated 50k-row perf database (audit_log 50,001 / flags 5,004, stated counts): bundle visualiser via npx (react-dom 524 KB = 59 % of rendered JS, zod 143 KB, react-router 93 KB, app code 91 KB); autocannon 30-second windows at 10/50 connections for health, users, queue, audit, CSV export plus POST /suggestions with the model up (p50 3,028 ms — the 20-flag batch serialises 20 scikit-learn predicts) and down (128 ms, zero non-2xx — fail-safe holds); model /predict cold 235 ms, warm p50 85 ms; EXPLAIN per audit filter (actor filter is the slowest path at 28.6–48.3 ms — `::text` cast + ILIKE). Bottlenecks at 10×/100× recorded in §7, each tied to a measurement. One measurement defect found and corrected mid-run: a Node spawnSync(shell:true) battery dropped the Cookie header (unquoted space under cmd.exe) and measured 401s — replaced with a bash-driven battery; the perf/fixes 10 s HTTP table is superseded. No application code changed; `docs/PERFORMANCE.md` rewritten as the authoritative baseline.

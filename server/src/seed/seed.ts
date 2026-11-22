@@ -1,5 +1,6 @@
 import bcrypt from 'bcryptjs'
 import { Pool } from 'pg'
+import { ACCOUNT_STATUS, PERMISSION_KEYS, ROLE_NAMES } from '../lib/vocabulary'
 import 'dotenv/config'
 
 // Seed script — run as the schema owner (OWNER_DATABASE_URL).
@@ -10,32 +11,32 @@ import 'dotenv/config'
 // the end of the run; they are for local development only.
 
 const PERMISSIONS: Array<[string, string]> = [
-  ['users.view', 'View and search account records'],
-  ['users.suspend', 'Suspend platform accounts (Moderator+)'],
-  ['users.assign_role', 'Assign operator roles (Super Admin)'],
-  ['users.ban', 'Permanently ban accounts (Super Admin)'],
-  ['users.unlock', 'Clear a login lockout on an account (Super Admin)'],
-  ['moderation.decide', 'Approve, reject, or escalate flags (Moderator+)'],
-  ['moderation.escalation', 'Resolve escalated flags in the Super Admin lane (overrule / uphold and ban)'],
-  ['audit.view', 'View and filter the audit log'],
-  ['audit.export', 'Download the audit log as CSV (Moderator+ — BRIEF restriction, CON-AUD-003)'],
-  ['settings.manage', 'Modify system settings and feature toggles (Super Admin)'],
+  [PERMISSION_KEYS.usersView, 'View and search account records'],
+  [PERMISSION_KEYS.usersSuspend, 'Suspend platform accounts (Moderator+)'],
+  [PERMISSION_KEYS.usersAssignRole, 'Assign operator roles (Super Admin)'],
+  [PERMISSION_KEYS.usersBan, 'Permanently ban accounts (Super Admin)'],
+  [PERMISSION_KEYS.usersUnlock, 'Clear a login lockout on an account (Super Admin)'],
+  [PERMISSION_KEYS.moderationDecide, 'Approve, reject, or escalate flags (Moderator+)'],
+  [PERMISSION_KEYS.moderationEscalation, 'Resolve escalated flags in the Super Admin lane (overrule / uphold and ban)'],
+  [PERMISSION_KEYS.auditView, 'View and filter the audit log'],
+  [PERMISSION_KEYS.auditExport, 'Download the audit log as CSV (Moderator+ — BRIEF restriction, CON-AUD-003)'],
+  [PERMISSION_KEYS.settingsManage, 'Modify system settings and feature toggles (Super Admin)'],
 ]
 
 const ROLE_MATRIX: Record<string, string[]> = {
-  viewer: ['users.view', 'audit.view'],
-  moderator: ['users.view', 'users.suspend', 'moderation.decide', 'audit.view', 'audit.export'],
+  viewer: [PERMISSION_KEYS.usersView, 'audit.view'],
+  moderator: [PERMISSION_KEYS.usersView, 'users.suspend', 'moderation.decide', 'audit.view', 'audit.export'],
   super_admin: [
-    'users.view',
-    'users.suspend',
-    'users.assign_role',
-    'users.ban',
-    'users.unlock',
-    'moderation.decide',
-    'moderation.escalation',
-    'audit.view',
-    'audit.export',
-    'settings.manage',
+    PERMISSION_KEYS.usersView,
+    PERMISSION_KEYS.usersSuspend,
+    PERMISSION_KEYS.usersAssignRole,
+    PERMISSION_KEYS.usersBan,
+    PERMISSION_KEYS.usersUnlock,
+    PERMISSION_KEYS.moderationDecide,
+    PERMISSION_KEYS.moderationEscalation,
+    PERMISSION_KEYS.auditView,
+    PERMISSION_KEYS.auditExport,
+    PERMISSION_KEYS.settingsManage,
   ],
 }
 
@@ -60,7 +61,7 @@ const PASSWORD_ENV_KEYS: Record<string, string> = {
 
 function resolveOperatorPasswords(isProduction: boolean): Record<string, string> {
   const resolved: Record<string, string> = {}
-  for (const role of ['viewer', 'moderator', 'super_admin']) {
+  for (const role of ROLE_NAMES) {
     const envKey = PASSWORD_ENV_KEYS[role]
     const fromEnv = process.env[envKey]
     if (isProduction) {
@@ -84,17 +85,17 @@ function resolveOperatorPasswords(isProduction: boolean): Record<string, string>
 }
 
 const OPERATORS = [
-  { email: 'viewer@kaziforce.local', name: 'Vera Operator (Demo)', role: 'viewer' },
-  { email: 'moderator@kaziforce.local', name: 'Marta Moderator (Demo)', role: 'moderator' },
-  { email: 'superadmin@kaziforce.local', name: 'Sasha Super Admin (Demo)', role: 'super_admin' },
+  { email: 'viewer@kaziforce.local', name: 'Vera Operator (Demo)', role: ROLE_NAMES[0] },
+  { email: 'moderator@kaziforce.local', name: 'Marta Moderator (Demo)', role: ROLE_NAMES[1] },
+  { email: 'superadmin@kaziforce.local', name: 'Sasha Super Admin (Demo)', role: ROLE_NAMES[2] },
 ]
 
 // Sample platform accounts mirroring the Figma export's seed rows (usr_*) — SAMPLE DATA.
 const SAMPLE_USERS = [
-  { email: 'adwoa.mensah@example.com', name: 'Adwoa Mensah (Sample)', role: 'viewer', status: 'Active' },
-  { email: 'isaac.njeri@example.com', name: 'Isaac Njeri (Sample)', role: 'moderator', status: 'Suspended' },
-  { email: 'zainab.okafor@example.com', name: 'Zainab Okafor (Sample)', role: 'viewer', status: 'Active' },
-  { email: 'moses.kato@example.com', name: 'Moses Kato (Sample)', role: 'viewer', status: 'Active' },
+  { email: 'adwoa.mensah@example.com', name: 'Adwoa Mensah (Sample)', role: 'viewer', status: ACCOUNT_STATUS.Active },
+  { email: 'isaac.njeri@example.com', name: 'Isaac Njeri (Sample)', role: 'moderator', status: ACCOUNT_STATUS.Suspended },
+  { email: 'zainab.okafor@example.com', name: 'Zainab Okafor (Sample)', role: 'viewer', status: ACCOUNT_STATUS.Active },
+  { email: 'moses.kato@example.com', name: 'Moses Kato (Sample)', role: 'viewer', status: ACCOUNT_STATUS.Active },
 ]
 
 const SAMPLE_CONTENT = [
@@ -123,9 +124,9 @@ async function main() {
 
     const roleIds: Record<string, string> = {}
     for (const [name, description] of [
-      ['viewer', 'Read-only operator: dashboards and audit log'],
-      ['moderator', 'Queue decisions and account suspension'],
-      ['super_admin', 'Full platform control: roles, bans, settings'],
+      [ROLE_NAMES[0], 'Read-only operator: dashboards and audit log'],
+      [ROLE_NAMES[1], 'Queue decisions and account suspension'],
+      [ROLE_NAMES[2], 'Full platform control: roles, bans, settings'],
     ]) {
       const { rows } = await conn.query(
         `INSERT INTO roles (name, description) VALUES ($1, $2)
@@ -188,7 +189,7 @@ async function main() {
     const passwords = resolveOperatorPasswords(isProduction)
     for (const op of OPERATORS) {
       const hash = await bcrypt.hash(passwords[op.role], 12)
-      await upsertUser(op.email, op.name, op.role, 'Active', hash, true)
+      await upsertUser(op.email, op.name, op.role, ACCOUNT_STATUS.Active, hash, true)
     }
     for (const u of SAMPLE_USERS) {
       await upsertUser(u.email, u.name, u.role, u.status, null, false) // platform accounts never sign in here

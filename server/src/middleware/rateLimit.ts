@@ -1,5 +1,6 @@
 import type { NextFunction, Request, Response } from 'express'
 import { env } from '../config/env'
+import { ERROR_CODES } from '../lib/vocabulary'
 
 // Ch5 §3.4.5 pipeline: authentication -> rate limiting -> RBAC -> controller.
 // In-memory fixed window (D-018); Redis sliding window is the documented
@@ -18,7 +19,7 @@ export function rateLimit(req: Request, res: Response, next: NextFunction) {
   if (bucket.count > env.RATE_LIMIT_MAX) {
     res.status(429).json({
       success: false,
-      error: { code: 'RATE_LIMITED', message: 'Too many requests. Retry later.' },
+      error: { code: ERROR_CODES.rateLimited, message: 'Too many requests. Retry later.' },
       timestamp: new Date().toISOString(),
     })
     return

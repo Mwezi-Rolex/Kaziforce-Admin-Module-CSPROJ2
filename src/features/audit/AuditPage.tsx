@@ -6,6 +6,7 @@ import { Toolbar } from '../../components/ui/Toolbar'
 import { PERMISSIONS, can } from '../../lib/permissions'
 import type { AuditEvent, AuditOutcome } from '../../lib/types'
 import { useApi } from '../../lib/useApi'
+import { formatDateTime } from '../../lib/format'
 
 type AuditMeta = { page: number; size: number; total: number; actionTypes: string[] }
 
@@ -164,7 +165,7 @@ export function AuditPage() {
                       {e.targetEntityType}
                       {e.targetEntityId ? ` · ${e.targetEntityId.slice(0, 8)}…` : ''}
                     </td>
-                    <td className="text-[#626c66]">{new Date(e.createdAt).toLocaleString()}</td>
+                    <td className="text-[#626c66]">{formatDateTime(e.createdAt)}</td>
                   </tr>
                 ))}
               </tbody>
