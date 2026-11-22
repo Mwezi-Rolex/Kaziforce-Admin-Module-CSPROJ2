@@ -160,6 +160,16 @@ Not started (only if the user asks).
 
 ---
 
+## Console restyle (2026-11-22, branch `restyle/image-heavy`, continued)
+
+**Done:** the five console screens restyled to the Figma Make design per `docs/RESTYLE_GUIDE.md`: legacy colour literals mapped to the F tokens (completion check clean — no `#183a35`/`#c99434`/`#17332f` outside src/legacy); `ConsoleLayout` rewritten as the dark forest rail with a **four-item** menu (System Settings removed from the rail, a permission-gated **header settings control** added; route + gate unchanged), breadcrumb header, role chip, trust blurb, session box, operator block; every decision now passes the two-step `ConfirmDialog` — approve/reject/escalate, the three bulk actions, overrule, uphold-and-ban, suspend, unlock and role change all state the action, target and "recorded in the immutable audit log" (Cancel/Escape change nothing; focus returns to the opener); `UsersPage` rebuilt with a full-width table and the horizontal record band beneath (Account details | Relationship history, 240px scroll boxes — DISCREPANCIES row 19 layout at 1440px fixed in-browser); `DashboardPage` rebuilt with the F hero band, control-centre cards, "Meaningful measures come first" analytics placeholder and a read-only recent-audit card. Verified in-browser per role: viewer (no settings control), moderator (confirmation gate), super admin (header settings control). Rule-2 behaviours re-checked in-browser: Viewer CSV 403 (server), confirmation Cancel changes nothing, "Suggestion only" labels intact.
+
+**Next:** report screenshots (10) are stale for the public pages + dashboard — a person retakes them after review; the settings/audit screens inherit the skin (spot-checked via the shared classes).
+
+**Blockers:** none.
+
+---
+
 ## Image-heavy public pages (2026-11-22, branch `restyle/image-heavy`)
 
 **Done:** the public pages rebuilt to the owner's Figma Make design (CS Project II v3 — the split hero shell, Newsreader display type, forest/lime palette, self-hosted OFL fonts copied from the Figma export so the demo renders offline). `LandingPage` is now image-heavy: split hero with the workforce-studio photo panel (owner's Figma asset), a facts band stating only real product facts, three photographed steps (report → human review → immutable record), a story band, an operator-tier people strip (portraits labelled as illustrative tiers), and a CTA band. `LoginPage` ports the Figma v3 PublicScreen login variant 1:1 (form logic unchanged). 7 photographs sourced from Pexels (CDN direct download; search pages are Cloudflare-blocked — noted), credited with photographer and page URL in `public/images/CREDITS.md`; Freepik not used (account-gated downloads). Design tokens moved to self-hosted fonts and the v3 palette (`--forest #103e32`, lime `#d1f77b`). Verified in-browser at 1440px with screenshots (hero, steps, people strip, CTA, login). Console screens untouched.
