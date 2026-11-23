@@ -309,3 +309,13 @@ Not started (only if the user asks).
 **Next:** the person-side actions from the previous entry stand (Update Field in Word, reference entries, Turn-It-In appendix).
 
 **Blockers:** none.
+
+---
+
+## Azure redeploy of the dashboard build (2026-11-23, master)
+
+**Done:** HEAD `166f6f1` redeployed to `kaziforce-vm` per the owner's runbook, after the local gates passed on Node 22.23.5 (both typechecks 0, Vitest 15/15, Jest 133/133, build ok). First upload aborted on CRLF line endings in the archived scripts (D-101); after converting the bundle to LF and committing the `.gitattributes` guard, the installer exited 0 with four health checks OK, and the smoke test reported **13 passed, 0 failed, 0 skipped**. Live checks: `/var/www/kaziforce` serves the new hashed assets, `/api/v1/analytics/dashboard` returns live aggregates, port 22 was reachable once the NSG rule was refreshed to the current IP.
+
+**Next:** owner hard-refreshes the site (Ctrl+F5) and confirms sign-in plus the dashboard; optional Nginx rate-limit/JSON-log merge by hand (certbot owns the live file).
+
+**Blockers:** none.
